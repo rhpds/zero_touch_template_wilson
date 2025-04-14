@@ -1,6 +1,6 @@
 ---
 site:
-  title: "Change me, your title lives as site.title in default-site.yml"
+  title: "Change me, your title lives as site.title in site.yml"
   url: https://github.com/rhpds/showroom_template_zero
   start_page: modules::index.adoc
 
@@ -9,7 +9,7 @@ asciidoc:
     lab_name: "I'm the lab_name var"
     release-version: master
     page-pagination: true
-    my_var: "foo - this is an asciidoc attribute from `default-site.yml`"
+    my_var: "foo - this is an asciidoc attribute from `site.yml`"
 
 content:
   sources:

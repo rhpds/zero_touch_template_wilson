@@ -2,8 +2,8 @@
 
 == Variables
 
-The `lab_name` var, known as an asciidoc attribute, is set in `default-site.yml` and can be used to set the lab_name (Example: {lab_name}) or title of your content.
-They are both free to change its value and if you prefer to use a different var name, you can change the value of `lab_name`, for example to `title` in `default-site.yml` and then reference it in your content as `\{site-title}` (Ex: {site-title}).
+The `lab_name` var, known as an asciidoc attribute, is set in `site.yml` and can be used to set the lab_name (Example: {lab_name}) or title of your content.
+They are both free to change its value and if you prefer to use a different var name, you can change the value of `lab_name`, for example to `title` in `site.yml` and then reference it in your content as `\{site-title}` (Ex: {site-title}).
 
 Example:
 [source,asciidoc]

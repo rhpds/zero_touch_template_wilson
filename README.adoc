@@ -16,7 +16,7 @@
 ├── runtime-automation          # Scripts directory for setup/next/solve modules 
 ├── setup-automation            # Scripts directory when provisioning
 ├── ui-config.yml               # Configuration file
-├── default-site.yml            # Theme config
+├── site.yml                    # Theme config
 └── content                     # Content directory
     ├── antora.yml              # Antora configuration file. You can add "inline vars" here to render within your content
     └── modules/ROOT
