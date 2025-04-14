@@ -2,23 +2,6 @@
 
 * Create a git repo from this template
 * Clone the repo and *cd* into it
-* Run the following command to build your html
-[.copyable]
-----
-./utilities/lab-build
-----
-* Run the following command to serve the html
-[.copyable]
-----
-./utilities/lab-serve
-----
-* Open *http://localhost:8080* in your browser
-
-Your lab should now update and it will look more or less like this:
-
-image::.images/lab-image.png[Lab Image]
-
-Now you are ready to go!  You can start editing the files in the `content/modules/ROOT/pages/` directory.
 
 === Understanding the Basic Template Directory Structure
 
@@ -29,9 +12,11 @@ Now you are ready to go!  You can start editing the files in the `content/module
 ----
 .
 ├── README.adoc                 # Readme file
-├── runtime-automation          # Playbook/Scripts directory
-├── zero-touch-config.yml       # Configuration file
-├── zero-touch-site.yml     
+├── config                      # Defines VMs, network and firewall
+├── runtime-automation          # Scripts directory for setup/next/solve modules 
+├── setup-automation            # Scripts directory when provisioning
+├── ui-config.yml               # Configuration file
+├── default-site.yml            # Theme config
 └── content                     # Content directory
     ├── antora.yml              # Antora configuration file. You can add "inline vars" here to render within your content
     └── modules/ROOT
@@ -44,7 +29,19 @@ Now you are ready to go!  You can start editing the files in the `content/module
         │   └── module-03.adoc               # Third module
 ----
 
-. Playbook/Scripts Directory Structure
+. Lab definition directory
++
+.tree output
+[source,shell]
+----
+config/
+├── firewall.yaml                           # Define the egress/ingress rules to be allowed
+├── instances.yaml                          # Define the instances to be created
+└── networks.yml                            # Define the networks to be created
+----
+
+
+. Runtime Scripts Directory Structure
 +
 .tree output
 [source,shell]
@@ -52,16 +49,28 @@ Now you are ready to go!  You can start editing the files in the `content/module
 runtime-automation/
 ├── module_1                            # The directory name should be the same as 
 │                                       # the module content page name
-│   ├── setup.yml                       # Setup playbook which run at start of module 
+│   ├── setup.sh                        # Setup playbook which run at start of module 
 │                                       # and when clicked on next button
-│   ├── solve.yml                       # Solve playbook, run when clicked on solve button
-│   └── validation.yml                  # Validation playbook, run when click on next button
+│   ├── solve.sh                        # Solve playbook, run when clicked on solve button
+│   └── validation.sh                   # Validation playbook, run when click on next button
 ├── ansible.cfg                         # Ansible configuration used with module playbooks
-└── inventory                           # Inventory for the playbook
+└── main.yml                            # Playbook to be called in each step
 ----
 
-== Understanding Zero Touch Configration file
-. Example: The *zero-touch-config.yml* configuration file
+. Setup Scripts Directory Structure
++
+.tree output
+[source,shell]
+----
+setup-automation/
+├── setup-vmname.sh                     # Script to be executed on vmname when is provisioned
+├── ansible.cfg                         # Ansible configuration used with module playbooks
+└── main.yml                            # Playbook to be called in each step
+----
+
+
+== Understanding UI Configration file
+. Example: The *ui-config.yml* configuration file
 +
 .tree output
 [source,shell]
@@ -88,7 +97,6 @@ tabs:
 === Development Cycle
 
 . Edit your content in `content/modules/ROOT/pages/`
-. Run `./utilities/build` to build your html
 . Use `git` to branch and commit your work
 . Push your work to your repo
 .. You should use `git tags` or `git branches` in production
