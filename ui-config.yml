@@ -6,8 +6,10 @@ antora:
   modules:
     - name: index
       label: "Writing your lab"
+      solveButton: true
     - name: module-02
       label: "Antora"
+      solveButton: true
     - name: module-03
       label: "Tabs"
 
