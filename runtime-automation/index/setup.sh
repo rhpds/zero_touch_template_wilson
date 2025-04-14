@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "Starting module called index" > /tmp/progress.log
+echo "Starting module called index" >> /tmp/progress.log

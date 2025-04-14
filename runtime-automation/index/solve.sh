@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "Solved module called index" > /tmp/progress.log
+echo "Solved module called index" >>>> /tmp/progress.log

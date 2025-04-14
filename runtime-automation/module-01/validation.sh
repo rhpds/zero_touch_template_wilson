@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "Validated module called module-01" > /tmp/progress.log
+echo "Validated module called module-01" >> /tmp/progress.log
