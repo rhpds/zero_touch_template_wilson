@@ -1,0 +1,19 @@
+---
+
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: index
+      label: "Writing your lab"
+    - name: module-02
+      label: "Antora"
+    - name: module-03
+      label: "Tabs"
+
+tabs:
+  - name: ">_ terminal"
+    type: "terminal"  # available types: terminal, double-terminal
+  - name: "Asciidoc Doc"
+    url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
+    external: true

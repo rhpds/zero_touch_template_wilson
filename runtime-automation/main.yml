@@ -1,0 +1,28 @@
+---
+- name: Demo Playbook for the ansible-runner API
+  hosts: all
+  gather_facts: false
+  become: false
+  vars:
+    module_directory_prefix: module_
+    module_number: 1
+    module_stage: setup
+
+  tasks:
+    - name: Simple debug task
+      ansible.builtin.debug:
+        msg: "Hello Runner"
+
+    - name: Check if module_01/setup.sh exists
+      ansible.builtin.stat:
+        path: "./{{ module_directory_prefix }}{{ module_number }}/{{ module_stage }}.sh"
+      register: r_script_test
+
+    - name: Execute setup.sh if it exists
+      when: r_script_test.stat.exists
+      command: "bash ./{{ module_directory_prefix }}{{ module_number }}/{{ module_stage }}.sh"
+      register: r_result
+
+    - name: Output script result
+      ansible.builtin.debug:
+        var: r_result
