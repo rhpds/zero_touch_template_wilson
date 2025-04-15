@@ -39,8 +39,9 @@
 
     - name: Copy script file
       when: r_script_test.stat.exists
-      src: "./{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
-      dest: "/tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
+      copy:
+        src: "./{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
+        dest: "/tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
       register: r_result
 
     - name: Execute module_stage-host.sh if it exists
