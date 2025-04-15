@@ -20,15 +20,32 @@
       ansible.builtin.debug:
         msg: "Hello Runner"
 
-    - name: Check if module_01/setup.sh exists
+    - name: Debug ansible_host variable
+      debug:
+        var: config_host
+      delegate_to: localhost
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "/tmp/runtime-scripts/{{ module_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if /module_dir/module_stage-host.sh exists
       ansible.builtin.stat:
-        path: "./{{ module_dir }}/{{ module_stage }}.sh"
+        path: "./{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
       delegate_to: localhost
       register: r_script_test
 
-    - name: Execute setup.sh if it exists
+    - name: Copy script file
       when: r_script_test.stat.exists
-      script: "./{{ module_dir }}/{{ module_stage }}.sh"
+      src: "./{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
+      dest: "/tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
+      register: r_result
+
+    - name: Execute module_stage-host.sh if it exists
+      when: r_script_test.stat.exists
+      shell: "sh -x /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh > /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.log 2>&1"
       register: r_result
 
     - name: Output script result
