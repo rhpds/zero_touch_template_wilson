@@ -2,7 +2,7 @@
 site:
   title: "Change me, your title lives as site.title in site.yml"
   url: https://github.com/rhpds/showroom_template_zero
-  start_page: modules::index.adoc
+  start_page: modules::module-01.adoc
 
 asciidoc:
   attributes:
