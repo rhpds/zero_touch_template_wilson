@@ -24,7 +24,7 @@
         │   └── images                       # Images used in your content 
         │       └── example-image.png
         ├── pages                            # Your content goes here
-        │   ├── index.adoc                   # First module of your lab, e.g. overview etc 
+        │   ├── module-01.adoc               # First module of your lab, e.g. overview etc 
         │   ├── module-02.adoc               # Second module of your lab  
         │   └── module-03.adoc               # Third module
 ----
