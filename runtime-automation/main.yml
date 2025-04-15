@@ -40,13 +40,13 @@
     - name: Copy script file
       when: r_script_test.stat.exists
       copy:
-        src: "./{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
-        dest: "/tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh"
+        src: "./{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.sh"
+        dest: "/tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.sh"
       register: r_result
 
     - name: Execute module_stage-host.sh if it exists
       when: r_script_test.stat.exists
-      shell: "sh -x /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.sh > /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ config_host }}.log 2>&1"
+      shell: "sh -x /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.sh > /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.log 2>&1"
       register: r_result
 
     - name: Output script result
