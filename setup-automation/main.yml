@@ -24,11 +24,6 @@
       set_fact:
         config_host: "{{ ansible_host }}"
 
-    - name: Debug ansible_host variable
-      debug:
-        var: config_host
-      delegate_to: localhost
-
     - name: Check if setup-server.sh exists
       ansible.builtin.stat:
         path: "./setup-{{ config_host }}.sh"
