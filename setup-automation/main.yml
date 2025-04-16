@@ -36,12 +36,6 @@
     delegate_to: localhost
     register: r_script_test
 
-  - name: Execute setup.sh if it exists
-    when: r_script_test.stat.exists
-    script: "./setup-{{ ansible_host }}.sh"
-    become: true
-    register: r_result
-
   - name: Copy script file
     when: r_script_test.stat.exists
     copy:
