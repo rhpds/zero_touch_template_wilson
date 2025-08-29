@@ -78,7 +78,6 @@
     group: "{{ vscode_user }}"
     mode: '0600'
   become: true
-  notify: restart vscode-server
 
 - name: Create systemd service file for vscode-server
   ansible.builtin.template:
@@ -86,9 +85,11 @@
     dest: "/etc/systemd/system/{{ vscode_service_name }}.service"
     mode: '0644'
   become: true
-  notify:
-    - reload systemd
-    - restart vscode-server
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
 
 - name: Enable and start vscode-server service
   ansible.builtin.systemd:
