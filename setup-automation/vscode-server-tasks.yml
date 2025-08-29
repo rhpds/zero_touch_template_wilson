@@ -14,6 +14,15 @@
   ansible.builtin.debug:
     msg: "Running on {{ ansible_distribution }} {{ ansible_distribution_version }}"
 
+- name: Disable EPEL repositories using subscription-manager
+  ansible.builtin.command: >
+    subscription-manager repos 
+    --disable="*EPEL*"
+  become: true
+  ignore_errors: true
+  register: epel_disable_result
+  changed_when: "'repositories disabled' in epel_disable_result.stdout"
+
 - name: Update system packages
   ansible.builtin.dnf:
     name: "*"
