@@ -1,0 +1,172 @@
+---
+# VS Code Server Installation Tasks
+# These tasks install and configure VS Code Server on RHEL 9.6
+
+- name: Set VS Code Server variables
+  ansible.builtin.set_fact:
+    vscode_port: 3000
+    vscode_user: "vscode"
+    vscode_home: "/opt/vscode-server"
+    vscode_service_name: "vscode-server"
+    vscode_password: "{{ lookup('password', '/tmp/vscode_password chars=ascii_letters,digits length=32') }}"
+
+- name: Check RHEL version
+  ansible.builtin.debug:
+    msg: "Running on {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+- name: Update system packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: true
+  become: true
+
+- name: Install required packages
+  ansible.builtin.dnf:
+    name:
+      - curl
+      - wget
+      - tar
+      - gzip
+      - git
+      - nodejs
+      - npm
+      - policycoreutils-python-utils
+    state: present
+  become: true
+
+- name: Create vscode user
+  ansible.builtin.user:
+    name: "{{ vscode_user }}"
+    system: true
+    home: "{{ vscode_home }}"
+    shell: /bin/bash
+    create_home: true
+  become: true
+
+- name: Install code-server using official script
+  ansible.builtin.shell: |
+    curl -fsSL https://code-server.dev/install.sh | sh
+  args:
+    creates: /usr/bin/code-server
+  become: true
+  register: code_server_install
+
+- name: Create code-server config directory
+  ansible.builtin.file:
+    path: "/home/{{ vscode_user }}/.config/code-server"
+    state: directory
+    owner: "{{ vscode_user }}"
+    group: "{{ vscode_user }}"
+    mode: '0755'
+  become: true
+
+- name: Create code-server configuration file
+  ansible.builtin.template:
+    src: code-server-config.yaml.j2
+    dest: "/home/{{ vscode_user }}/.config/code-server/config.yaml"
+    owner: "{{ vscode_user }}"
+    group: "{{ vscode_user }}"
+    mode: '0600'
+  become: true
+  notify: restart vscode-server
+
+- name: Create systemd service file for vscode-server
+  ansible.builtin.template:
+    src: vscode-server.service.j2
+    dest: "/etc/systemd/system/{{ vscode_service_name }}.service"
+    mode: '0644'
+  become: true
+  notify:
+    - reload systemd
+    - restart vscode-server
+
+- name: Configure firewall if firewalld is active
+  block:
+    - name: Check if firewalld is running
+      ansible.builtin.command: systemctl is-active firewalld
+      register: firewalld_status
+      ignore_errors: true
+      changed_when: false
+
+    - name: Open port for VS Code Server
+      ansible.posix.firewalld:
+        port: "{{ vscode_port }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+      when: firewalld_status.rc == 0
+      become: true
+  rescue:
+    - name: Firewalld not available or not running
+      ansible.builtin.debug:
+        msg: "Firewalld is not active - skipping firewall configuration"
+
+- name: Configure SELinux for VS Code Server port
+  block:
+    - name: Set SELinux boolean for network access
+      ansible.posix.seboolean:
+        name: nis_enabled
+        state: true
+        persistent: true
+      become: true
+
+    - name: Add SELinux port mapping for VS Code Server
+      community.general.seport:
+        ports: "{{ vscode_port }}"
+        proto: tcp
+        setype: http_port_t
+        state: present
+      become: true
+  rescue:
+    - name: SELinux configuration failed
+      ansible.builtin.debug:
+        msg: "SELinux configuration failed - continuing without SELinux changes"
+
+- name: Enable and start vscode-server service
+  ansible.builtin.systemd:
+    name: "{{ vscode_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true
+
+- name: Wait for VS Code Server to be ready
+  ansible.builtin.wait_for:
+    port: "{{ vscode_port }}"
+    host: "0.0.0.0"
+    timeout: 30
+
+- name: Get server IP address
+  ansible.builtin.set_fact:
+    server_ip: "{{ ansible_default_ipv4.address }}"
+
+- name: Display VS Code Server information
+  ansible.builtin.debug:
+    msg:
+      - "VS Code Server installation completed successfully!"
+      - "Access URL: http://{{ server_ip }}:{{ vscode_port }}"
+      - "Password: {{ vscode_password }}"
+      - "Service: {{ vscode_service_name }}"
+      - "User: {{ vscode_user }}"
+      - "Config: /home/{{ vscode_user }}/.config/code-server/config.yaml"
+
+- name: Create info file with connection details
+  ansible.builtin.copy:
+    content: |
+      VS Code Server Connection Details
+      ================================
+      URL: http://{{ server_ip }}:{{ vscode_port }}
+      Password: {{ vscode_password }}
+      Service: {{ vscode_service_name }}
+      User: {{ vscode_user }}
+      
+      Service Management:
+      - Start:   sudo systemctl start {{ vscode_service_name }}
+      - Stop:    sudo systemctl stop {{ vscode_service_name }}
+      - Restart: sudo systemctl restart {{ vscode_service_name }}
+      - Status:  sudo systemctl status {{ vscode_service_name }}
+      - Logs:    sudo journalctl -u {{ vscode_service_name }} -f
+    dest: "/tmp/vscode-server-info.txt"
+    mode: '0644'
+  become: true

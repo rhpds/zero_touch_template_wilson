@@ -1,0 +1,21 @@
+[Unit]
+Description=VS Code Server
+After=network.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/code-server
+Restart=always
+RestartSec=10
+User={{ vscode_user }}
+Environment=HOME=/home/{{ vscode_user }}
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/{{ vscode_user }} {{ vscode_home }}
+
+[Install]
+WantedBy=multi-user.target

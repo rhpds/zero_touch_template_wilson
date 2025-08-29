@@ -1,0 +1,13 @@
+---
+# VS Code Server Handlers
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: restart vscode-server
+  ansible.builtin.systemd:
+    name: vscode-server
+    state: restarted
+  become: true

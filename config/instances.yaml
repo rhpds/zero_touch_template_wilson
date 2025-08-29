@@ -1,9 +1,9 @@
 ---
 containers: []
 virtualmachines:
-  - name: "host1"
-    image: "rhel-9.5"
-    memory: "2G"
+  - name: "vscode"
+    image: "rhel-9.6"
+    memory: "4G"
     cores: 1
     image_size: "40G"
     tags:
@@ -11,4 +11,16 @@ virtualmachines:
         value: "bastions"
     networks:
       - default
-      - secondary
+    services:
+      - name: vscode-server
+        ports:
+          - port: 3000
+            protocol: TCP
+            targetPort: 3000
+            name: vscode-server
+    routes:
+      - name: vscode-server
+        host: vscode
+        service: vscode-server
+        targetPort: 3000
+        tls: false

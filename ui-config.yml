@@ -15,7 +15,6 @@ antora:
 
 tabs:
   - name: ">_ terminal"
-    url: /wetty
-  - name: "Asciidoc Doc"
-    url: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
-    external: true
+    url: /wetty_vscode/ssh/root
+  - name: "VS Code Server"
+    url: https://vscode-${guid}.${domain}:3000/
