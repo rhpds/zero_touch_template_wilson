@@ -4,6 +4,8 @@ egress:
   - ports:
       - protocol: TCP
         port: 443
+      - protocol: TCP
+        port: 3000
 ingress:
   - ports:
       - protocol: TCP
