@@ -23,4 +23,5 @@ virtualmachines:
         host: vscode
         service: vscode-server
         targetPort: 3000
-        tls: false
+        tls: true
+        tls_termination: Edge

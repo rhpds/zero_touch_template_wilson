@@ -17,4 +17,4 @@ tabs:
   - name: ">_ terminal"
     url: /wetty_vscode/ssh/root
   - name: "VS Code Server"
-    url: http://vscode-${guid}.${domain}/login
+    url: http://vscode-${guid}.${domain}/
