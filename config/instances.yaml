@@ -12,16 +12,16 @@ virtualmachines:
     networks:
       - default
     services:
-      - name: vscode-server
+      - name: vscode
         ports:
           - port: 3000
             protocol: TCP
             targetPort: 3000
-            name: vscode-server
+            name: vscode
     routes:
-      - name: vscode-server
+      - name: vscode
         host: vscode
-        service: vscode-server
+        service: vscode
         targetPort: 3000
         tls: true
         tls_termination: Edge
