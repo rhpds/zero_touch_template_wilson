@@ -1,6 +1,6 @@
 ---
 containers:
-  - name: "vscode-dev"
+  - name: "vscode"
     image: "codercom/code-server:latest"
     memory: "4G"
     cpu: "1"
@@ -9,55 +9,17 @@ containers:
         containerPort: 8080
         protocol: TCP
     environment:
-      PASSWORD: "{{ common_password }}"
-      SUDO_PASSWORD: "{{ common_password }}"
+      PASSWORD: {{ common_password }}
+      SUDO_PASSWORD: {{ common_password }}
       GIT_REPO: "https://github.com/rhpds/zero_touch_template_wilson.git"
-      GIT_BRANCH: "main"
       DEFAULT_WORKSPACE: "/home/coder/workspace/zero_touch_template_wilson"
-    volumes:
-      - name: "workspace"
-        emptyDir: {}
-      - name: "vscode-config"
-        emptyDir: {}
-    volumeMounts:
-      - name: "workspace"
-        mountPath: "/home/coder/workspace"
-      - name: "vscode-config"
-        mountPath: "/home/coder/.local/share/code-server"
-    lifecycle:
-      postStart:
-        exec:
-          command:
-            - "/bin/bash"
-            - "-c"
-            - |
-              # Wait for code-server to be ready
-              sleep 5
-              
-              # Clone the repository if it doesn't exist
-              if [ ! -d "$DEFAULT_WORKSPACE" ]; then
-                echo "Cloning Zero Touch Template repository..."
-                cd /home/coder/workspace
-                git clone $GIT_REPO
-                cd zero_touch_template_wilson
-                git checkout $GIT_BRANCH
-                
-                # Set up git configuration
-                git config --global user.name "Lab Developer"
-                git config --global user.email "developer@lab.local"
-                
-                # Create a development branch
-                git checkout -b lab-development
-                
-                echo "Repository cloned and ready for development!"
-                echo "Access VS Code at the vscode-dev route"
-              fi
-              
-              # Install useful VS Code extensions for Zero Touch development
-              /usr/bin/code-server --install-extension redhat.vscode-yaml
-              /usr/bin/code-server --install-extension asciidoctor.asciidoctor-vscode
-              /usr/bin/code-server --install-extension ms-vscode.vscode-json
-              /usr/bin/code-server --install-extension ms-vscode.remote-containers
+    commands:
+      - "mkdir -p /home/coder/workspace"
+      - "cd /home/coder/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
+      - "cd /home/coder/workspace/zero_touch_template_wilson && git checkout -b lab-development"
+      - "git config --global user.name 'Lab Developer'"
+      - "git config --global user.email 'developer@lab.local'"
+      - "chown -R coder:coder /home/coder/workspace"
     services:
       - name: vscode
         ports:
@@ -66,8 +28,8 @@ containers:
             targetPort: 8080
             name: vscode
     routes:
-      - name: vscode-dev
-        host: vscode-dev
+      - name: vscode
+        host: vscode
         service: vscode
         targetPort: 8080
         tls: true
