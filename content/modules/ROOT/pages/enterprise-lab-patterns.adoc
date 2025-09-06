@@ -208,7 +208,7 @@ virtualmachines:
     userdata: |-
       #cloud-config
       user: rhel
-      password: {{ common_password }}
+      password: "{{ common_password }}"
       chpasswd: { expire: False }
       runcmd:
         - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
@@ -297,7 +297,7 @@ Different VMs may require different cloud-init configurations:
 userdata: |-
   #cloud-config
   user: rhel
-  password: {{ common_password }}
+  password: "{{ common_password }}"
   chpasswd: { expire: False }
   runcmd:
     - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
@@ -307,7 +307,7 @@ userdata: |-
 userdata: |-
   #cloud-config
   user: rhel
-  password: {{ common_password }}
+  password: "{{ common_password }}"
   chpasswd: { expire: False }  
   runcmd:
     - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf

@@ -99,7 +99,7 @@ tabs:
     url: /wetty/ssh/lab-server
   - name: "💻 VS Code"
     type: "website"
-    url: https://vscode-dev-${guid}.${domain}/
+    url: https://vscode-${guid}.${domain}/
   - name: "Training Guide"
     type: "docs"
     url: /

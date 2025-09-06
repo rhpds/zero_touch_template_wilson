@@ -8,6 +8,7 @@ By the end of this module, you will:
 
 * Understand YAML syntax and formatting rules
 * Know the specific configuration format used by Zero Touch
+* Use correct variable patterns for different file types
 * Be able to validate and troubleshoot configuration files
 * Understand common configuration patterns and best practices
 
@@ -114,6 +115,50 @@ virtualmachines:
 ----
 
 == Zero Touch Configuration Patterns
+
+=== Variable Syntax Patterns
+
+**CRITICAL**: Different files use different variable syntax patterns.
+
+==== AgnosticD Files (instances.yaml, networks.yaml, firewall.yaml)
+
+Use **Jinja2 templating** with **required quotes**:
+
+[source,yaml]
+----
+# ✅ CORRECT in instances.yaml
+environment:
+  PASSWORD: "{{ common_password }}"      # ← Must be quoted
+  DATABASE_URL: "{{ db_connection }}"    # ← Must be quoted
+
+# ❌ WRONG - causes deployment failure  
+environment:
+  PASSWORD: {{ common_password }}        # ← Unquoted breaks YAML parsing
+----
+
+==== UI Configuration (ui-config.yml)
+
+Use **shell-style variables** with **no quotes**:
+
+[source,yaml]
+----
+# ✅ CORRECT in ui-config.yml
+tabs:
+  - name: "Web App"
+    url: https://webapp-${guid}.${domain}/    # ← Shell-style, no quotes
+
+# ❌ WRONG for UI config
+    url: https://webapp-{{ guid }}.{{ domain }}/  # ← Wrong syntax for UI
+----
+
+[IMPORTANT]
+====
+**Why This Matters**:
+
+* **AgnosticD processes** configuration files during deployment using Ansible templating
+* **Showroom processes** UI config during runtime using different variable substitution  
+* **Wrong patterns cause deployment failures or broken URLs**
+====
 
 === Standard File Structure
 

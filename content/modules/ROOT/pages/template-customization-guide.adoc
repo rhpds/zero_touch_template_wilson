@@ -111,6 +111,69 @@ virtualmachines:
 
 The bastion host provides SSH access, user accounts, and terminal integration. Other VMs can use appropriate Ansible groups for their roles (webservers, databases, etc.). Without any bastion, deployment will **fail completely**.
 
+=== Variable Pattern Requirements
+
+**Different files use different variable syntax patterns:**
+
+[cols="2,2,3"]
+|===
+|File Type |Processing System |Variable Pattern
+
+|`instances.yaml`
+`networks.yaml` 
+`firewall.yaml`
+|AgnosticD/Ansible
+|**Jinja2**: `"{{ common_password }}"` ← **Must be quoted**
+
+|`ui-config.yml`
+|Showroom UI
+|**Shell-style**: `${guid}`, `${domain}` ← **No quotes needed**
+
+|Content `.adoc` files
+|Antora/AsciiDoc
+|Both patterns depending on context
+|===
+
+**Critical YAML Requirements:**
+
+[source,yaml]
+----
+# ✅ CORRECT in instances.yaml
+environment:
+  PASSWORD: "{{ common_password }}"      # ← Quoted Jinja2
+  SUDO_PASSWORD: "{{ common_password }}" # ← Quoted Jinja2
+
+# ✅ CORRECT in ui-config.yml  
+tabs:
+  - name: "App"
+    url: https://app-${guid}.${domain}/  # ← Unquoted shell-style
+
+# ❌ WRONG - causes YAML parsing errors
+environment:
+  PASSWORD: {{ common_password }}        # ← Unquoted Jinja2 breaks YAML
+----
+
+**DNS Naming Consistency:**
+
+[source,yaml]
+----
+# ✅ CORRECT - Names must match between instances.yaml and ui-config.yml
+
+# instances.yaml
+routes:
+  - name: webapp           # ← Route creates DNS name
+    host: webapp           # ← Host must match route name
+
+# ui-config.yml  
+tabs:
+  - name: "Web App"
+    url: https://webapp-${guid}.${domain}/  # ← URL must match host name
+
+# ❌ WRONG - DNS mismatch causes 404 errors
+# instances.yaml: host: webapp
+# ui-config.yml:  url: https://web-app-${guid}.${domain}/  # ← Different name!
+----
+
 == Related Documentation
 
 === Self-Paced Training

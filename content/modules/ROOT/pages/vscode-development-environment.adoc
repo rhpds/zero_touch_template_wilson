@@ -33,7 +33,7 @@ The VS Code environment loads directly in the lab interface, providing seamless 
 [source,bash]
 ----
 # Access via lab URL (follows standard Zero Touch pattern)
-https://vscode-dev-${guid}.${domain}/
+https://vscode-${guid}.${domain}/
 
 # Login with lab credentials
 Password: [your-lab-password]
@@ -291,7 +291,8 @@ sudo apt-get install -y your-tool
 
 === Security
 
-* **Don't commit secrets** - Use variables like `{{ common_password }}`
+* **Don't commit secrets** - Use quoted variables like `"{{ common_password }}"` in YAML files
+* **DNS consistency** - Ensure route `host` names match UI config URL patterns
 * **Review changes** - Check diffs before committing  
 * **Use branches** - Isolate experimental work
 

@@ -9,8 +9,8 @@ containers:
         containerPort: 8080
         protocol: TCP
     environment:
-      PASSWORD: {{ common_password }}
-      SUDO_PASSWORD: {{ common_password }}
+      PASSWORD: "{{ common_password }}"
+      SUDO_PASSWORD: "{{ common_password }}"
       GIT_REPO: "https://github.com/rhpds/zero_touch_template_wilson.git"
       DEFAULT_WORKSPACE: "/home/coder/workspace/zero_touch_template_wilson"
     commands:

@@ -227,7 +227,7 @@ Use Zero Touch variables:
 ----
 Your lab GUID is: {{ guid }}
 Access your lab at: {{ lab_url }}
-Use password: {{ common_password }}
+Use password: "{{ common_password }}"
 ----
 
 ## Content Writing Best Practices
