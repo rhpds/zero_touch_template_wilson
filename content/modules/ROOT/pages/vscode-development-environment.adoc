@@ -10,7 +10,8 @@ This template includes a full VS Code development environment that automatically
 The `vscode` container provides:
 
 * **Full VS Code experience** - Complete browser-based VS Code IDE with all features
-* **Red Hat UBI Node.js base** - Reliable, OpenShift-compatible container platform
+* **Red Hat UBI base** - Standard RHEL container platform with maximum compatibility  
+* **Dynamic Node.js installation** - Fresh installation of Node.js and npm via dnf package manager
 * **Dynamic code-server installation** - Fresh installation of @coder/code-server via npm
 * **Automatic repository cloning** - Zero Touch template pre-loaded and ready
 * **Development branch setup** - Pre-configured `lab-development` branch for customization work  
@@ -34,13 +35,13 @@ The VS Code environment loads directly in the lab interface, providing seamless 
 
 == Container Configuration
 
-The VS Code container uses a Red Hat UBI Node.js base image and installs code-server during deployment:
+The VS Code container uses a Red Hat UBI base image and installs Node.js and code-server during deployment:
 
 [source,yaml]
 ----
 containers:
   - name: "vscode"
-    image: "registry.redhat.io/ubi9/nodejs-18:latest"
+    image: "registry.redhat.io/ubi9/ubi:latest"
     memory: "4G"
     cpu: "1"
     ports:
@@ -60,20 +61,24 @@ containers:
       - name: vscode-config
         mountPath: /opt/app-root/src/.local
     commands:
+      - "dnf install -y nodejs npm git curl"
       - "npm install -g @coder/code-server"
+      - "useradd -u 1001 -g 0 -m coder"
       - "mkdir -p /opt/app-root/src/workspace"
-      - "mkdir -p /opt/app-root/src/.local/share/code-server"  
+      - "mkdir -p /opt/app-root/src/.local/share/code-server"
+      - "chown -R coder:root /opt/app-root/src"  
       - "cd /opt/app-root/src/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
       - "cd /opt/app-root/src/workspace/zero_touch_template_wilson && git checkout -b lab-development"
       - "git config --global user.name 'Lab Developer'"
       - "git config --global user.email 'developer@lab.local'"
-      - "nohup code-server --bind-addr 0.0.0.0:8080 --password \"$PASSWORD\" --disable-telemetry --user-data-dir /opt/app-root/src/.local/share/code-server /opt/app-root/src/workspace/zero_touch_template_wilson > /tmp/code-server.log 2>&1 &"
+      - "su - coder -c 'nohup code-server --bind-addr 0.0.0.0:8080 --password \"$PASSWORD\" --disable-telemetry --user-data-dir /opt/app-root/src/.local/share/code-server /opt/app-root/src/workspace/zero_touch_template_wilson > /tmp/code-server.log 2>&1 &'"
 ----
 
 === Key Configuration Benefits
 
-* **🔒 OpenShift Compatible** - Red Hat UBI base image guaranteed to work
-* **📦 Dynamic Installation** - Fresh code-server installation via npm during startup
+* **🔒 Maximum Compatibility** - Standard Red Hat UBI image with full control over dependencies
+* **📦 Fresh Installation** - Node.js and code-server installed fresh during container startup  
+* **👤 Proper User Management** - Creates dedicated `coder` user with OpenShift-compatible permissions
 * **🔐 Secure Access** - Password protection using lab credentials
 * **📁 Auto Setup** - Repository cloned and development branch created automatically  
 * **🖥️ Full IDE** - Complete VS Code experience with terminal and extension support
