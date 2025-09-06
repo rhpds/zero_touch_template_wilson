@@ -1,0 +1,407 @@
+= Example: Enterprise Lab Configuration
+
+This example demonstrates how to configure an enterprise-grade lab combining containers, Linux VMs, and Windows systems with proper certificates and resource allocation.
+
+== Lab Scenario
+
+**Multi-Platform Automation Lab**: Demonstrates Ansible Automation Platform managing mixed infrastructure including containers, RHEL systems, and Windows servers.
+
+**Architecture**:
+- **Gitea Container**: Source control and repository management
+- **AAP Control Node**: Ansible Automation Platform controller (16G memory)
+- **Linux Managed Nodes**: RHEL 8.7 and RHEL 9.5 systems
+- **Windows Server**: Windows 2022 with IIS and RDP access
+- **Total Resources**: ~38G memory, 16 cores
+
+== Complete Configuration
+
+=== instances.yaml
+
+[source,yaml]
+----
+---
+# Container for source control
+containers:
+  - name: gitea
+    image: gitea/gitea:1.16.8-rootless
+    ports:
+      - name: gitea
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      GITEA__DEFAULT__RUN_MODE: dev
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__database__PATH: /data/gitea/gitea.db
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__service__REQUIRE_SIGNIN_VIEW: "false"
+    commands:
+      # Create admin user and organization
+      - gitea admin user create --admin --username gitea --password gitea --email admin@demo.com --must-change-password=false
+      - curl -X POST -H "Content-Type: application/json" -u 'gitea:gitea' -d '{"username": "student", "full_name": "Student User", "description": "Lab Student"}' http://localhost:3000/api/v1/orgs
+    memory: 2Gi
+    services:
+      - name: gitea
+        ports:
+          - port: 3000
+            protocol: TCP
+            targetPort: 3000
+            name: gitea
+    routes:
+      - name: gitea
+        host: gitea
+        service: gitea
+        targetPort: 3000
+        tls: true
+        tls_termination: Edge
+
+virtualmachines:
+  # Ansible Automation Platform Controller
+  - name: "control"
+    image: "base-zero-aap-2.5-container-ce"
+    memory: "16G"                      # Large memory for AAP
+    cores: 4
+    image_size: "40G"
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"              # Pre-configured, no automation
+    networks:
+      - default
+    userdata: |-
+      #cloud-config
+      user: rhel
+      password: {{ common_password }}
+      chpasswd: { expire: False }
+      runcmd:
+        - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
+        - systemctl reload sshd
+    services:
+      - name: control-https
+        ports:
+          - port: 443
+            protocol: TCP
+            targetPort: 443
+            name: control-https
+    routes:
+      - name: control-https
+        host: control
+        service: control-https
+        targetPort: 443
+        tls: true
+        tls_termination: reencrypt
+        tls_destinationCACertificate: |
+          -----BEGIN CERTIFICATE-----
+          # Replace with your actual certificate
+          # This is a placeholder for documentation purposes
+          # Generate your certificate using:
+          # openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes
+          -----END CERTIFICATE-----
+
+  # RHEL 9.5 Managed Node
+  - name: "node01"
+    image: "rhel-9.5"
+    bootloader: efi
+    memory: "4G"
+    cores: 2
+    image_size: "30G"
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"
+    networks:
+      - default
+    userdata: |-
+      #cloud-config
+      user: rhel
+      password: {{ common_password }}
+      chpasswd: { expire: False }
+      runcmd:
+        - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf
+        - systemctl reload sshd
+
+  # RHEL 8.7 Web Server Node
+  - name: "node02"
+    image: "rhel-8.7"
+    bootloader: efi
+    memory: "4G"
+    cores: 2
+    image_size: "30G"
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"
+    networks:
+      - default
+    services:
+      - name: node02-http
+        ports:
+          - port: 80
+            protocol: TCP
+            targetPort: 80
+            name: node02
+    routes:
+      - name: node02-web
+        host: node02
+        service: node02-http
+        targetPort: 80
+        tls: true
+        tls_termination: Edge
+    userdata: |-
+      #cloud-config
+      user: rhel
+      password: {{ common_password }}
+      chpasswd: { expire: False }
+      runcmd:
+        - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
+        - systemctl reload sshd
+
+  # Windows Server 2022
+  - name: "windows"
+    image: "base-windows-ad-2022"
+    memory: "16G"                      # Windows requires substantial memory
+    cores: 4
+    image_size: "60G"                  # Large disk for Windows
+    interface_model: "e1000e"          # Required for Windows compatibility
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"
+    networks:
+      - default
+    services:
+      - name: windows-rdp
+        ports:
+          - port: 3389
+            protocol: TCP
+            targetPort: 3389
+            name: windows-rdp
+      - name: iis
+        ports:
+          - port: 80
+            protocol: TCP
+            targetPort: 80
+            name: iis
+    routes:
+      - name: windows-web
+        host: windows
+        service: iis
+        targetPort: 80
+        tls: true
+        tls_termination: Edge
+----
+
+=== networks.yaml
+
+[source,yaml]
+----
+---
+- name: default
+----
+
+=== firewall.yaml
+
+[source,yaml]
+----
+---
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443               # HTTPS
+      - protocol: TCP
+        port: 80                # HTTP
+      - protocol: TCP
+        port: 3000              # Gitea
+      - protocol: TCP
+        port: 5986              # WinRM HTTPS
+
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 22                # SSH
+      - protocol: TCP
+        port: 443               # AAP HTTPS
+      - protocol: TCP
+        port: 3000              # Gitea
+      - protocol: TCP
+        port: 80                # Web servers
+      - protocol: TCP
+        port: 3389              # RDP
+      - protocol: TCP
+        port: 5986              # WinRM
+----
+
+=== ui-config.yml
+
+[source,yaml]
+----
+---
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: "01-environment-overview"
+      label: "Environment Overview"
+      solveButton: false
+    - name: "02-linux-automation"
+      label: "Linux Automation"
+      solveButton: false
+    - name: "03-windows-automation"
+      label: "Windows Automation"
+      solveButton: false
+    - name: "04-container-integration"
+      label: "Container Integration"
+      solveButton: false
+
+tabs:
+  # Ansible Automation Platform
+  - name: "Automation Platform"
+    url: https://control-${guid}.${domain}/
+    modules:
+      - 01-environment-overview
+      - 02-linux-automation
+      - 03-windows-automation
+      - 04-container-integration
+    external: false
+    
+  # Gitea Source Control
+  - name: "Source Control"
+    url: https://gitea-${guid}.${domain}/
+    modules:
+      - 02-linux-automation
+      - 04-container-integration
+    external: false
+    
+  # Linux Web Application
+  - name: "RHEL Web Server"
+    url: https://node02-${guid}.${domain}/
+    modules:
+      - 02-linux-automation
+    external: true
+    
+  # Windows IIS
+  - name: "Windows Server"
+    url: https://windows-${guid}.${domain}/
+    modules:
+      - 03-windows-automation
+    external: true
+
+  # Terminal access (commented - UI-driven lab)
+  # - name: ">_ control"
+  #   url: /wetty_control/ssh/rhel
+  # - name: ">_ node01"
+  #   url: /wetty_node01/ssh/rhel
+  # - name: ">_ node02"
+  #   url: /wetty_node02/ssh/rhel
+----
+
+=== site.yml
+
+[source,yaml]
+----
+site:
+  title: "Multi-Platform Automation with Ansible"
+  url: https://demo.redhat.com/multi-platform-automation
+  start_page: modules::01-environment-overview.adoc
+
+content:
+  sources:
+    - url: ./
+      start_path: content
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.5/nookbag-v0.0.5.zip
+
+output:
+  dir: ./www
+----
+
+== Key Enterprise Features Demonstrated
+
+=== Resource Scaling
+- **Total Memory**: 42G (16G + 16G + 4G + 4G + 2G)
+- **Total Cores**: 16 (4 + 4 + 2 + 2 + container shared)
+- **Enterprise-Scale**: Realistic for production automation scenarios
+
+=== Multi-Platform Integration
+- **Container**: Gitea for source control and collaboration
+- **Linux**: Two different RHEL versions (8.7, 9.5)
+- **Windows**: Windows Server 2022 with Active Directory base
+- **Automation**: AAP controlling all platforms
+
+=== Advanced Networking
+- **TLS Termination**: Multiple types (Edge, Reencrypt)
+- **Certificate Management**: Embedded certificates for AAP
+- **Service Exposure**: Web interfaces and RDP access
+- **Platform Variables**: Dynamic URLs with `${guid}` and `${domain}`
+
+=== Isolated VM Pattern
+- **Pre-built Images**: All VMs marked as `isolated`
+- **No Automation**: Platform doesn't try to configure pre-built images
+- **Cloud-Init Only**: Basic user setup and SSH configuration
+
+=== Module-Specific UI
+- **Conditional Tabs**: Different interfaces per module
+- **External Applications**: Windows and web apps open in new windows
+- **Progressive Disclosure**: Only show relevant tools per section
+
+== Resource Planning
+
+=== Memory Allocation Strategy
+[cols="2,1,3"]
+|===
+|Component |Memory |Purpose
+
+|AAP Control
+|16G
+|Automation controller, database, web UI
+
+|Windows Server
+|16G
+|Active Directory, IIS, RDP services
+
+|Linux Node 01
+|4G
+|Managed RHEL 9.5 system
+
+|Linux Node 02
+|4G
+|Web server, managed RHEL 8.7 system
+
+|Gitea Container
+|2G
+|Source control and repository management
+
+|**Total**
+|**42G**
+|**Complete multi-platform environment**
+|===
+
+=== Scaling Considerations
+
+**For Smaller Clusters**:
+- Reduce AAP control to 8G minimum
+- Reduce Windows to 8G (may impact performance)
+- Use single Linux node instead of two
+
+**For Larger Labs**:
+- Add more managed nodes (RHEL 7, 8, 9 variants)
+- Include additional Windows servers
+- Add database servers or application tiers
+
+== Deployment Notes
+
+=== Prerequisites
+- Cluster must support enterprise resource requirements
+- Windows images must be available in environment
+- AAP images must be pre-built with licenses
+- Certificate management must be configured
+
+=== Common Issues
+- **Memory constraints**: Reduce VM memory if cluster capacity insufficient
+- **Windows networking**: Ensure `interface_model: "e1000e"` for compatibility
+- **Certificate validation**: Verify embedded certificates are properly formatted
+- **Image availability**: Confirm all specified images exist in environment
+
+== Related Patterns
+
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complete enterprise patterns guide
+* xref:production-patterns-guide.adoc[Production Lab Patterns Guide] - Real-world deployment patterns
+* xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases] - Business Unit specific requirements

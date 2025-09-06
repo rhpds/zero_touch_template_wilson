@@ -1,0 +1,669 @@
+= Module 2.3: Simple Content
+:estimated-time: 15-20 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Write effective lab instructions using AsciiDoc
+* Use Zero Touch variables and interactive features
+* Create engaging, step-by-step learning content
+* Structure content for optimal student experience
+
+== Overview
+
+Great infrastructure is only half the story. The content you create determines whether students have an engaging, educational experience or get frustrated and give up.
+
+== 🎯 Content Writing Principles
+
+=== Keep Students Engaged
+
+✅ **Clear learning objectives** for each section  
+✅ **Step-by-step progression** with validation  
+✅ **Real-world context** and practical examples  
+✅ **Immediate feedback** and results  
+✅ **Troubleshooting help** for common issues  
+
+=== Structure for Success
+
+* **Modules**: 15-30 minutes each
+* **Steps**: 2-5 minutes per step
+* **Commands**: Copy-paste ready
+* **Validation**: Clear success criteria
+* **Context**: Explain why, not just what
+
+== 🛠️ Step 1: Understanding AsciiDoc Basics
+
+AsciiDoc is the markup language used for Zero Touch content. It's designed to be readable as plain text and powerful when rendered.
+
+=== Essential AsciiDoc Syntax
+
+==== Headers and Structure
+[source,asciidoc]
+----
+= Module Title (Level 0 - only one per file)
+== Section Title (Level 1)
+=== Subsection Title (Level 2)
+==== Sub-subsection Title (Level 3)
+----
+
+==== Text Formatting
+[source,asciidoc]
+----
+**Bold text** for emphasis
+*Italic text* for terms
+`code or commands` for inline code
+_underlined text_ for special terms
+----
+
+==== Code Blocks
+[source,asciidoc]
+----
+[source,bash]
+----
+echo "This is a bash command"
+ls -la
+----
+[source,yaml]
+----
+key: "value"
+list:
+  - item1
+  - item2
+----
+----
+
+==== Lists and Organization
+[source,asciidoc]
+----
+* Unordered list item
+* Another item
+  ** Sub-item
+  ** Another sub-item
+
+. Ordered list item
+. Another numbered item
+  .. Sub-item a
+  .. Sub-item b
+
+- [ ] Checklist item (unchecked)
+- [x] Checklist item (checked)
+----
+
+== 🛠️ Step 2: Create Your First Lab Module
+
+Let's create a practical lab module that teaches RHEL basics using our VMs.
+
+=== Create the Module File
+
+[source,bash]
+----
+cat > content/modules/ROOT/pages/01-rhel-basics.adoc << 'EOF'
+= Module 1: RHEL Basics and System Exploration
+
+Welcome to your first hands-on RHEL lab! You'll explore a multi-server environment and learn essential Linux administration commands.
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Navigate the Linux filesystem confidently
+* Check system information and resources
+* Understand network configuration in a multi-server environment
+* Use essential troubleshooting commands
+
+== Lab Environment Overview
+
+Your lab includes three servers:
+
+[cols="1,2,2"]
+|===
+|Server |Role |Networks
+
+|**control-server**
+|Management and administration
+|All networks (default, frontend, backend)
+
+|**web-server**  
+|Web application hosting
+|Frontend network only
+
+|**database-server**
+|Data storage and management
+|Backend network only
+|===
+
+💡 **Tip**: Use the terminal tabs at the top to switch between servers!
+
+== Step 1: System Information and Exploration
+
+Let's start by exploring the control server to understand our environment.
+
+=== Check System Details
+
+First, let's see what system we're working with:
+
+[source,bash]
+----
+hostnamectl
+----
+
+You should see output showing:
+- Operating system (Red Hat Enterprise Linux)
+- Kernel version
+- Architecture
+- Hostname
+
+=== Explore the Filesystem
+
+Navigate around the filesystem to get familiar:
+
+[source,bash]
+----
+# See where you are
+pwd
+
+# List files and directories
+ls -la
+
+# Check disk usage
+df -h
+
+# See memory usage
+free -h
+----
+
+**📝 What to Notice**:
+- `/` is the root of the filesystem
+- `/home/rhel` is your home directory
+- The system has adequate disk space and memory
+
+=== Check Running Processes
+
+See what's currently running:
+
+[source,bash]
+----
+# Show running processes
+ps aux | head -10
+
+# Show system resource usage
+top
+# (Press 'q' to quit)
+----
+
+✅ **Validation**: You should see various system processes running, including `systemd`, `kernel` threads, and network services.
+
+== Step 2: Network Configuration Exploration
+
+Now let's understand how networking is configured in this multi-server environment.
+
+=== Check Network Interfaces
+
+View the network interfaces on the control server:
+
+[source,bash]
+----
+# Show all network interfaces
+ip addr show
+
+# Show just the IP addresses
+ip addr show | grep "inet 10\."
+----
+
+**📝 What to Notice**:
+- The control server has multiple network interfaces
+- Each interface has an IP address in a different subnet:
+  - 10.0.x.x (default/management network)
+  - 10.1.x.x (frontend network)  
+  - 10.2.x.x (backend network)
+
+=== Test Network Connectivity
+
+Let's verify that our multi-network setup is working:
+
+[source,bash]
+----
+# Test internet connectivity
+ping -c 3 8.8.8.8
+
+# Test connectivity to frontend network gateway
+ping -c 3 10.1.0.1
+
+# Test connectivity to backend network gateway  
+ping -c 3 10.2.0.1
+----
+
+✅ **Validation**: All ping tests should succeed, showing the control server can reach all networks.
+
+== Step 3: Explore Other Servers
+
+Now let's switch to the other servers and see how network isolation works.
+
+=== Web Server Exploration
+
+Click the **">_ web"** tab to access the web server.
+
+Check its network configuration:
+
+[source,bash]
+----
+# Check hostname
+hostnamectl | grep hostname
+
+# Check network interfaces
+ip addr show | grep "inet 10\."
+
+# Try to reach backend network (this should fail)
+ping -c 3 10.2.0.1
+----
+
+**📝 What to Notice**:
+- Web server only has frontend network access (10.1.x.x)
+- Cannot reach backend network (10.2.x.x) - this is intentional isolation!
+
+=== Database Server Exploration
+
+Click the **">_ database"** tab to access the database server.
+
+[source,bash]
+----
+# Check hostname  
+hostnamectl | grep hostname
+
+# Check network interfaces
+ip addr show | grep "inet 10\."
+
+# Try to reach frontend network (this should fail)
+ping -c 3 10.1.0.1
+
+# Check if MariaDB packages are installed
+rpm -qa | grep mariadb
+----
+
+**📝 What to Notice**:
+- Database server only has backend network access (10.2.x.x)
+- Cannot reach frontend network (10.1.x.x) - network isolation working!
+- MariaDB database software is pre-installed
+
+== Step 4: Understanding Network Isolation
+
+This demonstrates a **security best practice**: network segmentation.
+
+=== Why Network Isolation Matters
+
+* **Security**: Limits blast radius of compromises
+* **Performance**: Reduces broadcast traffic
+* **Compliance**: Many standards require network segmentation
+* **Troubleshooting**: Easier to isolate problems
+
+=== How Our Lab Demonstrates This
+
+```
+Internet ←→ [default] ←→ control-server ←→ [frontend] ←→ web-server
+                              ↕
+                         [backend] ←→ database-server
+```
+
+- **Control server**: Can manage all networks (typical for admin servers)
+- **Web server**: Only frontend access (DMZ pattern)
+- **Database server**: Only backend access (protected internal resources)
+
+== Step 5: Useful Administrative Commands
+
+Let's learn some essential commands you'll use regularly:
+
+=== System Monitoring
+
+Back on the **control server** (">_ control" tab):
+
+[source,bash]
+----
+# System uptime and load
+uptime
+
+# Disk usage by directory
+du -sh /var/log /tmp /home
+
+# Check system services status
+systemctl status sshd
+systemctl status NetworkManager
+
+# View recent system logs
+journalctl -n 20
+----
+
+=== File and Directory Operations
+
+[source,bash]
+----
+# Create a test directory
+mkdir ~/lab-test
+
+# Create a test file
+echo "Hello from $(hostname)" > ~/lab-test/server-info.txt
+
+# View the file
+cat ~/lab-test/server-info.txt
+
+# Copy file with timestamp
+cp ~/lab-test/server-info.txt ~/lab-test/backup-$(date +%Y%m%d).txt
+
+# List what we created
+ls -la ~/lab-test/
+----
+
+=== Network Troubleshooting
+
+[source,bash]
+----
+# Show routing table
+ip route
+
+# Show network connections
+ss -tuln
+
+# Test DNS resolution
+nslookup google.com
+
+# Check which ports are listening
+ss -tuln | grep LISTEN
+----
+
+✅ **Validation**: You should see SSH (port 22) listening and various system services running.
+
+== 🎯 Module Summary
+
+Congratulations! You've successfully:
+
+✅ **Explored** a multi-server RHEL environment  
+✅ **Understood** network segmentation and isolation  
+✅ **Used** essential Linux administration commands  
+✅ **Verified** system configuration and connectivity  
+✅ **Learned** security best practices through hands-on experience  
+
+== Key Takeaways
+
+* **Network isolation** improves security and performance
+* **System commands** help you understand and troubleshoot environments
+* **Multi-server setups** are common in real-world scenarios
+* **Administrative tools** provide insight into system health
+
+== What's Next?
+
+In the next module, we'll build on this foundation by configuring services and exploring automation concepts.
+
+---
+
+💡 **Need Help?** If any commands didn't work as expected, check the troubleshooting section below.
+
+== Troubleshooting
+
+**Ping commands timeout**:
+- This might be expected (network isolation working)
+- If internet ping fails, check with instructor
+
+**Permission denied errors**:
+- Some commands require `sudo` in real environments
+- Lab VMs are configured for direct access
+
+**Command not found**:
+- Some packages might not be installed
+- Try: `sudo dnf install <package-name>`
+EOF
+----
+
+== 🛠️ Step 3: Understanding Zero Touch Features
+
+Zero Touch provides special features that make your content more interactive:
+
+=== Copy+Run Buttons
+
+When you use `[source,bash]` code blocks, students automatically get copy+run buttons:
+
+[source,asciidoc]
+----
+[source,bash]
+----
+echo "This command will have a copy+run button"
+hostnamectl
+----
+----
+
+=== Variables and Substitution
+
+You can use variables for dynamic content (advanced feature):
+
+[source,asciidoc]
+----
+Your lab GUID is: {guid}
+Your cluster domain is: {cluster_subdomain}
+----
+
+=== Admonitions for Important Information
+
+Use special callout blocks:
+
+[source,asciidoc]
+----
+💡 **Tip**: This provides helpful guidance
+
+⚠️ **Warning**: This alerts about potential issues
+
+✅ **Success**: This confirms correct completion
+
+❌ **Error**: This helps with troubleshooting
+----
+
+== 🛠️ Step 4: Create a Module Landing Page
+
+Update the main landing page to introduce your lab:
+
+[source,bash]
+----
+cat > content/modules/ROOT/pages/index.adoc << 'EOF'
+= Welcome to Your RHEL Multi-Server Lab
+
+This hands-on lab teaches essential Red Hat Enterprise Linux administration skills using a realistic multi-server environment.
+
+== What You'll Learn
+
+Through practical exercises, you'll master:
+
+* **System Administration**: Essential Linux commands and system exploration
+* **Network Configuration**: Understanding multi-network topologies and isolation
+* **Security Concepts**: Network segmentation and access control
+* **Troubleshooting Skills**: Using built-in tools to diagnose issues
+
+== Lab Environment
+
+Your lab includes three virtual machines:
+
+[cols="1,2,3"]
+|===
+|Server |Purpose |What You'll Learn
+
+|**Control Server**
+|Management and administration
+|System monitoring, network troubleshooting, multi-network access
+
+|**Web Server**
+|Frontend application hosting
+|Service configuration, network isolation, frontend security
+
+|**Database Server**
+|Backend data management
+|Database concepts, backend security, data protection
+|===
+
+== Getting Started
+
+Ready to begin? Start with **Module 1** to explore your lab environment and learn essential RHEL administration skills.
+
+xref:01-rhel-basics.adoc[**Start Module 1: RHEL Basics and System Exploration** →]
+
+== Lab Navigation
+
+Use the tabs at the top of your screen to access different servers:
+
+* **">_ control"**: Control/management server
+* **">_ web"**: Web application server  
+* **">_ database"**: Database server
+* **"Lab Guide"**: This documentation
+
+== Need Help?
+
+* Each module includes validation steps to confirm your progress
+* Troubleshooting sections help resolve common issues
+* Commands are designed to be copy-paste ready
+
+Ready to dive in? Let's start exploring RHEL!
+EOF
+----
+
+== 🛠️ Step 5: Update Site Configuration
+
+Update `site.yml` to use your new content:
+
+[source,yaml]
+----
+site:
+  title: "RHEL Multi-Server Administration Lab"
+  url: https://demo.redhat.com/rhel-lab
+  start_page: modules::index.adoc
+
+content:
+  sources:
+    - url: ./
+      start_path: content
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.5/nookbag-v0.0.5.zip
+
+output:
+  dir: ./www
+----
+
+== 🛠️ Step 6: Update UI Configuration for Navigation
+
+Update `ui-config.yml` to include your new module:
+
+[source,yaml]
+----
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: index
+      label: "Welcome"
+    - name: 01-rhel-basics
+      label: "Module 1: RHEL Basics"
+      solveButton: true
+
+tabs:
+  - name: ">_ control"
+    url: /wetty
+    path: /ssh/control-server
+    
+  - name: ">_ web"
+    url: /wetty  
+    path: /ssh/web-server
+    
+  - name: ">_ database"
+    url: /wetty
+    path: /ssh/database-server
+    
+  - name: "Lab Guide"
+    type: "docs"
+    url: /
+----
+
+== 📝 Content Writing Best Practices
+
+=== Structure Your Content
+
+✅ **Clear Learning Objectives**: Start each module with what students will accomplish  
+✅ **Logical Progression**: Each step builds on the previous  
+✅ **Validation Points**: Help students confirm they're on track  
+✅ **Context and Why**: Explain the purpose, not just the commands  
+
+=== Make Commands Clear
+
+✅ **Copy-paste ready**: Commands should work exactly as written  
+✅ **Expected output**: Show students what success looks like  
+✅ **Error handling**: Explain what to do if something goes wrong  
+✅ **Safety first**: Avoid destructive commands in beginner labs  
+
+=== Engage Your Audience
+
+✅ **Real-world scenarios**: "You're setting up a web application"  
+✅ **Progressive complexity**: Start simple, add layers  
+✅ **Interactive elements**: Use tabs, different servers, varied tasks  
+✅ **Immediate feedback**: Students see results right away  
+
+== ✅ Content Review Checklist
+
+Verify your content includes:
+
+**Structure**:
+- [ ] Clear module title and learning objectives
+- [ ] Logical step-by-step progression
+- [ ] Validation points throughout
+- [ ] Summary of accomplishments
+
+**Technical Quality**:
+- [ ] Commands are tested and work correctly
+- [ ] Code blocks use appropriate syntax highlighting
+- [ ] Expected outputs are shown
+- [ ] Troubleshooting guidance included
+
+**Engagement**:
+- [ ] Real-world context provided
+- [ ] Multiple servers/environments used
+- [ ] Interactive features leveraged
+- [ ] Progressive skill building
+
+**Navigation**:
+- [ ] UI configuration matches content structure
+- [ ] Module appears in navigation
+- [ ] Cross-references work correctly
+
+== 🎯 What You've Accomplished
+
+Outstanding work! You've just:
+
+✅ **Created engaging lab content** using AsciiDoc  
+✅ **Structured learning** with clear objectives and progression  
+✅ **Used Zero Touch features** for interactive experiences  
+✅ **Applied best practices** for educational content  
+✅ **Connected content to infrastructure** meaningfully  
+
+== 🛠️ Quick Troubleshooting
+
+**AsciiDoc not rendering correctly**:
+- Check syntax with online validator
+- Ensure proper spacing around code blocks
+- Verify header levels are correct
+
+**Module not appearing in navigation**:
+- Check `ui-config.yml` modules list
+- Ensure filename matches exactly
+- Verify YAML syntax
+
+**Commands don't work as expected**:
+- Test commands on actual VMs
+- Check package prerequisites
+- Provide alternative approaches
+
+== 🎯 What's Next?
+
+Your content is ready! Next, let's test the complete lab and ensure everything works together.
+
+**Next Module**: xref:module-2-4-deploy-test.adoc[2.4 Deploy & Test] (10-15 min)
+
+== Related Resources
+
+* xref:creating-content.adoc[Creating Lab Content and UI Configuration] (Reference)
+* xref:module-2-2-basic-networking.adoc[Previous: Basic Networking]
+* https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Reference]

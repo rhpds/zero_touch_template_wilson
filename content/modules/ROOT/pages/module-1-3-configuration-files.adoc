@@ -1,0 +1,442 @@
+
+= Module 1.3: Configuration Files
+:estimated-time: 10-15 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Understand YAML syntax and formatting rules
+* Know the specific configuration format used by Zero Touch
+* Be able to validate and troubleshoot configuration files
+* Understand common configuration patterns and best practices
+
+== YAML Fundamentals
+
+Zero Touch uses YAML files for all configuration. YAML is human-readable and follows specific formatting rules.
+
+=== Basic YAML Syntax
+
+==== Key-Value Pairs
+[source,yaml]
+----
+name: "web-server"
+memory: "4G"
+cores: 2
+----
+
+==== Lists (Arrays)
+[source,yaml]
+----
+networks:
+  - default
+  - web-tier
+  - database-tier
+----
+
+==== Nested Objects
+[source,yaml]
+----
+virtualmachines:
+  - name: "control"
+    memory: "4G"
+    networks:
+      - default
+----
+
+==== Comments
+[source,yaml]
+----
+# This is a comment
+virtualmachines:
+  - name: "web-server"  # Inline comment
+    memory: "4G"
+----
+
+=== YAML Formatting Rules
+
+⚠️ **Critical Rules** (breaking these causes errors):
+
+==== Indentation
+* Use **spaces only** (never tabs)
+* Use **2 spaces** per level
+* Be **consistent** throughout the file
+
+[source,yaml]
+----
+# ✅ Correct
+virtualmachines:
+  - name: "server1"
+    memory: "4G"
+    networks:
+      - default
+
+# ❌ Wrong (inconsistent indentation)
+virtualmachines:
+- name: "server1"
+  memory: "4G"
+   networks:
+    - default
+----
+
+==== Quotes
+* Use quotes for **strings with special characters**
+* Use quotes for **values that might be interpreted as numbers/booleans**
+
+[source,yaml]
+----
+# ✅ Good practices
+name: "web-server"
+port: "8080"        # Quoted to ensure it's treated as string
+memory: "4G"        # Quoted because of the 'G' suffix
+enabled: true       # Boolean, no quotes needed
+
+# ❌ Potential issues
+name: web-server    # Works, but inconsistent
+port: 8080          # Might be interpreted as number
+version: 1.0        # Might become 1.0 instead of "1.0"
+----
+
+==== Lists vs Objects
+[source,yaml]
+----
+# ✅ List of objects
+virtualmachines:
+  - name: "server1"
+    memory: "4G"
+  - name: "server2"
+    memory: "2G"
+
+# ❌ Common mistake (missing dash)
+virtualmachines:
+  name: "server1"    # This creates one object, not a list
+  memory: "4G"
+----
+
+== Zero Touch Configuration Patterns
+
+=== Standard File Structure
+
+Each configuration file follows a consistent pattern:
+
+==== `instances.yaml`
+[source,yaml]
+----
+# Virtual machines (always a list)
+virtualmachines:
+  - name: "server-name"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+    # Optional configurations...
+
+# Containers (optional list)
+containers:
+  - name: "app-container"
+    image: "nginx:latest"
+    # Container-specific config...
+----
+
+==== `networks.yaml`
+[source,yaml]
+----
+---  # Document separator (recommended)
+# List of network definitions
+- name: default      # Default network (always present)
+- name: web-tier
+  cidr: "10.1.0.0/24"
+  description: "Frontend network"
+- name: database-tier
+  cidr: "10.2.0.0/24"
+  description: "Backend network"
+----
+
+==== `firewall.yaml`
+[source,yaml]
+----
+---  # Document separator (recommended)
+# Egress rules (outbound traffic)
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 80
+
+# Ingress rules (inbound traffic)  
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 8080
+----
+
+=== Configuration Validation
+
+==== Required vs Optional Fields
+
+Each configuration has required and optional fields:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "my-server"          # ✅ Required
+    image: "rhel-9.6"          # ✅ Required  
+    memory: "4G"               # ✅ Required
+    cores: 2                   # ✅ Required
+    image_size: "40G"          # ✅ Required
+    networks:                  # ✅ Required
+      - default
+    
+    # Optional fields
+    packages:                  # ⚪ Optional
+      - git
+      - vim
+    tags:                      # ⚪ Optional
+      - key: "Environment"
+        value: "Lab"
+    bootloader: efi            # ⚪ Optional
+    disk_type: "scsi"          # ⚪ Optional
+----
+
+==== Common Validation Errors
+
+**Missing Required Fields**:
+[source,yaml]
+----
+# ❌ Error: Missing required fields
+virtualmachines:
+  - name: "test-server"
+    # Missing: image, memory, cores, image_size, networks
+----
+
+**Invalid Data Types**:
+[source,yaml]
+----
+# ❌ Error: cores should be a number, not string
+virtualmachines:
+  - name: "test-server"
+    cores: "two"        # Should be: cores: 2
+----
+
+**Invalid Network References**:
+[source,yaml]
+----
+# ❌ Error: network "frontend" not defined in networks.yaml
+virtualmachines:
+  - name: "test-server"
+    networks:
+      - frontend        # Must exist in networks.yaml
+----
+
+=== Best Practices
+
+==== Naming Conventions
+
+[source,yaml]
+----
+# ✅ Good naming practices
+virtualmachines:
+  - name: "control-node"      # Descriptive, kebab-case
+  - name: "web-server-01"     # Clear purpose, numbered
+  - name: "database-primary"  # Role-based naming
+
+# ❌ Poor naming
+virtualmachines:
+  - name: "vm1"               # Not descriptive
+  - name: "test_server"       # Mixed case style  
+  - name: "MyServer"          # CamelCase (inconsistent)
+----
+
+==== Resource Planning
+
+[source,yaml]
+----
+# ✅ Appropriate resource allocation
+virtualmachines:
+  - name: "control-node"
+    memory: "4G"              # Sufficient for management
+    cores: 2
+  - name: "database-server"
+    memory: "8G"              # More for database workload
+    cores: 4
+  - name: "web-server"
+    memory: "2G"              # Lighter for web serving
+    cores: 1
+----
+
+==== Documentation
+
+[source,yaml]
+----
+# ✅ Well-documented configuration
+virtualmachines:
+  # Control node for Ansible automation
+  - name: "control-node"
+    image: "rhel-9.6"
+    memory: "4G"              # Needs memory for Ansible operations
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+    packages:                 # Pre-install automation tools
+      - ansible-core
+      - git
+      - vim
+    tags:
+      - key: "AnsibleGroup"   # Used by automation scripts
+        value: "controllers"
+----
+
+== Configuration Validation Tools
+
+=== YAML Syntax Checking
+
+==== Online Tools
+* **YAML Lint**: http://www.yamllint.com/
+* **YAML Validator**: https://yamlchecker.com/
+
+==== Command Line Tools
+[source,bash]
+----
+# If yamllint is available
+yamllint config/instances.yaml
+
+# Using Python (if available)
+python -c "import yaml; yaml.safe_load(open('config/instances.yaml'))"
+
+# Basic syntax check with any YAML-aware tool
+----
+
+=== Zero Touch Specific Validation
+
+==== Check File Relationships
+[source,bash]
+----
+# Ensure networks referenced in instances.yaml exist in networks.yaml
+grep -h "networks:" -A 10 config/instances.yaml
+cat config/networks.yaml
+----
+
+==== Verify Resource Totals
+[source,bash]
+----
+# Calculate total memory allocation (example)
+grep "memory:" config/instances.yaml
+# Ensure total doesn't exceed cluster capacity
+----
+
+== Common Configuration Examples
+
+=== Single VM Lab
+[source,yaml]
+----
+# instances.yaml
+virtualmachines:
+  - name: "lab-server"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+
+# networks.yaml
+---
+- name: default
+
+# firewall.yaml
+---
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443
+ingress: []  # No inbound traffic allowed
+----
+
+=== Multi-VM Lab with Network Segmentation
+[source,yaml]
+----
+# instances.yaml
+virtualmachines:
+  - name: "web-server"
+    image: "rhel-9.6"
+    memory: "2G"
+    cores: 1
+    image_size: "20G"
+    networks:
+      - web-tier
+  - name: "database-server"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - database-tier
+
+# networks.yaml
+---
+- name: default
+- name: web-tier
+  cidr: "10.1.0.0/24"
+- name: database-tier
+  cidr: "10.2.0.0/24"
+
+# firewall.yaml  
+---
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 8080  # Web traffic
+      - protocol: TCP
+        port: 5432  # Database traffic
+----
+
+== ✅ Knowledge Check
+
+Before moving to the next module, make sure you can:
+
+- [ ] Write valid YAML with proper indentation and syntax
+- [ ] Identify required vs optional fields in Zero Touch configs
+- [ ] Understand the relationship between instances.yaml and networks.yaml
+- [ ] Validate YAML syntax and catch common errors
+- [ ] Follow naming conventions and best practices
+
+== 🛠️ Practice Exercise
+
+**Try This**: Create a simple configuration for a web development lab:
+
+1. **Design**: One VM for development, one container for database
+2. **Configure**: Write the YAML files
+3. **Validate**: Check your syntax and relationships
+
+**Template to start**:
+[source,yaml]
+----
+# In instances.yaml
+virtualmachines:
+  - name: "dev-workstation"
+    # Add your configuration here...
+
+containers:
+  - name: "postgres-db"
+    # Add your configuration here...
+----
+
+== 🎯 What's Next?
+
+Now that you understand the configuration basics, let's put it into practice by creating your first lab!
+
+**Next Module**: xref:module-2-1-single-vm-setup.adoc[2.1 Single VM Setup] (15-20 min)
+
+== Related Resources
+
+* xref:adding-instances.adoc[Adding Instances and Containers] (Reference)
+* xref:configuring-networking.adoc[Configuring Networking] (Reference)
+* xref:configuring-firewall.adoc[Configuring Firewall Rules] (Reference)

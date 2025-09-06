@@ -1,0 +1,115 @@
+= Template Customization Guide
+
+This comprehensive reference guide covers how to customize the Zero Touch template to meet your specific lab requirements. The template provides a flexible framework that can be extended and modified for various use cases.
+
+💡 **New to Zero Touch?** Consider starting with our xref:zero-touch-platform-training.adoc[**Self-Paced Training Program**] for step-by-step guidance.
+
+== Overview
+
+The template allows you to customize several key aspects:
+
+* **Instances**: Add virtual machines and containers to your lab environment
+* **Networking**: Configure custom networks and connectivity between instances
+* **Firewall**: Define ingress and egress rules for network security
+* **Content**: Create educational content using AsciiDoc and configure the lab interface
+* **UI Configuration**: Set up navigation, tabs, and interactive elements
+
+== Configuration Files
+
+Template customization involves several key configuration files:
+
+=== Infrastructure Configuration (`config/` directory)
+
+[cols="1,3"]
+|===
+|File |Purpose
+
+|`instances.yaml`
+|Defines virtual machines and containers, including their specifications, networks, and services
+
+|`networks.yaml`
+|Configures custom networks and network topology
+
+|`firewall.yaml`
+|Sets up ingress and egress firewall rules for network security
+|===
+
+=== Content and UI Configuration
+
+[cols="1,3"]
+|===
+|File |Purpose
+
+|`ui-config.yml`
+|Configures lab navigation, modules, and interface tabs
+
+|`site.yml`
+|Sets global variables and theme configuration
+
+|`content/modules/ROOT/pages/*.adoc`
+|Educational content written in AsciiDoc format
+
+|`content/antora.yml`
+|Antora configuration with inline variables for content rendering
+|===
+
+== Quick Start Checklist
+
+Before customizing your template:
+
+. [ ] Clone your template repository
+. [ ] Review existing configuration files
+. [ ] Plan your lab architecture
+. [ ] Identify required instances and their specifications
+. [ ] Design network topology if custom networking is needed
+. [ ] Determine firewall requirements
+
+== Customization Workflow
+
+. **Design Phase**: Plan your lab environment, learning objectives, and user journey
+. **Configure Infrastructure**: Update YAML configuration files for instances, networking, and firewall
+. **Create Content**: Develop educational modules using AsciiDoc
+. **Configure UI**: Set up navigation, tabs, and interactive elements in `ui-config.yml`
+. **Test Locally**: Validate configuration, content, and user interface
+. **Deploy**: Push changes and provision lab environment
+
+== Best Practices
+
+* Start with minimal changes and iterate
+* Use descriptive names for instances and networks
+* Document any custom configurations
+* Test firewall rules thoroughly
+* Keep security considerations in mind
+* Version control all changes
+* Review advanced features for Business Unit specific requirements
+* Test lab scenarios thoroughly before deployment
+* Consider platform architecture when designing complex labs
+
+== Related Documentation
+
+=== Self-Paced Training
+
+* xref:zero-touch-platform-training.adoc[**Zero Touch Platform Training**] - Complete self-paced learning program
+
+=== Core Configuration Guides
+
+* xref:adding-instances.adoc[Adding Instances and Containers]
+* xref:configuring-networking.adoc[Configuring Networking]  
+* xref:configuring-firewall.adoc[Configuring Firewall Rules]
+* xref:creating-content.adoc[Creating Lab Content and UI Configuration]
+
+=== Advanced Features
+
+* xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
+* xref:production-patterns-guide.adoc[Production Lab Patterns Guide]
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns]
+
+== Getting Help
+
+If you encounter issues during customization:
+
+. Check the configuration file syntax
+. Validate YAML formatting
+. Review logs during provisioning
+. Consult the template documentation
+. Reach out to the platform team for support

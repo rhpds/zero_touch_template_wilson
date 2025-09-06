@@ -1,0 +1,556 @@
+= Creating Lab Content
+
+This guide explains how to create educational content for your lab using AsciiDoc and configure the user interface.
+
+== Overview
+
+Content creation involves:
+
+* **Writing educational modules** using AsciiDoc syntax
+* **Configuring the lab interface** through `ui-config.yml`
+* **Using variables and images** to enhance content
+* **Setting up navigation** and interactive elements
+
+== Content Structure
+
+Your lab content is organized in the `content/modules/ROOT/pages/` directory:
+
+[source,text]
+----
+content/modules/ROOT/pages/
+├── module-1-1-understanding-zero-touch.adoc    # Platform fundamentals
+├── module-1-2-template-structure.adoc       # Template structure
+├── module-2-1-single-vm-setup.adoc          # Basic VM setup
+└── your-custom-modules.adoc # Additional modules
+----
+
+== Writing Lab Content
+
+=== Using Variables
+
+Variables allow you to reuse values throughout your content. The `lab_name` variable is set in `site.yml` and can be used in your content.
+
+==== Setting Variables
+
+In `site.yml`:
+[source,yaml]
+----
+asciidoc:
+  attributes:
+    lab_name: "My Awesome Lab"
+    site-title: "Infrastructure Training"
+    my_var: "Custom Value"
+----
+
+==== Using Variables in Content
+
+Reference variables in your AsciiDoc content:
+
+[source,asciidoc]
+----
+= Welcome to {lab_name}
+
+This lab will teach you about {site-title}.
+
+Example variable: {my_var}
+----
+
+**Variable rendered:**
+Welcome to {lab_name}
+
+=== Inserting Images
+
+Images enhance your lab content and help explain concepts visually.
+
+==== Image Storage
+
+Place image files in the `content/modules/ROOT/assets/images/` directory:
+
+[source,text]
+----
+content/modules/ROOT/assets/images/
+├── architecture-diagram.png
+├── screenshot-example.png
+└── network-topology.svg
+----
+
+==== Basic Image Syntax
+
+[source,asciidoc]
+----
+image::architecture-diagram.png[Architecture Overview, width=600, height=400]
+----
+
+==== Advanced Image Options
+
+[source,asciidoc]
+----
+image::screenshot-example.png[Screenshot Description, width=80%, align=center, role=border]
+----
+
+**Image attributes:**
+- `width`: Specify width in pixels (400) or percentage (80%)
+- `height`: Specify height in pixels
+- `align`: left, center, right
+- `role`: CSS class for styling (border, shadow, etc.)
+
+=== AsciiDoc Syntax Reference
+
+==== Headers
+
+[source,asciidoc]
+----
+= Document Title (Level 0)
+== Section Title (Level 1) 
+=== Subsection Title (Level 2)
+==== Sub-subsection Title (Level 3)
+----
+
+==== Text Formatting
+
+[source,asciidoc]
+----
+*Bold text*
+_Italic text_
+`Monospace text`
+----
+
+==== Code Blocks
+
+[source,asciidoc]
+----
+[source,bash]
+----
+#!/bin/bash
+echo "Hello, World!"
+----
+----
+
+==== Lists
+
+[source,asciidoc]
+----
+* Unordered list item
+* Another item
+  ** Nested item
+
+. Ordered list item
+. Another ordered item
+----
+
+==== Admonitions
+
+[source,asciidoc]
+----
+NOTE: This is a note.
+
+TIP: This is a helpful tip.
+
+WARNING: This is a warning.
+
+CAUTION: This is a caution.
+
+IMPORTANT: This is important information.
+----
+
+== Configuring the Lab Interface
+
+The `ui-config.yml` file controls how your lab interface appears and behaves.
+
+=== Configuration Structure
+
+[source,yaml]
+----
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: module-1-1-understanding-zero-touch
+      label: "1.1 Understanding Zero Touch"
+      solveButton: false
+    - name: module-1-2-template-structure  
+      label: "1.2 Template Structure"
+      solveButton: false
+
+tabs:
+  - name: ">_ terminal"
+    type: "terminal"
+  - name: "VS Code"
+    port: 3000
+    path: "/?folder=/home/rhel/lab-files/"
+----
+
+=== Antora Configuration
+
+The `antora` section defines your lab modules and navigation:
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`name`
+|Yes
+|Name of the documentation folder
+
+|`dir`
+|Yes
+|Directory where documentation is built
+
+|`modules`
+|Yes
+|List of lab modules and their configuration
+|===
+
+==== Module Configuration
+
+Each module in the `modules` list supports:
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`name`
+|Yes
+|Filename of the module (without .adoc extension)
+
+|`label`
+|Yes
+|Display name shown in navigation
+
+|`solveButton`
+|No
+|Whether to show a "Solve" button for this module
+
+|`skipButton`
+|No
+|Whether to show a "Skip" button (calls solve script and moves to next)
+
+|`exitButton`
+|No
+|Whether to show an "Exit" button (finishes the lab)
+|===
+
+=== Advanced UI Features
+
+==== Copy+Run Functionality
+
+The lab interface includes copy+run buttons for bash code blocks. To enable this feature, ensure you're using the latest theme:
+
+[source,yaml]
+----
+ui:
+  bundle:
+    url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.3/ui-bundle.zip
+----
+
+Bash code blocks will automatically show a "Copy+Run" button that executes commands directly in the terminal.
+
+==== Keep iframes Running
+
+Prevent tab reloading when switching between tabs (implemented in v0.0.5):
+
+[source,yaml]
+----
+# This behavior is automatic with modern theme versions
+ocp4_workload_showroom_zero_touch_bundle: "https://github.com/rhpds/nookbag/releases/download/nookbag-v0.0.5/nookbag-v0.0.5.zip"
+----
+
+==== Tab Reload Functionality
+
+Allow users to reload specific tabs without reloading the entire interface:
+
+[source,yaml]
+----
+# Available in theme v0.0.5 and later
+tabs:
+  - name: "Web Server"
+    port: 8080
+    path: "/"
+    reload: true  # Enables reload button for this tab
+----
+
+==== Image Lightbox
+
+Users can click images to view them in a lightbox (v0.0.5+):
+
+[source,asciidoc]
+----
+image::architecture-diagram.png[Click to enlarge, width=400]
+----
+
+==== Zero-Touch Converged Mode
+
+Enable showroom compatibility with zero-touch tech stack:
+
+[source,yaml]
+----
+# In ui-config.yml
+type: zero-touch
+
+# Use converged bundle
+ocp4_workload_showroom_zero_touch_bundle: "https://github.com/rhpds/nookbag/releases/download/nookbag-v0.0.5/nookbag-v0.0.5.zip"
+----
+
+==== Example Module Configuration
+
+[source,yaml]
+----
+modules:
+  - name: "01-introduction"
+    label: "Lab Introduction"
+    solveButton: false
+  - name: "02-setup"
+    label: "Environment Setup" 
+    solveButton: true
+  - name: "03-configuration"
+    label: "System Configuration"
+    solveButton: true
+  - name: "04-validation"
+    label: "Testing and Validation"
+    solveButton: true
+----
+
+=== Tabs Configuration
+
+The `tabs` section defines interface tabs for tools and external resources:
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`name`
+|Yes
+|Tab label displayed in the interface
+
+|`type`
+|No
+|Tab layout type (terminal, double-terminal)
+
+|`port`
+|No
+|Port number for local services
+
+|`path`
+|No
+|URL path for the service
+
+|`url`
+|No
+|External URL (overrides port/path)
+
+|`external`
+|No
+|Open in new window (true/false)
+|===
+
+==== Terminal Tabs
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ control"
+    type: "terminal"
+    port: 443
+    path: "/tty1"
+  
+  - name: ">_ managed"
+    type: "terminal" 
+    port: 443
+    path: "/tty2"
+----
+
+==== Split Terminal with Labels
+
+For labs requiring multiple terminals with descriptive labels:
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ terminal"
+    url: /wetty
+    secondary_name: "Second terminal"
+    secondary_url: /wetty
+----
+
+==== Module-Specific Tabs
+
+Show different tabs depending on the current module:
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ terminal"
+    url: /wetty
+    modules:
+      - module-1
+      - module-2
+  
+  - name: "Web Console"
+    port: 9090
+    path: "/"
+    modules:
+      - module-3
+      - module-4
+----
+
+==== Application Tabs
+
+[source,yaml]
+----
+tabs:
+  - name: "VS Code Editor"
+    port: 3000
+    path: "/?folder=/home/rhel/ansible-files/"
+  
+  - name: "Web Console"
+    port: 9090
+    path: "/"
+----
+
+==== External Resource Tabs
+
+[source,yaml]
+----
+tabs:
+  - name: "AsciiDoc Reference"
+    url: "https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/"
+    external: true
+  
+  - name: "Documentation"
+    url: "https://docs.example.com/lab-guide"
+    external: true
+----
+
+== Complete UI Configuration Example
+
+[source,yaml]
+----
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: "01-overview"
+      label: "Lab Overview"
+      solveButton: false
+    - name: "02-environment-setup"
+      label: "Environment Setup"
+      solveButton: true
+    - name: "03-basic-configuration"
+      label: "Basic Configuration"
+      solveButton: true
+    - name: "04-advanced-topics"
+      label: "Advanced Topics" 
+      solveButton: true
+    - name: "05-troubleshooting"
+      label: "Troubleshooting"
+      solveButton: false
+
+tabs:
+  - name: ">_ control"
+    type: "terminal"
+    port: 443
+    path: "/tty1"
+  
+  - name: ">_ node1"
+    type: "terminal"
+    port: 443
+    path: "/tty2"
+  
+  - name: "VS Code"
+    port: 3000
+    path: "/?folder=/home/rhel/lab-files/"
+  
+  - name: "Web Console"
+    port: 9090
+    path: "/"
+  
+  - name: "Documentation"
+    url: "https://docs.redhat.com/"
+    external: true
+----
+
+== Content Development Workflow
+
+=== 1. Plan Your Lab Structure
+
+- Define learning objectives
+- Outline module progression
+- Identify required tools and interfaces
+
+=== 2. Create Module Files
+
+- Write content using AsciiDoc syntax
+- Include practical exercises
+- Add screenshots and diagrams
+
+=== 3. Configure UI
+
+- Update `ui-config.yml` with modules
+- Define necessary tabs for tools
+- Test navigation and functionality
+
+=== 4. Test and Iterate
+
+- Review content flow and clarity
+- Test all interactive elements
+- Gather feedback and refine
+
+== Best Practices
+
+=== Content Writing
+
+* Use clear, concise language
+* Include step-by-step instructions
+* Provide examples and code snippets
+* Add screenshots for GUI operations
+
+=== Module Organization
+
+* Keep modules focused on single topics
+* Use logical progression between modules
+* Include validation steps
+* Provide troubleshooting guidance
+
+=== UI Design
+
+* Choose descriptive tab names
+* Organize tabs logically (terminals first, tools second)
+* Test all tab functionality
+* Consider user workflow when arranging tabs
+
+=== Variables and Reusability
+
+* Define common values as variables
+* Use consistent naming conventions
+* Document custom variables
+* Consider localization needs
+
+== Troubleshooting
+
+=== Common Issues
+
+. **Variables not rendering**: Check variable definition in `site.yml`
+. **Images not displaying**: Verify image path and file existence
+. **Module not appearing**: Check `ui-config.yml` module configuration
+. **Tab not working**: Verify port and path configuration
+
+=== Validation Steps
+
+. Check AsciiDoc syntax
+. Validate YAML configuration
+. Test image links and paths
+. Verify all modules are listed in `ui-config.yml`
+
+== Related Documentation
+
+* xref:adding-instances.adoc[Adding Instances and Containers]
+* xref:configuring-networking.adoc[Configuring Networking]
+* xref:configuring-firewall.adoc[Configuring Firewall Rules]
+* xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
+* xref:template-customization-guide.adoc[Template Customization Guide]
+
+== External Resources
+
+* https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Reference]
+* https://antora.org/[Antora Documentation Site Generator]
+* https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoc Language Documentation]

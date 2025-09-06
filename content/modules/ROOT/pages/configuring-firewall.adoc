@@ -1,0 +1,628 @@
+= Configuring Firewall Rules
+
+This guide explains how to configure firewall rules for your lab environment by modifying the `config/firewall.yaml` file.
+
+== Overview
+
+The firewall configuration provides network security by controlling:
+
+* **Egress traffic**: Outbound connections from your lab instances
+* **Ingress traffic**: Inbound connections to your lab services
+* **Inter-network communication**: Traffic between different networks
+* **Protocol-specific rules**: TCP, UDP, and ICMP traffic control
+
+== Default Security Policy
+
+By default, the platform implements a restrictive security model:
+
+* All egress traffic is **DENIED** unless explicitly allowed
+* All ingress traffic is **DENIED** unless explicitly allowed
+* Inter-network traffic is controlled by firewall rules
+
+This ensures your lab environment is secure by default.
+
+== Configuration File Structure
+
+The `firewall.yaml` file contains two main sections:
+
+[source,yaml]
+----
+---
+# Egress rules (outbound traffic)
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443
+
+# Ingress rules (inbound traffic)  
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 3000
+----
+
+== Configuring Egress Rules
+
+Egress rules control outbound traffic from your lab instances to external services.
+
+=== Basic Egress Configuration
+
+Allow common outbound connections:
+
+[source,yaml]
+----
+egress:
+  - ports:
+      - protocol: TCP
+        port: 80         # HTTP
+      - protocol: TCP
+        port: 443        # HTTPS
+      - protocol: TCP
+        port: 22         # SSH
+      - protocol: UDP
+        port: 53         # DNS
+----
+
+=== Common Egress Scenarios
+
+==== Web and Package Updates
+
+Allow instances to download packages and updates:
+
+[source,yaml]
+----
+egress:
+  - ports:
+      - protocol: TCP
+        port: 80         # HTTP repositories
+      - protocol: TCP
+        port: 443        # HTTPS repositories
+      - protocol: UDP
+        port: 53         # DNS resolution
+----
+
+==== Development Tools
+
+Allow access to development services:
+
+[source,yaml]
+----
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443        # HTTPS (Git, npm, pip)
+      - protocol: TCP
+        port: 22         # SSH (Git over SSH)
+      - protocol: TCP
+        port: 9418       # Git protocol
+      - protocol: UDP
+        port: 53         # DNS
+----
+
+==== Database Access
+
+Allow connections to external databases:
+
+[source,yaml]
+----
+egress:
+  - ports:
+      - protocol: TCP
+        port: 3306       # MySQL
+      - protocol: TCP
+        port: 5432       # PostgreSQL
+      - protocol: TCP
+        port: 27017      # MongoDB
+      - protocol: TCP
+        port: 6379       # Redis
+----
+
+==== Container Registries
+
+Allow pulling container images:
+
+[source,yaml]
+----
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443        # HTTPS registries
+      - protocol: TCP
+        port: 80         # HTTP registries
+      - protocol: TCP
+        port: 5000       # Local registries
+----
+
+=== Advanced Egress Configuration
+
+==== Destination-Specific Rules
+
+Control access to specific destinations:
+
+[source,yaml]
+----
+egress:
+  - to:
+      - destination: "github.com"
+    ports:
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 22
+  - to:
+      - destination: "registry.redhat.io"
+    ports:
+      - protocol: TCP
+        port: 443
+----
+
+==== Network-Specific Egress
+
+Allow egress only from specific networks:
+
+[source,yaml]
+----
+egress:
+  - from:
+      - network: "mgmt"
+    ports:
+      - protocol: TCP
+        port: 22         # SSH only from management network
+  - from:
+      - network: "web-tier"
+    ports:
+      - protocol: TCP
+        port: 443        # HTTPS only from web tier
+----
+
+== Configuring Ingress Rules
+
+Ingress rules control inbound traffic to services running in your lab.
+
+=== Basic Ingress Configuration
+
+Allow access to common lab services:
+
+[source,yaml]
+----
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 3000       # VS Code server
+      - protocol: TCP
+        port: 8080       # Web applications
+      - protocol: TCP
+        port: 22         # SSH access
+----
+
+=== Service-Specific Ingress
+
+==== Web Applications
+
+Allow HTTP and HTTPS traffic:
+
+[source,yaml]
+----
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 80         # HTTP
+      - protocol: TCP
+        port: 443        # HTTPS
+      - protocol: TCP
+        port: 8080       # Alternative HTTP
+      - protocol: TCP
+        port: 8443       # Alternative HTTPS
+----
+
+==== Development Services
+
+Allow access to development tools:
+
+[source,yaml]
+----
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 3000       # VS Code / Node.js
+      - protocol: TCP
+        port: 8000       # Python dev server
+      - protocol: TCP
+        port: 4200       # Angular dev server
+      - protocol: TCP
+        port: 3001       # React dev server
+----
+
+==== Database Services
+
+Allow database connections:
+
+[source,yaml]
+----
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 3306       # MySQL
+      - protocol: TCP
+        port: 5432       # PostgreSQL
+      - protocol: TCP
+        port: 27017      # MongoDB
+      - protocol: TCP
+        port: 6379       # Redis
+----
+
+=== Advanced Ingress Configuration
+
+==== Source-Specific Rules
+
+Restrict access to specific sources:
+
+[source,yaml]
+----
+ingress:
+  - from:
+      - network: "web-tier"
+    to:
+      - network: "app-tier"
+    ports:
+      - protocol: TCP
+        port: 8080
+  - from:
+      - network: "app-tier"
+    to:
+      - network: "db-tier"
+    ports:
+      - protocol: TCP
+        port: 5432
+----
+
+==== Port Range Rules
+
+Allow access to a range of ports:
+
+[source,yaml]
+----
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 8000-8100  # Development server range
+      - protocol: TCP
+        port: 9000-9999  # Monitoring services range
+----
+
+== Network Segmentation Rules
+
+Control traffic between different networks in your lab.
+
+=== Multi-Tier Application
+
+Implement proper tier isolation:
+
+[source,yaml]
+----
+egress:
+  # Allow web tier to reach app tier
+  - from:
+      - network: "web-tier"
+    to:
+      - network: "app-tier"
+    ports:
+      - protocol: TCP
+        port: 8080
+  
+  # Allow app tier to reach database tier
+  - from:
+      - network: "app-tier"
+    to:
+      - network: "db-tier"
+    ports:
+      - protocol: TCP
+        port: 5432
+
+ingress:
+  # Allow load balancer access to web tier
+  - to:
+      - network: "web-tier"
+    ports:
+      - protocol: TCP
+        port: 80
+      - protocol: TCP
+        port: 443
+----
+
+=== Management Network Access
+
+Create a dedicated management network:
+
+[source,yaml]
+----
+egress:
+  # Management network can reach all networks
+  - from:
+      - network: "mgmt"
+    ports:
+      - protocol: TCP
+        port: 22         # SSH access
+      - protocol: TCP
+        port: 443        # HTTPS management
+
+ingress:
+  # Only management network can SSH
+  - from:
+      - network: "mgmt"
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+== Complete Example
+
+Here's a comprehensive firewall configuration:
+
+[source,yaml]
+----
+---
+# Egress rules (outbound traffic)
+egress:
+  # Basic internet access
+  - ports:
+      - protocol: TCP
+        port: 80         # HTTP
+      - protocol: TCP
+        port: 443        # HTTPS
+      - protocol: UDP
+        port: 53         # DNS
+  
+  # Development tools
+  - ports:
+      - protocol: TCP
+        port: 22         # SSH (Git)
+      - protocol: TCP
+        port: 9418       # Git protocol
+  
+  # Container registries
+  - to:
+      - destination: "registry.redhat.io"
+      - destination: "quay.io"
+      - destination: "docker.io"
+    ports:
+      - protocol: TCP
+        port: 443
+  
+  # Inter-tier communication
+  - from:
+      - network: "web-tier"
+    to:
+      - network: "app-tier"
+    ports:
+      - protocol: TCP
+        port: 8080
+  
+  - from:
+      - network: "app-tier"
+    to:
+      - network: "db-tier"
+    ports:
+      - protocol: TCP
+        port: 5432
+  
+  # Management access
+  - from:
+      - network: "mgmt"
+    ports:
+      - protocol: TCP
+        port: 22
+      - protocol: ICMP
+
+# Ingress rules (inbound traffic)
+ingress:
+  # Lab interface access
+  - ports:
+      - protocol: TCP
+        port: 3000       # VS Code
+      - protocol: TCP
+        port: 8080       # Lab applications
+  
+  # Web services
+  - to:
+      - network: "web-tier"
+    ports:
+      - protocol: TCP
+        port: 80
+      - protocol: TCP
+        port: 443
+  
+  # SSH access from management
+  - from:
+      - network: "mgmt"
+    ports:
+      - protocol: TCP
+        port: 22
+  
+  # Development services
+  - to:
+      - network: "dev"
+    ports:
+      - protocol: TCP
+        port: 3000-3010  # Dev server range
+      - protocol: TCP
+        port: 8000-8010  # Alt dev server range
+  
+  # Database access (restricted)
+  - from:
+      - network: "app-tier"
+    to:
+      - network: "db-tier"
+    ports:
+      - protocol: TCP
+        port: 5432       # PostgreSQL
+      - protocol: TCP
+        port: 6379       # Redis
+----
+
+== Security Best Practices
+
+=== Principle of Least Privilege
+
+* Only allow necessary ports and protocols
+* Restrict access to specific networks when possible
+* Use destination-specific rules for external access
+* Regularly review and audit firewall rules
+
+=== Common Security Patterns
+
+==== DMZ Configuration
+
+[source,yaml]
+----
+# DMZ can only access specific external services
+egress:
+  - from:
+      - network: "dmz"
+    ports:
+      - protocol: TCP
+        port: 443
+
+# DMZ accepts limited inbound traffic
+ingress:
+  - to:
+      - network: "dmz"
+    ports:
+      - protocol: TCP
+        port: 80
+      - protocol: TCP
+        port: 443
+----
+
+==== Zero Trust Network
+
+[source,yaml]
+----
+# Explicit rules for each network-to-network communication
+egress:
+  - from:
+      - network: "web"
+    to:
+      - network: "api"
+    ports:
+      - protocol: TCP
+        port: 8080
+  
+  - from:
+      - network: "api"
+    to:
+      - network: "database"
+    ports:
+      - protocol: TCP
+        port: 5432
+----
+
+=== Monitoring and Logging
+
+* Monitor denied connections for security threats
+* Log all firewall rule matches
+* Set up alerts for unusual traffic patterns
+* Regularly review firewall logs
+
+== Troubleshooting
+
+=== Common Issues
+
+. **Connection timeouts**: Check if required ports are allowed
+. **DNS resolution failures**: Ensure UDP port 53 is allowed for egress
+. **Package installation failures**: Allow HTTP/HTTPS egress
+. **Service access denied**: Verify ingress rules for the service port
+
+=== Debugging Steps
+
+. Check firewall rule syntax and formatting
+. Verify network names match `networks.yaml`
+. Test connectivity using basic tools (`ping`, `telnet`, `curl`)
+. Review firewall logs for denied connections
+
+=== Testing Connectivity
+
+[source,bash]
+----
+# Test HTTP connectivity
+curl -I http://example.com
+
+# Test HTTPS connectivity  
+curl -I https://example.com
+
+# Test specific port
+telnet hostname port
+
+# Test DNS resolution
+nslookup hostname
+
+# Check open ports
+netstat -tlnp
+----
+
+=== Rule Validation
+
+. Validate YAML syntax: `yamllint config/firewall.yaml`
+. Check for conflicting rules
+. Verify network references exist
+. Test rules in development environment first
+
+== Integration Considerations
+
+=== Load Balancers
+
+Configure firewall rules for load balancer health checks:
+
+[source,yaml]
+----
+ingress:
+  - from:
+      - network: "lb"
+    to:
+      - network: "web-tier"
+    ports:
+      - protocol: TCP
+        port: 80
+      - protocol: TCP
+        port: 8080      # Health check port
+----
+
+=== Monitoring Systems
+
+Allow monitoring system access:
+
+[source,yaml]
+----
+ingress:
+  - from:
+      - network: "monitoring"
+    ports:
+      - protocol: TCP
+        port: 9090      # Prometheus
+      - protocol: TCP
+        port: 3000      # Grafana
+----
+
+=== Backup Systems
+
+Configure access for backup operations:
+
+[source,yaml]
+----
+egress:
+  - from:
+      - network: "db-tier"
+    to:
+      - destination: "backup.example.com"
+    ports:
+      - protocol: TCP
+        port: 22        # SFTP backup
+----
+
+== Related Documentation
+
+* xref:adding-instances.adoc[Adding Instances and Containers]
+* xref:configuring-networking.adoc[Configuring Networking]
+* xref:creating-content.adoc[Creating Lab Content and UI Configuration]
+* xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
+* xref:template-customization-guide.adoc[Template Customization Guide]

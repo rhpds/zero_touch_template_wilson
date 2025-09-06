@@ -1,0 +1,499 @@
+= Module 2.4: Deploy & Test
+:estimated-time: 10-15 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Validate your complete lab configuration
+* Understand the deployment process
+* Test all components work together correctly
+* Know how to troubleshoot common issues
+
+== Overview
+
+Before deploying your lab to students, it's crucial to validate that everything works correctly. This module guides you through comprehensive testing and shows you the deployment workflow.
+
+== 🛠️ Step 1: Pre-Deployment Validation
+
+Let's systematically check all components of your lab:
+
+=== Configuration File Validation
+
+Check all YAML files for syntax and consistency:
+
+[source,bash]
+----
+echo "=== Validating YAML Syntax ==="
+for file in config/*.yaml *.yml; do
+  if python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+    echo "✅ $file: Valid YAML"
+  else
+    echo "❌ $file: YAML Error - check syntax"
+    python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>&1
+  fi
+done
+----
+
+=== Network Reference Validation
+
+Ensure all networks used by VMs are properly defined:
+
+[source,bash]
+----
+echo "=== Network Reference Check ==="
+echo "Networks used by VMs:"
+grep -A 20 "networks:" config/instances.yaml | grep "^  *- " | sort -u
+
+echo -e "\nNetworks defined:"
+grep "^- name:" config/networks.yaml
+
+echo -e "\n=== Checking for undefined networks ==="
+# This will show any networks referenced but not defined
+networks_used=$(grep -A 20 "networks:" config/instances.yaml | grep "^  *- " | sed 's/^  *- //' | sort -u)
+networks_defined=$(grep "^- name:" config/networks.yaml | awk '{print $3}' | sort -u)
+
+for network in $networks_used; do
+  if ! echo "$networks_defined" | grep -q "^$network$"; then
+    echo "❌ Network '$network' used but not defined in networks.yaml"
+  else
+    echo "✅ Network '$network' properly defined"
+  fi
+done
+----
+
+=== Resource Planning Validation
+
+Check that resource allocation is reasonable:
+
+[source,bash]
+----
+echo "=== Resource Summary ==="
+vm_count=$(grep -c "^  - name:" config/instances.yaml)
+total_memory=$(grep "memory:" config/instances.yaml | grep -o "[0-9]*G" | sed 's/G//' | awk '{sum+=$1} END {print sum}')
+total_cores=$(grep "cores:" config/instances.yaml | awk '{sum+=$2} END {print sum}')
+
+echo "Virtual Machines: $vm_count"
+echo "Total Memory: ${total_memory}G"
+echo "Total CPU Cores: $total_cores"
+
+# Basic resource warnings
+if [ "$total_memory" -gt 16 ]; then
+  echo "⚠️  High memory usage (${total_memory}G) - ensure cluster capacity"
+fi
+
+if [ "$total_cores" -gt 8 ]; then
+  echo "⚠️  High CPU usage ($total_cores cores) - ensure cluster capacity"
+fi
+
+if [ "$vm_count" -gt 5 ]; then
+  echo "⚠️  Many VMs ($vm_count) - consider if all are necessary"
+fi
+----
+
+== 🛠️ Step 2: Content Validation
+
+=== Check Content Files
+
+Verify your content files exist and are structured correctly:
+
+[source,bash]
+----
+echo "=== Content File Check ==="
+content_dir="content/modules/ROOT/pages"
+
+# Check required files exist
+required_files=("index.adoc" "01-rhel-basics.adoc")
+for file in "${required_files[@]}"; do
+  if [ -f "$content_dir/$file" ]; then
+    echo "✅ $file exists"
+    # Basic AsciiDoc validation
+    if grep -q "^= " "$content_dir/$file"; then
+      echo "  ✅ Has proper AsciiDoc title"
+    else
+      echo "  ❌ Missing AsciiDoc title (should start with '= ')"
+    fi
+  else
+    echo "❌ $file missing"
+  fi
+done
+
+# Check for common AsciiDoc issues
+echo -e "\n=== AsciiDoc Quality Check ==="
+for file in $content_dir/*.adoc; do
+  filename=$(basename "$file")
+  echo "Checking $filename:"
+  
+  # Check for learning objectives
+  if grep -q "Learning Objectives\|== Learning Objectives" "$file"; then
+    echo "  ✅ Has learning objectives"
+  else
+    echo "  ⚠️  Consider adding learning objectives"
+  fi
+  
+  # Check for code blocks
+  if grep -q "\[source," "$file"; then
+    echo "  ✅ Contains interactive code blocks"
+  else
+    echo "  ⚠️  No code blocks found - add hands-on exercises"
+  fi
+  
+  # Check for validation points
+  if grep -q "✅\|Validation" "$file"; then
+    echo "  ✅ Contains validation points"
+  else
+    echo "  ⚠️  Consider adding validation checkpoints"
+  fi
+done
+----
+
+=== UI Configuration Validation
+
+Check that UI configuration matches your content:
+
+[source,bash]
+----
+echo "=== UI Configuration Check ==="
+
+# Check ui-config.yml structure
+if python3 -c "import yaml; config=yaml.safe_load(open('ui-config.yml')); print('antora' in config and 'tabs' in config)" 2>/dev/null | grep -q True; then
+  echo "✅ ui-config.yml has required sections"
+else
+  echo "❌ ui-config.yml missing required 'antora' or 'tabs' sections"
+fi
+
+# Check module references
+echo -e "\nModules in ui-config.yml:"
+python3 -c "
+import yaml
+try:
+    config = yaml.safe_load(open('ui-config.yml'))
+    for module in config.get('antora', {}).get('modules', []):
+        print(f\"  {module.get('name', 'unnamed')}: {module.get('label', 'no label')}\")
+except Exception as e:
+    print(f'Error reading ui-config.yml: {e}')
+"
+
+# Check tabs configuration
+echo -e "\nTabs configured:"
+python3 -c "
+import yaml
+try:
+    config = yaml.safe_load(open('ui-config.yml'))
+    for tab in config.get('tabs', []):
+        print(f\"  {tab.get('name', 'unnamed')}: {tab.get('url', tab.get('type', 'unknown'))}\")
+except Exception as e:
+    print(f'Error reading ui-config.yml: {e}')
+"
+----
+
+== 🛠️ Step 3: Site Configuration Test
+
+Verify your site configuration is correct:
+
+[source,bash]
+----
+echo "=== Site Configuration Check ==="
+
+# Check site.yml
+if [ -f "site.yml" ]; then
+  echo "✅ site.yml exists"
+  
+  # Check required sections
+  if grep -q "^site:" site.yml; then
+    echo "  ✅ Has 'site' section"
+  else
+    echo "  ❌ Missing 'site' section"
+  fi
+  
+  if grep -q "^content:" site.yml; then
+    echo "  ✅ Has 'content' section"
+  else
+    echo "  ❌ Missing 'content' section"
+  fi
+  
+  if grep -q "^ui:" site.yml; then
+    echo "  ✅ Has 'ui' section"
+  else
+    echo "  ❌ Missing 'ui' section"
+  fi
+  
+  # Check start page
+  start_page=$(grep "start_page:" site.yml | awk '{print $2}')
+  if [ ! -z "$start_page" ]; then
+    echo "  ✅ Start page configured: $start_page"
+    # Verify the start page file exists
+    page_file=$(echo "$start_page" | sed 's/modules:://' | sed 's/::.*//')
+    if [ -f "content/modules/ROOT/pages/$page_file" ]; then
+      echo "    ✅ Start page file exists"
+    else
+      echo "    ❌ Start page file missing: content/modules/ROOT/pages/$page_file"
+    fi
+  else
+    echo "  ❌ No start page configured"
+  fi
+else
+  echo "❌ site.yml missing"
+fi
+----
+
+== 🛠️ Step 4: End-to-End Simulation
+
+Let's simulate the student experience by checking key workflows:
+
+=== Test VM SSH Access Patterns
+
+Verify that the UI configuration matches the actual VMs:
+
+[source,bash]
+----
+echo "=== VM Access Pattern Check ==="
+
+# Get VM names from instances.yaml
+echo "VMs defined in instances.yaml:"
+grep "^  - name:" config/instances.yaml | awk '{print "  " $3}' | tr -d '"'
+
+# Get SSH paths from ui-config.yml tabs
+echo -e "\nSSH paths in ui-config.yml:"
+python3 -c "
+import yaml
+try:
+    config = yaml.safe_load(open('ui-config.yml'))
+    for tab in config.get('tabs', []):
+        if 'path' in tab and '/ssh/' in tab['path']:
+            vm_name = tab['path'].split('/ssh/')[-1]
+            print(f\"  {vm_name} (from tab: {tab.get('name', 'unnamed')})\")
+except Exception as e:
+    print(f'Error: {e}')
+"
+
+echo -e "\n=== Cross-Reference Check ==="
+# This would require more complex scripting to fully validate
+echo "✅ Manual verification required:"
+echo "  1. Each VM in instances.yaml should have a corresponding terminal tab"
+echo "  2. Each terminal tab should reference a VM that exists"
+echo "  3. Tab names should be descriptive and consistent"
+----
+
+=== Content Flow Test
+
+Check that the content flows logically:
+
+[source,bash]
+----
+echo "=== Content Flow Check ==="
+
+# Check for proper cross-references
+echo "Cross-references found:"
+grep -r "xref:" content/modules/ROOT/pages/ | head -5
+
+# Check for broken internal links (basic check)
+echo -e "\nChecking for potential broken internal references:"
+for file in content/modules/ROOT/pages/*.adoc; do
+  filename=$(basename "$file" .adoc)
+  # Look for references to this file from other files
+  refs=$(grep -l "xref:$filename" content/modules/ROOT/pages/*.adoc 2>/dev/null | wc -l)
+  if [ "$refs" -gt 0 ]; then
+    echo "  $filename.adoc: Referenced by $refs other files"
+  fi
+done
+----
+
+== 🛠️ Step 5: Deployment Readiness Check
+
+=== Final Validation Summary
+
+[source,bash]
+----
+echo "=== DEPLOYMENT READINESS SUMMARY ==="
+echo ""
+
+# Configuration
+echo "📁 CONFIGURATION:"
+config_issues=0
+
+for file in config/instances.yaml config/networks.yaml config/firewall.yaml; do
+  if python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+    echo "  ✅ $file: Valid"
+  else
+    echo "  ❌ $file: Invalid YAML"
+    config_issues=$((config_issues + 1))
+  fi
+done
+
+# Content
+echo -e "\n📚 CONTENT:"
+content_issues=0
+
+required_content=("content/modules/ROOT/pages/index.adoc" "ui-config.yml" "site.yml")
+for file in "${required_content[@]}"; do
+  if [ -f "$file" ]; then
+    echo "  ✅ $file: Present"
+  else
+    echo "  ❌ $file: Missing"
+    content_issues=$((content_issues + 1))
+  fi
+done
+
+# Summary
+echo -e "\n🎯 OVERALL STATUS:"
+total_issues=$((config_issues + content_issues))
+
+if [ "$total_issues" -eq 0 ]; then
+  echo "  ✅ READY FOR DEPLOYMENT"
+  echo "     Your lab configuration appears correct!"
+else
+  echo "  ❌ ISSUES FOUND: $total_issues"
+  echo "     Please resolve issues before deployment"
+fi
+
+echo -e "\n📊 LAB SUMMARY:"
+echo "  VMs: $(grep -c "^  - name:" config/instances.yaml)"
+echo "  Networks: $(grep -c "^- name:" config/networks.yaml)"
+echo "  Content Pages: $(ls content/modules/ROOT/pages/*.adoc 2>/dev/null | wc -l)"
+echo "  Total Memory: $(grep "memory:" config/instances.yaml | grep -o "[0-9]*G" | sed 's/G//' | awk '{sum+=$1} END {print sum}')G"
+----
+
+== 🚀 Understanding the Deployment Process
+
+=== What Happens During Deployment
+
+When your lab is deployed, Zero Touch performs these steps:
+
+. **Repository Clone**: Your lab configuration is pulled from Git
+. **Infrastructure Provisioning**: 
+   - VMs are created with specified resources
+   - Networks are configured according to your topology
+   - Firewall rules are applied
+. **Content Building**: AsciiDoc files are converted to web content
+. **Environment Setup**: 
+   - `setup-automation/main.yml` runs to configure VMs
+   - Packages are installed
+   - Services are configured
+. **Platform Integration**: 
+   - Terminal access is established
+   - Web interface is configured
+   - Monitoring is enabled
+. **Student Access**: Lab becomes available to users
+
+=== Deployment Timeline
+
+* **Infrastructure**: 2-3 minutes
+* **Content Building**: 30-60 seconds  
+* **Setup Automation**: 1-3 minutes (depends on complexity)
+* **Total Time**: Typically 5-10 minutes
+
+=== Common Deployment Issues
+
+**Resource Constraints**:
+- **Symptom**: VMs fail to provision
+- **Solution**: Reduce memory/CPU allocation or VM count
+
+**Network Conflicts**:
+- **Symptom**: Network creation fails
+- **Solution**: Check CIDR ranges don't conflict with cluster networks
+
+**Content Build Failures**:
+- **Symptom**: Web interface shows errors
+- **Solution**: Fix AsciiDoc syntax, check file references
+
+**Setup Automation Failures**:
+- **Symptom**: VMs provision but aren't configured correctly
+- **Solution**: Check `setup-automation/main.yml` syntax and package availability
+
+== ✅ Pre-Deployment Checklist
+
+Before deploying your lab, verify:
+
+**Configuration**:
+- [ ] All YAML files have valid syntax
+- [ ] Network references are consistent
+- [ ] Resource allocation is reasonable
+- [ ] VM names are descriptive and unique
+
+**Content**:
+- [ ] Landing page exists and is engaging
+- [ ] Learning objectives are clear
+- [ ] Step-by-step instructions are detailed
+- [ ] Validation points are included
+- [ ] AsciiDoc syntax is correct
+
+**UI Configuration**:
+- [ ] Modules are listed in correct order
+- [ ] Tab configuration matches VM setup
+- [ ] Tab names are descriptive
+- [ ] Site title and description are set
+
+**Testing**:
+- [ ] Content flows logically
+- [ ] Commands are tested and work
+- [ ] Cross-references are correct
+- [ ] No broken links
+
+== 🎯 What You've Accomplished
+
+Excellent work! You've successfully:
+
+✅ **Validated your complete lab configuration**  
+✅ **Learned the deployment process and timeline**  
+✅ **Created comprehensive testing procedures**  
+✅ **Built a realistic multi-server RHEL lab**  
+✅ **Mastered the Zero Touch platform fundamentals**  
+
+## 🏆 Your Lab is Ready!
+
+You now have a complete, working Zero Touch lab that includes:
+
+* **3 VMs** with realistic network topology
+* **Network segmentation** demonstrating security best practices
+* **Engaging content** with hands-on exercises
+* **Professional presentation** with proper navigation
+* **Validation procedures** for quality assurance
+
+== 🎯 What's Next?
+
+Congratulations! You've built a complete Zero Touch lab. You now have several paths forward:
+
+=== Continue Learning
+**Explore Advanced Patterns**:
+* xref:production-patterns-guide.adoc[**Production Lab Patterns**] - Real-world deployment patterns
+* xref:enterprise-lab-patterns.adoc[**Enterprise Lab Patterns**] - Satellite, AAP, and multi-platform labs
+* xref:example-enterprise-config.adoc[**Enterprise Configuration Example**] - Complete multi-platform lab
+
+=== Deploy Your Lab
+**Put It Into Production**:
+* Commit your changes to Git repository
+* Submit for deployment testing
+* Share with colleagues or students
+
+=== Build Advanced Labs
+**Expand Your Skills**:
+* Add container integration
+* Include Windows systems
+* Implement complex networking
+* Create specialized Business Unit content
+
+== 🛠️ Quick Troubleshooting
+
+**Validation scripts show errors**:
+- Check file permissions: `ls -la config/ content/`
+- Verify Python/YAML tools: `python3 -c "import yaml"`
+- Re-run individual validation steps
+
+**Resource allocation warnings**:
+- Consider reducing VM memory if cluster capacity is limited
+- Combine functionality into fewer VMs if needed
+- Check with platform administrators about capacity
+
+**Content doesn't render correctly**:
+- Validate AsciiDoc syntax online
+- Check for proper spacing around code blocks
+- Ensure cross-references use correct filenames
+
+Congratulations on building your first Zero Touch lab! 🎉
+
+== Related Resources
+
+* xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
+* xref:template-customization-guide.adoc[Template Customization Guide]
+* xref:module-2-3-simple-content.adoc[Previous: Simple Content]

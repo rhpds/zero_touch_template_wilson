@@ -1,0 +1,382 @@
+= Module 2.1: Single VM Setup
+:estimated-time: 15-20 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Create your first VM configuration from scratch
+* Understand the essential VM parameters
+* Modify the existing template to use your VM
+* Validate your configuration works correctly
+
+== Overview
+
+In this hands-on module, you'll replace the existing `vscode` VM with your own lab server. This is the foundation for any Zero Touch lab.
+
+== 🛠️ Step 1: Plan Your VM
+
+Before writing configuration, let's plan what we need:
+
+**Lab Scenario**: Basic RHEL administration training  
+**VM Purpose**: Single server for learning Linux commands  
+**Requirements**:
+- RHEL 9.6 operating system
+- 4GB RAM (enough for multiple processes)
+- 2 CPU cores (responsive performance)
+- 40GB disk (sufficient for packages and data)
+- Network connectivity
+
+== 🛠️ Step 2: Create the VM Configuration
+
+Let's modify `config/instances.yaml` to replace the vscode VM:
+
+=== Current Configuration
+
+First, let's see what's currently configured:
+
+[source,bash]
+----
+cat config/instances.yaml
+----
+
+You should see something like:
+[source,yaml]
+----
+virtualmachines:
+  - name: "vscode"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 1
+    image_size: "40G"
+    # ... more configuration
+----
+
+=== Replace with Lab Server
+
+Replace the entire `virtualmachines` section with our lab server:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "lab-server"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+    packages:
+      - git
+      - vim
+      - tree
+      - htop
+    tags:
+      - key: "Purpose"
+        value: "Training"
+      - key: "AnsibleGroup"
+        value: "lab-servers"
+----
+
+=== Understanding Each Parameter
+
+[cols="1,1,3"]
+|===
+|Parameter |Value |Purpose
+
+|`name`
+|`"lab-server"`
+|Unique identifier for this VM
+
+|`image` 
+|`"rhel-9.6"`
+|Operating system to install
+
+|`memory`
+|`"4G"`
+|RAM allocation (4 gigabytes)
+
+|`cores`
+|`2`
+|Number of CPU cores
+
+|`image_size`
+|`"40G"`
+|Disk size (40 gigabytes)
+
+|`networks`
+|`- default`
+|Which networks to connect to
+
+|`packages`
+|List of packages
+|Software to pre-install
+
+|`tags`
+|Key-value pairs
+|Metadata for automation and organization
+|===
+
+== 🛠️ Step 3: Update the UI Configuration
+
+The current UI configuration references the "vscode" VM. We need to update it to point to our new "lab-server".
+
+=== Check Current UI Config
+
+[source,bash]
+----
+cat ui-config.yml
+----
+
+Look for the `tabs` section. You'll likely see:
+[source,yaml]
+----
+tabs:
+  - name: "VS Code"
+    # ... configuration pointing to vscode VM
+----
+
+=== Update to Lab Server
+
+Replace the tab configuration to point to our lab server's terminal:
+
+[source,yaml]
+----
+tabs:
+  - name: ">_ lab-server"
+    url: /wetty
+    path: /ssh/lab-server
+  
+  - name: "Lab Guide"
+    type: "docs"
+    url: /
+----
+
+This creates:
+- **Terminal tab**: Direct SSH access to lab-server
+- **Lab Guide tab**: Documentation/instructions
+
+== 🛠️ Step 4: Verify Network Configuration
+
+Our VM uses the `default` network. Let's make sure it's properly configured:
+
+[source,bash]
+----
+cat config/networks.yaml
+----
+
+You should see:
+[source,yaml]
+----
+---
+- name: default
+----
+
+This is correct for a single VM setup. The default network provides:
+- ✅ Internet connectivity
+- ✅ DNS resolution  
+- ✅ SSH access from the platform
+- ✅ Access to lab interface
+
+== 🛠️ Step 5: Configure Firewall Rules
+
+For a basic lab server, we need minimal firewall configuration:
+
+[source,bash]
+----
+cat config/firewall.yaml
+----
+
+Update it to:
+[source,yaml]
+----
+---
+# Allow outbound web traffic for package installation
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443  # HTTPS
+      - protocol: TCP
+        port: 80   # HTTP
+
+# Allow inbound SSH (this is typically handled automatically)
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 22   # SSH
+----
+
+== 🛠️ Step 6: Validate Your Configuration
+
+=== YAML Syntax Check
+
+Validate that your YAML is syntactically correct:
+
+[source,bash]
+----
+# Check each file for syntax errors
+python3 -c "import yaml; yaml.safe_load(open('config/instances.yaml'))" && echo "instances.yaml: OK"
+python3 -c "import yaml; yaml.safe_load(open('config/networks.yaml'))" && echo "networks.yaml: OK"  
+python3 -c "import yaml; yaml.safe_load(open('config/firewall.yaml'))" && echo "firewall.yaml: OK"
+python3 -c "import yaml; yaml.safe_load(open('ui-config.yml'))" && echo "ui-config.yml: OK"
+----
+
+=== Configuration Logic Check
+
+Verify the relationships between files:
+
+**Network References**:
+[source,bash]
+----
+# Check that networks used in instances.yaml exist in networks.yaml
+echo "Networks used by VMs:"
+grep -A 5 "networks:" config/instances.yaml
+
+echo "Networks defined:"
+grep "name:" config/networks.yaml
+----
+
+**Resource Totals** (for planning):
+[source,bash]
+----
+echo "Total memory allocation:"
+grep "memory:" config/instances.yaml | awk '{sum += $2} END {print sum "G total"}'
+
+echo "Total CPU cores:"
+grep "cores:" config/instances.yaml | awk '{sum += $2} END {print sum " cores total"}'
+----
+
+== 🛠️ Step 7: Test Configuration
+
+=== Create a Test Content File
+
+Let's create a simple instruction file to test our setup:
+
+[source,bash]
+----
+cat > content/modules/ROOT/pages/test-lab.adoc << 'EOF'
+= Test Lab: Basic RHEL Commands
+
+Welcome to your lab server! Let's verify everything is working.
+
+== Step 1: Check System Information
+
+Run this command to see system details:
+
+[source,bash]
+----
+hostnamectl
+----
+
+== Step 2: Check Available Packages
+
+List the packages we pre-installed:
+
+[source,bash]
+----
+rpm -qa | grep -E "git|vim|tree|htop"
+----
+
+== Step 3: Test Network Connectivity
+
+Verify internet access:
+
+[source,bash]
+----
+curl -s https://httpbin.org/ip
+----
+
+✅ If you see an IP address, your lab server is properly configured!
+EOF
+----
+
+=== Update Site Configuration
+
+Update `site.yml` to point to our test lab:
+
+[source,yaml]
+----
+site:
+  title: "My First Zero Touch Lab"
+  url: https://demo.redhat.com/my-lab
+  start_page: modules::test-lab.adoc  # Point to our test file
+
+content:
+  sources:
+    - url: ./
+      start_path: content
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.5/nookbag-v0.0.5.zip
+----
+
+== ✅ Configuration Review Checklist
+
+Before proceeding, verify you have:
+
+**VM Configuration**:
+- [ ] VM name changed from "vscode" to "lab-server"
+- [ ] Appropriate memory (4G) and cores (2) allocated
+- [ ] Useful packages included (git, vim, tree, htop)
+- [ ] Connected to default network
+- [ ] Tags added for organization
+
+**UI Configuration**:
+- [ ] Tab updated to point to lab-server terminal
+- [ ] Tab name is descriptive (">_ lab-server")
+- [ ] Documentation tab included
+
+**Network & Security**:
+- [ ] Default network exists in networks.yaml
+- [ ] Firewall allows necessary traffic (HTTP/HTTPS outbound, SSH inbound)
+- [ ] No unused network references
+
+**Content**:
+- [ ] Test content file created
+- [ ] Site configuration points to test content
+- [ ] Instructions are clear and testable
+
+== 🎯 What You've Accomplished
+
+Congratulations! You've just:
+
+✅ **Created your first VM configuration** from scratch  
+✅ **Updated the UI** to match your infrastructure  
+✅ **Configured networking and security** appropriately  
+✅ **Created test content** to validate your setup  
+✅ **Learned the relationship** between configuration files  
+
+== 🛠️ Quick Troubleshooting
+
+**Common Issues**:
+
+**YAML Syntax Error**:
+```
+yaml.scanner.ScannerError: while parsing a scalar
+```
+- **Fix**: Check indentation (use spaces, not tabs)
+- **Fix**: Ensure consistent spacing (2 spaces per level)
+
+**Network Reference Error**:
+```
+Network 'lab-tier' not found
+```
+- **Fix**: Add the network to `networks.yaml` or use `default`
+
+**Missing Required Field**:
+```
+ValidationError: 'memory' is a required property
+```
+- **Fix**: Ensure all required fields are present (name, image, memory, cores, image_size, networks)
+
+== 🎯 What's Next?
+
+Your VM is configured! Next, let's explore networking options to connect multiple systems.
+
+**Next Module**: xref:module-2-2-basic-networking.adoc[2.2 Basic Networking] (10-15 min)
+
+== Related Resources
+
+* xref:adding-instances.adoc[Adding Instances and Containers] (Reference)
+* xref:module-1-3-configuration-files.adoc[Previous: Configuration Files]

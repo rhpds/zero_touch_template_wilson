@@ -1,8 +1,8 @@
 ---
 site:
-  title: "Change me, your title lives as site.title in site.yml"
-  url: https://github.com/rhpds/showroom_template_zero
-  start_page: modules::module-01.adoc
+  title: "Zero Touch Platform Training Template"
+  url: https://demo.redhat.com/zero-touch-training
+  start_page: modules::zero-touch-platform-training.adoc
 
 content:
   sources:

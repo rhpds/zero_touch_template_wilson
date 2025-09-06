@@ -1,13 +1,26 @@
-=== Getting Started
+= Zero Touch Platform Training Template 🎓
 
-* Create a git repo from this template
-* Clone the repo and *cd* into it
+A comprehensive, security-hardened template for creating immersive Zero Touch platform training experiences. This template provides a complete self-paced learning system with modular training modules, enterprise patterns, and production-ready examples.
 
-=== Understanding the Basic Template Directory Structure
+== ✨ Features
 
-. Content Directory
-+
-.tree output
+* **🎯 Modular Training System** - Complete self-paced learning program from basics to advanced patterns
+* **🔒 Security Hardened** - All sensitive information scrubbed, uses secure deployment variables
+* **🏢 Enterprise Ready** - Advanced patterns for Satellite, AAP, multi-platform environments  
+* **📚 Comprehensive Documentation** - 19 training modules covering all aspects of Zero Touch platform
+* **🚀 Production Patterns** - Real-world examples and deployment strategies
+* **⚡ Quick Start** - Get up and running in minutes
+
+== 🚀 Quick Start
+
+1. **Create a repository** from this template
+2. **Clone your repository** and `cd` into it  
+3. **Start with the training**: Open `content/modules/ROOT/pages/zero-touch-platform-training.adoc`
+4. **Customize for your needs**: Follow the comprehensive guides included
+
+== 📁 Template Structure
+
+=== 📚 Content & Documentation
 [source,shell]
 ----
 .
@@ -24,14 +37,13 @@
         │   └── images                       # Images used in your content 
         │       └── example-image.png
         ├── pages                            # Your content goes here
-        │   ├── module-01.adoc               # First module of your lab, e.g. overview etc 
-        │   ├── module-02.adoc               # Second module of your lab  
-        │   └── module-03.adoc               # Third module
+        │   ├── module-1-1-understanding-zero-touch.adoc    # Platform fundamentals
+        │   ├── module-1-2-template-structure.adoc       # Template structure
+        │   ├── module-2-1-single-vm-setup.adoc          # Basic VM setup
+        │   └── [other training modules...]              # Full modular training system
 ----
 
-. Lab definition directory
-+
-.tree output
+=== ⚙️ Infrastructure Configuration
 [source,shell]
 ----
 config/
@@ -41,9 +53,7 @@ config/
 ----
 
 
-. Runtime Scripts Directory Structure
-+
-.tree output
+=== 🤖 Automation Scripts
 [source,shell]
 ----
 runtime-automation/
@@ -57,9 +67,7 @@ runtime-automation/
 └── main.yml                            # Playbook to be called in each step
 ----
 
-. Setup Scripts Directory Structure
-+
-.tree output
+=== 🔧 Setup Automation
 [source,shell]
 ----
 setup-automation/
@@ -69,36 +77,68 @@ setup-automation/
 ----
 
 
-== Understanding UI Configration file
-. Example: The *ui-config.yml* configuration file
-+
-.tree output
-[source,shell]
-----
-antora:
-  name: modules
-  dir: www
-  modules:
-    - name: 01-playbook-inventory               # Module Name
-      label: Playbook Inventory                 # Module Label
-      solveButton: true                         # Enable Solve button
-    - name: 02-playbook-directory-structure
-      label: Playbook Directory Structure
-      solveButton: true
-tabs:
-  - name: VSCode Editor                         # Tab name
-    port: 8443                                  # Port no of the service
-    path: /?folder=/home/rhel/ansible-files/    # Path suffix
-  - name: ">_control"                           # Tab name
-    port: 443                                   # Port of the tt1 terminal
-    path: /tty1                                 # Path to the tty1 terminal
-----
+== 🎓 Training System
 
-=== Development Cycle
+This template includes a complete **self-paced training program** covering:
 
-. Edit your content in `content/modules/ROOT/pages/`
-. Use `git` to branch and commit your work
-. Push your work to your repo
-.. You should use `git tags` or `git branches` in production
-.. However development items default to the head of `main`
+=== **Module 1: Platform Fundamentals** (30-40 min)
+* Understanding Zero Touch platform concepts
+* Template structure and organization  
+* YAML configuration fundamentals
+
+=== **Module 2: Hands-On Lab Building** (45-60 min)  
+* Setting up your first VM
+* Basic networking configuration
+* Creating lab content and UI
+* Deploying and testing your lab
+
+=== **Reference Guides**
+* **Core Configuration**: Adding instances, networking, firewall rules
+* **Advanced Features**: Special lab scenarios, troubleshooting  
+* **Enterprise Patterns**: Satellite, AAP, multi-platform environments
+* **Production Examples**: Real-world deployment patterns
+
+== 🔒 Security Features
+
+* **✅ Secure by Default**: All sensitive data removed or parameterized
+* **✅ Deployment Variables**: Uses `{{ common_password }}` for secure password generation
+* **✅ Certificate Management**: Safe placeholder certificates with generation instructions  
+* **✅ Clean Examples**: All sample data uses clearly dummy information
+
+== 🛠️ Development Workflow
+
+=== **Getting Started**
+1. **📖 Read the Training**: Start with `zero-touch-platform-training.adoc`
+2. **🏗️ Customize Infrastructure**: Modify `config/instances.yaml`, `config/networks.yaml`  
+3. **✍️ Write Content**: Create your lab instructions in `content/modules/ROOT/pages/`
+4. **🎨 Configure UI**: Update `ui-config.yml` for navigation and tabs
+5. **🧪 Test Locally**: Use `antora generate` and `antora serve` for development
+
+=== **Template Customization**
+* **📋 Quick Setup**: Follow `template-customization-guide.adoc` for overview
+* **🔧 Infrastructure**: Use guides for adding VMs, networks, firewall rules
+* **📝 Content Creation**: Learn AsciiDoc and Antora patterns  
+* **🚀 Advanced Features**: Explore enterprise and production patterns
+
+=== **Version Control**
+* Use **git branches** for feature development
+* Use **git tags** for production releases  
+* **Main branch** is used for development by default
+* Follow standard Git workflow practices
+
+== 📚 Key Documentation Files
+
+* **🎓 `zero-touch-platform-training.adoc`** - Start here! Complete training program
+* **📋 `template-customization-guide.adoc`** - Template overview and customization
+* **🏗️ `adding-instances.adoc`** - VM and container configuration  
+* **🌐 `configuring-networking.adoc`** - Network setup and configuration
+* **🔥 `configuring-firewall.adoc`** - Security and firewall rules
+* **📖 `creating-content.adoc`** - Writing lab content and UI configuration
+
+== 🚀 Ready to Get Started?
+
+**👉 Open `content/modules/ROOT/pages/zero-touch-platform-training.adoc` and begin your Zero Touch journey!**
+
+---
+*This template is production-ready, security-hardened, and designed for immediate use. Happy lab building! 🎉*
 

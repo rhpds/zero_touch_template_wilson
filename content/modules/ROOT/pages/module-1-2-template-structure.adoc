@@ -1,0 +1,284 @@
+= Module 1.2: Template Structure
+:estimated-time: 10-15 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Understand the Zero Touch template directory structure
+* Know the purpose of each key file and directory
+* Be able to navigate the template confidently
+* Understand how files relate to each other
+
+== Template Directory Overview
+
+A Zero Touch template follows a specific structure that separates different concerns:
+
+[source,text]
+----
+zero_touch_template/
+├── config/                     # Infrastructure configuration
+│   ├── instances.yaml          # VMs and containers
+│   ├── networks.yaml           # Network definitions
+│   └── firewall.yaml           # Security rules
+├── content/                    # Educational content
+│   └── modules/
+│       └── ROOT/
+│           ├── pages/          # Lab instruction pages
+│           └── assets/         # Images, downloads, etc.
+├── runtime-automation/         # Lab execution scripts
+│   ├── setup/                  # Initial environment setup
+│   ├── solve/                  # Auto-completion scripts
+│   └── validate/               # Progress validation
+├── setup-automation/           # Infrastructure automation
+│   └── main.yml                # Ansible automation
+├── ui-config.yml               # User interface configuration
+├── site.yml                    # Antora build configuration
+└── README.adoc                 # Template documentation
+----
+
+== Key Directories Explained
+
+=== 🏗️ Infrastructure Configuration (`config/`)
+
+This is where you define **what** gets provisioned:
+
+==== `instances.yaml`
+Defines virtual machines and containers for your lab:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "control"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+
+containers:
+  - name: "database"
+    image: "postgres:15"
+    # ... configuration
+----
+
+==== `networks.yaml` 
+Defines network topology and connectivity:
+
+[source,yaml]
+----
+---
+- name: default          # Always include default
+- name: web-tier
+  cidr: "10.1.0.0/24"
+  description: "Frontend network"
+----
+
+==== `firewall.yaml`
+Defines security rules and traffic control:
+
+[source,yaml]
+----
+---
+egress:                  # Outbound traffic rules
+  - ports:
+      - protocol: TCP
+        port: 443
+
+ingress:                 # Inbound traffic rules
+  - ports:
+      - protocol: TCP
+        port: 8080
+----
+
+=== 📚 Educational Content (`content/`)
+
+This is where you create the learning experience:
+
+==== `content/modules/ROOT/pages/`
+Contains your instruction files (AsciiDoc format):
+
+* `index.adoc` - Landing page
+* `module-1-1-understanding-zero-touch.adoc` - Platform fundamentals
+* `module-1-2-template-structure.adoc` - Template structure (this file)
+* `module-2-1-single-vm-setup.adoc` - Basic VM setup
+* etc.
+
+==== `content/modules/ROOT/assets/`
+Contains supporting files:
+
+* `images/` - Screenshots, diagrams, image assets
+* `attachments/` - Download files
+
+=== 🤖 Automation Scripts
+
+==== `runtime-automation/`
+Scripts that run **during** the lab:
+
+* **`setup/`** - Module initialization (run when entering a module)
+* **`validate/`** - Check if student completed steps correctly
+* **`solve/`** - Auto-complete steps for students who are stuck
+
+==== `setup-automation/`
+Scripts that run **before** the lab starts:
+
+* **`main.yml`** - Ansible playbook to configure infrastructure
+* Installs packages, configures services, sets up users
+
+=== 🎨 User Interface Configuration
+
+==== `ui-config.yml`
+Defines the lab interface and navigation:
+
+[source,yaml]
+----
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: module-1-1-understanding-zero-touch
+      label: "1.1 Understanding Zero Touch"
+      solveButton: false
+    - name: module-1-2-template-structure  
+      label: "1.2 Template Structure"
+      solveButton: true
+  
+tabs:
+  - name: ">_ control"
+    url: /wetty
+  - name: "Web Console"
+    port: 9090
+    path: "/"
+----
+
+==== `site.yml`
+Controls how content is built and served:
+
+[source,yaml]
+----
+site:
+  title: "My Lab Training"
+  url: https://demo.redhat.com/my-lab
+  start_page: modules::index.adoc
+
+content:
+  sources:
+    - url: ./
+      start_path: content
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.5/nookbag-v0.0.5.zip
+----
+
+== How Files Work Together
+
+Understanding the relationships between files is crucial:
+
+=== Infrastructure → Content Flow
+
+. **`instances.yaml`** defines a VM named "control"
+. **`ui-config.yml`** creates a tab pointing to that VM's terminal
+. **`module-2-1-single-vm-setup.adoc`** contains instructions for using that VM
+. **`setup-automation/main.yml`** configures the VM before students access it
+
+=== Content → Navigation Flow
+
+. **`site.yml`** tells Antora to start with `modules::index.adoc`
+. **`ui-config.yml`** defines which modules appear in navigation
+. **Each module file** contains step-by-step instructions
+. **`runtime-automation/validate/`** scripts check student progress
+
+=== Security → Access Flow
+
+. **`networks.yaml`** creates isolated network segments
+. **`firewall.yaml`** controls traffic between segments
+. **`instances.yaml`** places VMs in appropriate networks
+. Students can only access what you explicitly allow
+
+== File Naming Conventions
+
+=== Content Files
+* Use **descriptive names**: `configuring-ansible.adoc` not `module-03.adoc` (old naming)
+* Use **kebab-case**: `setting-up-database.adoc`
+* Include **sequence numbers** if order matters: `01-introduction.adoc`
+
+=== Infrastructure Names
+* Use **functional names**: `database-server` not `vm1`
+* Be **consistent**: if you use `web-tier` network, name instances `web-server-01`
+* Avoid **special characters**: stick to letters, numbers, hyphens
+
+=== Script Organization
+* **Group by purpose**: all database scripts in `runtime-automation/database/`
+* **Include module name**: `setup/01-introduction.yml`
+* **Use descriptive names**: `validate-user-creation.yml`
+
+== Template Customization Areas
+
+When creating your lab, you'll typically modify:
+
+=== Always Customize
+- [ ] **`instances.yaml`** - Define your VMs and containers
+- [ ] **`content/modules/ROOT/pages/`** - Write your instructions
+- [ ] **`ui-config.yml`** - Configure navigation and tabs
+- [ ] **`site.yml`** - Set lab title and configuration
+
+=== Often Customize
+- [ ] **`networks.yaml`** - If you need network segmentation
+- [ ] **`firewall.yaml`** - If you need custom security rules
+- [ ] **`setup-automation/main.yml`** - If you need infrastructure setup
+- [ ] **`runtime-automation/`** - If you need validation or solve scripts
+
+=== Rarely Customize
+- [ ] **`README.adoc`** - Only if adding template-specific notes
+
+== 🔍 Exploring This Template
+
+Let's look at the current template structure:
+
+[source,bash]
+----
+# View the overall structure
+find . -type f -name "*.yaml" -o -name "*.yml" -o -name "*.adoc" | head -20
+
+# Check what's currently configured
+cat config/instances.yaml
+cat ui-config.yml
+----
+
+== ✅ Knowledge Check
+
+Before moving to the next module, make sure you can:
+
+- [ ] Identify where to define VMs and containers
+- [ ] Know where to write lab instructions
+- [ ] Understand where UI configuration goes
+- [ ] Explain how infrastructure and content connect
+- [ ] Navigate the template directory structure confidently
+
+== 🛠️ Quick Exercise
+
+**Try This**: Open the current template files and identify:
+
+1. What VM is currently defined in `instances.yaml`?
+2. What content files exist in `content/modules/ROOT/pages/`?
+3. What tabs are configured in `ui-config.yml`?
+4. What is the lab title in `site.yml`?
+
+**Answers**:
+1. A VM named "vscode" with RHEL 9.6, 4G RAM, 1 core
+2. Multiple `.adoc` files including our new modular training
+3. A vscode tab on port 3000
+4. Check `site.yml` for the current title
+
+== 🎯 What's Next?
+
+Now that you understand the template structure, let's dive into the configuration files themselves.
+
+**Next Module**: xref:module-1-3-configuration-files.adoc[1.3 Configuration Files] (10-15 min)
+
+== Related Resources
+
+* xref:template-customization-guide.adoc[Complete Template Customization Guide] (Reference)
+* xref:adding-instances.adoc[Adding Instances and Containers] (Reference)

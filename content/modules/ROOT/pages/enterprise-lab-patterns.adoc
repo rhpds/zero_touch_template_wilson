@@ -1,0 +1,457 @@
+= Enterprise Lab Patterns
+:estimated-time: 30-45 minutes
+
+This guide covers advanced patterns found in enterprise Zero Touch labs, including Satellite, Ansible Automation Platform, and multi-platform environments.
+
+== Overview
+
+Enterprise labs require sophisticated configurations to simulate real-world environments. These patterns go beyond basic VM setups to include:
+
+* **Multi-platform environments** (Linux + Windows + containers)
+* **Enterprise resource requirements** (32G+ memory, multiple cores)
+* **Advanced certificate management** with reencrypt termination
+* **Isolated VM patterns** for pre-built enterprise images
+* **Module-specific UI behavior** and conditional access
+* **Complex initialization workflows** with containers and VMs
+
+== Satellite Lab Patterns
+
+Satellite labs demonstrate enterprise system management scenarios with multiple servers and complex networking.
+
+=== Resource-Intensive Configuration
+
+Satellite requires substantial resources for realistic operation:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "satellite"
+    image: "satellite-server-rhdp-1-6-17-07-30-25"
+    bootloader: efi
+    register_satellite: false          # Satellite doesn't register to itself
+    memory: "32G"                      # Enterprise-scale memory
+    cores: 8                           # Multiple cores for performance
+    image_size: "540G"                 # Large disk for content
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"              # Management role
+    networks:
+      - default
+    userdata: |
+      #cloud-config
+      fqdn: satellite.lab              # Proper FQDN required
+      hostname: satellite
+      prefer_fqdn_over_hostname: true
+      manage_etc_hosts: true
+----
+
+=== Multi-Satellite Configuration
+
+Advanced labs include multiple Satellite servers for disaster recovery scenarios:
+
+[source,yaml]
+----
+virtualmachines:
+  # Primary Satellite
+  - name: "satellite"
+    image: "satellite-server-rhdp-1-6-17-07-30-25"
+    # ... configuration as above
+    
+  # Secondary Satellite  
+  - name: "satellite-2"
+    image: "satellite-server-rhdp-2-6-17-07-08-25"
+    bootloader: efi
+    register_satellite: false
+    memory: "32G"
+    cores: 8
+    image_size: "540G"
+    tags:
+      - key: "AnsibleGroup"
+        value: "nodes"                 # Different role
+    userdata: |
+      #cloud-config
+      fqdn: satellite-2.lab           # Unique FQDN
+      hostname: satellite-2
+      prefer_fqdn_over_hostname: true
+      manage_etc_hosts: true
+----
+
+=== Advanced Certificate Configuration
+
+Satellite uses reencrypt termination with embedded certificates:
+
+[source,yaml]
+----
+    services:
+      - name: satellite-https
+        ports:
+          - port: 443
+            protocol: TCP
+            targetPort: 443
+            name: satellite-https
+    routes:
+      - name: satellite-https
+        host: satellite
+        service: satellite-https
+        targetPort: 443
+        tls: true
+        tls_termination: reencrypt
+        tls_destinationCACertificate: |
+          -----BEGIN CERTIFICATE-----
+          # Replace with your actual certificate
+          # This is a placeholder for documentation purposes
+          # Generate your certificate using:
+          # openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes
+          -----END CERTIFICATE-----
+----
+
+=== Per-VM Terminal Access
+
+Satellite labs provide dedicated terminal access for each VM:
+
+[source,yaml]
+----
+tabs:
+  - name: "Satellite Web UI"
+    url: https://satellite-${guid}.${domain}/
+  - name: "satellite.lab terminal"
+    url: /wetty_satellite/ssh/root      # VM-specific wetty endpoint
+  - name: "rhel1.lab terminal"
+    url: /wetty_rhel1/ssh/root
+  - name: "rhel2.lab terminal"
+    url: /wetty_rhel2/ssh/root
+  - name: "Satellite 2 Web UI"
+    url: https://satellite-2-${guid}.${domain}/
+  - name: "satellite-2.lab terminal"
+    url: /wetty_satellite-2/ssh/root
+----
+
+== Ansible Automation Platform Patterns
+
+AAP labs demonstrate container integration, multi-platform environments, and complex automation scenarios.
+
+=== Container + VM Hybrid Architecture
+
+Modern labs combine containers and VMs for realistic architectures:
+
+[source,yaml]
+----
+# Gitea container for source control
+containers:
+  - name: gitea
+    image: gitea/gitea:1.16.8-rootless
+    ports:
+      - name: gitea
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      GITEA__DEFAULT__RUN_MODE: dev
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+    commands:                           # Container initialization
+      - gitea admin user create --admin --username gitea --password gitea --email dummy@dummy.com --must-change-password=false
+      - >
+        curl -X POST -H "accept: application/json" -H "Content-Type: application/json"
+        -u 'gitea:gitea' 
+        -d '{"username": "student", "full_name": "student", "description": "student"}'
+        http://localhost:3000/api/v1/orgs
+      - >
+        curl -X POST -H "accept: application/json" -H "Content-Type: application/json"
+        -u 'gitea:gitea'
+        -d '{"clone_addr": "https://github.com/ansible-tmm/aap25-roadshow", "repo_name": "aap25-roadshow-content", "owner": "student", "uid": 2, "private": false}'
+        http://localhost:3000/api/v1/repos/migrate
+    memory: 2Gi
+    services:
+      - name: gitea
+        ports:
+          - port: 3000
+            protocol: TCP
+            targetPort: 3000
+            name: gitea
+    routes:
+      - name: gitea
+        host: gitea
+        service: gitea
+        targetPort: 3000
+        tls: true
+        tls_termination: Edge
+
+# AAP Control VM
+virtualmachines:
+  - name: "control"
+    image: "base-zero-aap-2.5-container-ce"
+    memory: "16G"                       # Large for AAP controller
+    cores: 4
+    image_size: "30Gi"
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"               # Pre-configured, no automation
+    networks:
+      - default
+----
+
+=== Isolated VM Pattern
+
+Enterprise images often come pre-configured and shouldn't be modified by automation:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "control"
+    image: "base-zero-aap-2.5-container-ce"  # Pre-built AAP image
+    memory: "16G"
+    cores: 4
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"               # Key pattern: no automation
+    userdata: |-
+      #cloud-config
+      user: rhel
+      password: {{ common_password }}
+      chpasswd: { expire: False }
+      runcmd:
+        - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
+        - systemctl reload sshd
+----
+
+=== Multi-Platform Environment
+
+Real environments include Linux and Windows systems:
+
+[source,yaml]
+----
+  # Linux nodes
+  - name: "node01"
+    image: "rhel-9.5"
+    memory: "2G"
+    cores: 2
+    
+  - name: "node02"
+    image: "rhel-8.7"                  # Different RHEL versions
+    memory: "2G"
+    cores: 2
+    
+  # Windows server
+  - name: "windows"
+    image: "base-windows-ad-2022"
+    memory: "16G"                      # Windows requires more memory
+    cores: 4
+    image_size: "60Gi"                 # Larger disk for Windows
+    interface_model: "e1000e"          # Windows compatibility
+    tags:
+      - key: "AnsibleGroup"
+        value: "isolated"
+    services:
+      - name: windows-rdp              # RDP access
+        ports:
+          - port: 3389
+            protocol: TCP
+            targetPort: 3389
+            name: windows-rdp
+      - name: iis                      # Web server
+        ports:
+          - port: 80
+            protocol: TCP
+            targetPort: 80
+            name: iis
+----
+
+=== Module-Specific UI Configuration
+
+Advanced labs show different tabs based on the current module:
+
+[source,yaml]
+----
+tabs:
+  - name: aap
+    url: https://control-${guid}.${domain}/
+    modules:                          # Only show on these modules
+      - module-1-1-understanding-zero-touch
+      - module-1-2-template-structure  
+      - module-1-3-configuration-files
+    external: false
+    
+  - name: Report Server
+    url: https://node03-${guid}.${domain}/index.html
+    external: true                    # Opens in new window
+    modules:
+     - module-2-1-single-vm-setup    # Only on this module
+     
+  - name: Windows UI
+    url: https://windows-${guid}.${domain}/
+    external: true
+    modules:
+     - module-2-2-basic-networking    # Only on this module
+----
+
+== Advanced Configuration Patterns
+
+=== Cloud-Init Variations
+
+Different VMs may require different cloud-init configurations:
+
+[source,yaml]
+----
+# Standard RHEL configuration
+userdata: |-
+  #cloud-config
+  user: rhel
+  password: {{ common_password }}
+  chpasswd: { expire: False }
+  runcmd:
+    - sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/" /etc/ssh/sshd_config
+    - systemctl reload sshd
+
+# Alternative SSH configuration method
+userdata: |-
+  #cloud-config
+  user: rhel
+  password: {{ common_password }}
+  chpasswd: { expire: False }  
+  runcmd:
+    - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf
+    - systemctl reload sshd
+
+# FQDN-focused configuration (Satellite)
+userdata: |
+  #cloud-config
+  fqdn: satellite.lab
+  hostname: satellite
+  prefer_fqdn_over_hostname: true
+  manage_etc_hosts: true
+----
+
+=== Interface Model Considerations
+
+Some images require specific network interface models:
+
+[source,yaml]
+----
+# Windows VMs often need e1000e
+- name: "windows"
+  image: "base-windows-ad-2022"
+  interface_model: "e1000e"           # Required for Windows compatibility
+  
+# Some AAP images may need SCSI disks (commented examples)
+- name: "control"
+  image: "base-zero-aap-2.5-container-ce"
+  # disk_type: "scsi"                # Uncomment if needed
+  # bootloader: "efi"                # May be required
+----
+
+=== Comprehensive Resource Planning
+
+Enterprise labs require careful resource planning:
+
+[source,yaml]
+----
+# Total lab resources example:
+# - Satellite: 32G + 8 cores = Primary workload
+# - Satellite-2: 32G + 8 cores = Secondary workload  
+# - Control (AAP): 16G + 4 cores = Automation platform
+# - Windows: 16G + 4 cores = Windows workloads
+# - Linux nodes: 4G + 2 cores each = Managed systems
+# - Containers: 2G shared = Supporting services
+#
+# Total: ~100G memory, 30+ cores for complete environment
+----
+
+== Best Practices for Enterprise Labs
+
+=== Resource Management
+
+✅ **Plan for Scale**: Enterprise labs often need 50G+ total memory  
+✅ **Use Isolation**: Mark pre-built VMs as `isolated` to prevent automation conflicts  
+✅ **FQDN Configuration**: Always set proper hostnames for enterprise applications  
+✅ **Certificate Management**: Use reencrypt termination for self-signed certificates  
+
+=== Multi-Platform Considerations
+
+✅ **Interface Compatibility**: Use `e1000e` for Windows VMs  
+✅ **OS Diversity**: Include different RHEL versions to simulate real environments  
+✅ **Container Integration**: Combine containers and VMs for modern architectures  
+✅ **External Applications**: Use `external: true` for apps that need new windows  
+
+=== UI/UX Design
+
+✅ **Module-Specific Tabs**: Show only relevant interfaces per module  
+✅ **Per-VM Access**: Provide dedicated terminal access for each system  
+✅ **Descriptive Naming**: Use service-oriented tab names ("Satellite Web UI")  
+✅ **Platform Variables**: Always use `${guid}` and `${domain}` for URLs  
+
+=== Content Structure
+
+✅ **Progressive Complexity**: Start simple, add enterprise features gradually  
+✅ **Real-World Scenarios**: Mirror actual enterprise architectures  
+✅ **Validation Points**: Include checks for enterprise-specific functionality  
+✅ **Troubleshooting**: Document common enterprise configuration issues  
+
+== Migration from Basic to Enterprise
+
+=== Adding Enterprise Features to Basic Labs
+
+. **Resource Scaling**: Increase memory/CPU for enterprise applications
+. **Certificate Configuration**: Add TLS reencrypt termination  
+. **FQDN Setup**: Configure proper hostnames via cloud-init
+. **Isolation Patterns**: Mark appropriate VMs as isolated
+. **Multi-Platform**: Add Windows or container components
+. **Module-Specific UI**: Implement conditional tab visibility
+
+=== Example Migration
+
+**Basic Lab**:
+[source,yaml]
+----
+virtualmachines:
+  - name: "rhel"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 1
+----
+
+**Enterprise Version**:
+[source,yaml]
+----
+virtualmachines:
+  - name: "satellite"
+    image: "satellite-server-rhdp-1-6-17-07-30-25"
+    bootloader: efi
+    register_satellite: false
+    memory: "32G"
+    cores: 8
+    image_size: "540G"
+    userdata: |
+      #cloud-config
+      fqdn: satellite.lab
+      hostname: satellite
+      prefer_fqdn_over_hostname: true
+      manage_etc_hosts: true
+    services:
+      - name: satellite-https
+        ports:
+          - port: 443
+            protocol: TCP
+            targetPort: 443
+    routes:
+      - name: satellite-https
+        host: satellite
+        service: satellite-https
+        targetPort: 443
+        tls: true
+        tls_termination: reencrypt
+        tls_destinationCACertificate: |
+          -----BEGIN CERTIFICATE-----
+          # Replace with your actual certificate
+          # This is a placeholder for documentation purposes
+          # Generate your certificate using:
+          # openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes
+          -----END CERTIFICATE-----
+----
+
+== Related Documentation
+
+* xref:production-patterns-guide.adoc[Production Lab Patterns Guide]
+* xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
+* xref:adding-instances.adoc[Adding Instances and Containers]
+* xref:configuring-networking.adoc[Configuring Networking]

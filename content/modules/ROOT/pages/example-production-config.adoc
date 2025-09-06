@@ -1,0 +1,270 @@
+= Example: Converting to Production Patterns
+
+This example shows how to convert our training lab configuration to match production patterns found in actual Zero Touch labs.
+
+== Current Training Configuration
+
+Our current configuration uses descriptive naming and educational structure:
+
+.instances.yaml (Training Style)
+[source,yaml]
+----
+virtualmachines:
+  - name: "control-server"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+      - frontend
+      - backend
+    packages:
+      - curl
+      - telnet
+      - nmap
+    tags:
+      - key: "Role"
+        value: "Management"
+----
+
+.ui-config.yml (Training Style)
+[source,yaml]
+----
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: module-1-1-understanding-zero-touch
+      label: "Understanding Zero Touch"
+      solveButton: true
+
+tabs:
+  - name: ">_ control"
+    url: /wetty
+    path: /ssh/control-server
+----
+
+== Production Pattern Conversion
+
+Here's how the same configuration would look using production patterns:
+
+.instances.yaml (Production Style)
+[source,yaml]
+----
+---
+virtualmachines:
+  - name: "rhel"                        # Simple naming
+    image: "rhel-10-0-07-09-25-3"       # Specific image version
+    bootloader: efi                     # Required for newer images
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    tags:
+      - key: "AnsibleGroup"             # Standard automation tag
+        value: "bastions"
+    networks:
+      - default
+    packages:
+      - curl
+      - telnet
+      - nmap
+      - cockpit                         # Common web console
+    services:                           # Define web services
+      - name: cockpit
+        ports:
+          - port: 9090
+            protocol: TCP
+            targetPort: 9090
+            name: cockpit
+    routes:                             # Define external routes
+      - name: cockpit
+        host: cockpit
+        service: cockpit
+        targetPort: 9090
+        tls: true
+        tls_termination: Edge
+----
+
+.ui-config.yml (Production Style)  
+[source,yaml]
+----
+---
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: "01-system-exploration"      # Numbered naming
+      label: "System Exploration"       # Concise labels
+      solveButton: false               # Explicit setting
+    - name: "02-network-configuration"
+      label: "Network Configuration"
+      solveButton: false
+
+tabs:
+  - name: ">_ terminal"                 # Standard naming
+    url: /wetty/ssh/root               # Direct SSH path
+  - name: "RHEL Web Console"           # Descriptive service name
+    url: https://cockpit-${guid}.${domain}/   # Platform variables
+----
+
+.Content Files (Production Style)
+[source,text]
+----
+content/modules/ROOT/pages/
+├── 01-system-exploration.adoc         # Numbered sequence
+├── 02-network-configuration.adoc
+├── 03-package-management.adoc
+└── 04-validation.adoc
+----
+
+== Key Differences Explained
+
+=== VM Configuration
+
+[cols="2,3,3"]
+|===
+|Aspect |Training Pattern |Production Pattern
+
+|**VM Names**
+|Descriptive (`control-server`)
+|Simple (`rhel`)
+
+|**Images**
+|Generic (`rhel-9.6`)
+|Specific (`rhel-10-0-07-09-25-3`)
+
+|**Boot**
+|Default BIOS
+|Explicit EFI (`bootloader: efi`)
+
+|**Tags**
+|Descriptive (`Role: Management`)
+|Automation-focused (`AnsibleGroup: bastions`)
+
+|**Services**
+|Optional
+|Always defined for web apps
+
+|**Routes**
+|Basic
+|Full TLS configuration
+|===
+
+=== UI Configuration
+
+[cols="2,3,3"]
+|===
+|Aspect |Training Pattern |Production Pattern
+
+|**Module Names**
+|Descriptive (`understanding-zero-touch`)
+|Numbered (`01-system-exploration`)
+
+|**Labels**
+|Educational ("Understanding Zero Touch")
+|Functional ("System Exploration")
+
+|**Solve Buttons**
+|Often enabled (`true`)
+|Usually disabled (`false`)
+
+|**Terminal Access**
+|Path-based (`/wetty` + path)
+|Direct (`/wetty/ssh/root`)
+
+|**URLs**
+|Static
+|Dynamic with variables (`${guid}`, `${domain}`)
+|===
+
+=== Content Structure
+
+[cols="2,3,3"]
+|===
+|Aspect |Training Pattern |Production Pattern
+
+|**File Names**
+|module-X-Y-topic.adoc
+|01-topic.adoc
+
+|**Content Style**
+|Detailed explanations
+|Concise, action-focused
+
+|**Code Blocks**
+|Basic syntax highlighting
+|`role=execute` for interaction
+
+|**Output Examples**
+|Minimal
+|Comprehensive with expected results
+|===
+
+== When to Use Each Pattern
+
+=== Use Training Patterns For:
+- Self-paced learning materials
+- Template documentation  
+- Multi-part educational content
+- Concept explanation and theory
+
+=== Use Production Patterns For:
+- Customer-facing labs
+- Conference demonstrations
+- Product integration
+- Automated deployment scenarios
+
+== Migration Steps
+
+To convert training configuration to production:
+
+=== 1. Update VM Configuration
+[source,bash]
+----
+# Change VM names to simple format
+sed -i 's/control-server/rhel/g' config/instances.yaml
+
+# Add EFI bootloader
+# Add this line after each VM image specification:
+#   bootloader: efi
+
+# Update tags to use AnsibleGroup
+# Change Role/Purpose tags to:
+#   - key: "AnsibleGroup"
+#     value: "bastions"
+----
+
+=== 2. Update UI Configuration
+[source,bash]
+----
+# Rename content files to numbered format
+mv content/modules/ROOT/pages/module-1-1-understanding-zero-touch.adoc \
+   content/modules/ROOT/pages/01-understanding-zero-touch.adoc
+
+# Update ui-config.yml module references
+# Change module names to match new file names
+----
+
+=== 3. Update Content Style
+- Add `role=execute` to interactive code blocks
+- Include expected output sections
+- Make explanations more concise
+- Add `.Command` and `.Output` section labels
+
+=== 4. Add Production Features
+- Include `services` and `routes` for web applications
+- Use platform variables in URLs (`${guid}`, `${domain}`)
+- Add comprehensive package lists
+- Configure TLS termination for routes
+
+== Hybrid Approach
+
+For this template, we recommend keeping both patterns:
+
+- **Training modules** for learning the platform
+- **Production examples** for real-world implementation
+- **Migration guidance** for converting between styles
+- **Utilities** for local development and testing
+
+This approach serves both educational and practical needs effectively.

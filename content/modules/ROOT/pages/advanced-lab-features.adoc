@@ -1,0 +1,432 @@
+= Advanced Lab Features and Special Cases
+
+This guide covers advanced features and special configurations needed for specific lab scenarios, including Business Unit requirements and complex use cases.
+
+== Overview
+
+Beyond basic template customization, some labs require specialized configurations for:
+
+* **Business Unit Requirements**: Specific features needed by RHEL, Ansible, and other teams
+* **Advanced Networking**: Complex routing and certificate handling
+* **Specialized Workloads**: Satellite, bootc images, and enterprise applications
+* **Integration Requirements**: Satellite registration, pull secrets, and authentication
+
+== Platform Architecture
+
+The Zero Touch platform consists of several integrated components:
+
+=== Core Components
+
+* **git-cloner**: Clones lab repositories into shared storage
+* **antora-builder**: Builds educational content from AsciiDoc sources
+* **zerotouch-automation/cli**: Runs setup and automation scripts
+* **zerotouch-automation/api**: Handles runtime module execution
+* **nookbag**: Lab interface with progress tracking and navigation
+* **caddy**: Reverse proxy and static file server
+* **wetty**: Web-based terminal access
+
+=== Data Flow
+
+. Repository is cloned during lab provisioning
+. Antora builds static content from source
+. Automation scripts configure lab environment
+. User accesses lab through integrated web interface
+. Runtime API handles step validation and progression
+
+== Advanced Instance Features
+
+=== Backend Configuration
+
+==== SSH Root Login
+
+Enable SSH root access for wetty terminal integration:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "control-node"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    userdata: |
+      #cloud-config
+      users:
+        - name: root
+          ssh_authorized_keys:
+            - ssh-rsa AAAAB3... # Lab SSH key
+      runcmd:
+        - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+        - systemctl restart sshd
+    networks:
+      - default
+----
+
+==== VirtIO Networking
+
+Default interface configuration for consistent naming:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "rhel-server"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    # VirtIO is default - interface will be enp1s0
+    networks:
+      - default
+----
+
+=== Special Lab Scenarios
+
+==== Bootc Image Mode Labs
+
+For labs converting VMs to image mode (bootc), special handling is required:
+
+[source,yaml]
+----
+# In setup-automation/main.yml
+- name: Fetch private SSH key before bootc conversion
+  ansible.builtin.slurp:
+    src: "/home/rhel/.ssh/{{ guid }}key.pem"
+  register: r_slurp
+
+- name: Save SSH key for later use
+  ansible.builtin.copy:
+    dest: "/tmp/{{ guid }}key.pem"
+    content: "{{ r_slurp['content'] | b64decode }}"
+    mode: 0600
+  delegate_to: localhost
+
+- name: Preserve /etc/hosts configuration
+  ansible.builtin.slurp:
+    src: "/etc/hosts"
+  register: r_etc_hosts
+
+# After bootc conversion, recreate users and configuration
+- name: Recreate rhel user after bootc conversion
+  ansible.builtin.user:
+    name: rhel
+    password: "{{ rhel_user_password | password_hash('sha512') }}"
+    state: present
+    shell: /bin/bash
+    create_home: yes
+    home: /home/rhel
+    groups: wheel
+    append: yes
+
+- name: Enable root SSH access
+  ansible.builtin.copy:
+    content: |
+      PermitRootLogin yes
+    dest: /etc/ssh/sshd_config.d/ansible_permit_root_login.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restore /etc/hosts
+  ansible.builtin.copy:
+    src: /tmp/hosts
+    dest: /etc/hosts
+----
+
+==== Satellite Registration for Ansible Labs
+
+Ansible Business Unit images require Satellite registration:
+
+[source,yaml]
+----
+# In setup-automation/main.yml
+vars:
+  satellite_url: "{{ lookup('ansible.builtin.env', 'SATELLITE_URL') }}"
+  satellite_org: "{{ lookup('ansible.builtin.env', 'SATELLITE_ORG') }}"
+  satellite_activationkey: "{{ lookup('ansible.builtin.env', 'SATELLITE_ACTIVATIONKEY') }}"
+
+tasks:
+  - name: Execute setup script with Satellite variables
+    shell: "sh -x /tmp/setup-scripts/setup-{{ ansible_host }}.sh > /tmp/setup-scripts/setup-{{ ansible_host }}.log 2>&1"
+    become: true
+    register: r_result
+    environment:
+      SATELLITE_URL: "{{ satellite_url }}"
+      SATELLITE_ORG: "{{ satellite_org }}"
+      SATELLITE_ACTIVATIONKEY: "{{ satellite_activationkey }}"
+----
+
+==== Registry Pull Secrets
+
+For accessing Red Hat registry images:
+
+[source,yaml]
+----
+# In setup-automation/main.yml
+- name: Execute setup with registry credentials
+  shell: "sh -x /tmp/setup-scripts/setup-{{ ansible_host }}.sh > /tmp/setup-scripts/setup-{{ ansible_host }}.log 2>&1"
+  become: true
+  register: r_result
+  environment:
+    REGISTRY_PULL_TOKEN: "{{ lookup('ansible.builtin.env', 'REGISTRY_PULL_TOKEN') }}"
+    GUID: "{{ lookup('ansible.builtin.env', 'GUID') }}"
+    DOMAIN: "{{ lookup('ansible.builtin.env', 'DOMAIN') }}"
+----
+
+== Advanced Networking Features
+
+=== Reencrypt Routes
+
+For services with self-signed certificates, use reencrypt termination:
+
+[source,yaml]
+----
+# In instances.yaml
+virtualmachines:
+  - name: "control-server"
+    image: "rhel-9.6"
+    memory: "4G"
+    cores: 2
+    image_size: "40G"
+    networks:
+      - default
+    services:
+      - name: control-https
+        ports:
+          - port: 443
+            protocol: TCP
+            targetPort: 443
+            name: https
+    routes:
+      - name: control-https
+        host: control
+        service: control-https
+        targetPort: 443
+        tls: true
+        tls_termination: reencrypt
+        tls_destinationCACertificate: |
+          -----BEGIN CERTIFICATE-----
+          # Replace with your actual certificate
+          # This is a placeholder for documentation purposes
+          # Generate your certificate using:
+          # openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes
+          -----END CERTIFICATE-----
+----
+
+=== DNS and FQDN Configuration
+
+Configure proper hostnames and DNS resolution:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "satellite"
+    image: "satellite-server-latest"
+    memory: "8G"
+    cores: 4
+    image_size: "100G"
+    userdata: |
+      #cloud-config
+      fqdn: satellite.lab
+      hostname: satellite
+      prefer_fqdn_over_hostname: true
+      manage_etc_hosts: true
+    networks:
+      - default
+----
+
+Testing DNS resolution:
+[source,bash]
+----
+[rhel@control ~]$ ping node01.lab
+PING node01.lab.sandbox-kvwkp-ocp4-cluster.svc.cluster.local (10.131.8.249) 56(84) bytes of data.
+64 bytes from 10-131-8-249.node01-http.sandbox-kvwkp-ocp4-cluster.svc.cluster.local (10.131.8.249): icmp_seq=1 ttl=62 time=3.33 ms
+----
+
+=== Iframe Support
+
+Remove X-Frame-Options headers for embedded applications:
+
+[source,yaml]
+----
+# In routes configuration
+routes:
+  - name: satellite-web
+    host: satellite
+    service: satellite-web
+    targetPort: 443
+    tls: true
+    tls_termination: reencrypt
+    httpHeaders:
+      actions:
+        response:
+          - name: X-Frame-Options
+            action:
+              type: Delete
+----
+
+== Advanced Container Features
+
+=== Container Initialization Commands
+
+Execute commands after container startup:
+
+[source,yaml]
+----
+containers:
+  - name: gitea
+    image: quay.io/agonzalezrh/gitea:1.16.8-rootless
+    ports:
+      - name: gitea
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      GITEA__DEFAULT__RUN_MODE: dev
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__security__INSTALL_LOCK: "true"
+    commands:
+      - gitea admin user create --admin --username gitea --password gitea --email dummy@dummy.com --must-change-password=false
+      - |
+        curl -X POST -H "accept: application/json" -H "Content-Type: application/json" \
+             -u 'gitea:gitea' \
+             -d '{"username": "student", "full_name": "student", "description": "student"}' \
+             http://localhost:3000/api/v1/orgs
+    volumes:
+      - name: gitea-data
+        emptyDir: {}
+    memory: 2Gi
+----
+
+=== Complex Container Configurations
+
+Example Kafka broker with full configuration:
+
+[source,yaml]
+----
+containers:
+  - name: broker
+    image: confluentinc/cp-kafka:7.0.1
+    ports:
+      - name: broker
+        containerPort: 9092
+        protocol: TCP
+    environment:
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_BROKER_ID: "1"
+    volumeMounts:
+      - name: kafka-varlog
+        mountPath: /var/log/kafka/
+    volumes:
+      - name: kafka-varlog
+        emptyDir: {}
+    memory: 4Gi
+----
+
+== Troubleshooting Common Issues
+
+=== Instance Configuration Problems
+
+==== Boot Loader Issues
+
+**Problem**: VM fails to boot with EFI-configured images
+**Solution**: Ensure `bootloader: efi` is set for Business Unit provided images
+
+==== Disk Type Compatibility
+
+**Problem**: Windows or Ansible BU images fail with VirtIO disks
+**Solution**: Use `disk_type: "scsi"` for compatibility
+
+==== Network Interface Naming
+
+**Problem**: Scripts expect specific interface names
+**Solution**: Use VirtIO (default) for `enp1s0` or configure cloud-init networking
+
+=== Container Issues
+
+==== Registry Access
+
+**Problem**: Cannot pull images from registry.redhat.io
+**Solution**: Ensure `REGISTRY_PULL_TOKEN` environment variable is set
+
+==== Command Execution
+
+**Problem**: Container initialization commands fail
+**Solution**: Check command syntax and ensure dependencies are available
+
+=== Networking Problems
+
+==== Certificate Issues
+
+**Problem**: Self-signed certificate warnings
+**Solution**: Use `tls_termination: reencrypt` with proper CA certificate
+
+==== DNS Resolution
+
+**Problem**: Services cannot resolve `.lab` hostnames
+**Solution**: Configure DNS search domains and verify cloud-init FQDN settings
+
+==== Iframe Blocking
+
+**Problem**: Web applications cannot be embedded
+**Solution**: Remove `X-Frame-Options` header using route configuration
+
+=== Authentication and Access
+
+==== SSH Access Issues
+
+**Problem**: Cannot SSH to instances as root
+**Solution**: Configure SSH root login and password authentication
+
+==== Satellite Registration
+
+**Problem**: Cannot install packages on Ansible BU instances
+**Solution**: Configure Satellite registration variables in setup automation
+
+== Best Practices
+
+=== Security
+
+* Use strong passwords in cloud-init configurations
+* Limit SSH access to necessary users
+* Configure proper certificate handling for HTTPS services
+* Use isolated node configuration for pre-built images
+
+=== Performance
+
+* Allocate appropriate resources based on workload requirements
+* Use VirtIO for networking unless compatibility requires SCSI
+* Configure proper memory limits for containers
+* Monitor resource usage during lab execution
+
+=== Maintenance
+
+* Document special configurations and their purposes
+* Test lab scenarios thoroughly before deployment
+* Keep track of Business Unit specific requirements
+* Version control all configuration changes
+
+=== Development Workflow
+
+* Start with basic configurations and add complexity incrementally
+* Test each component independently before integration
+* Use descriptive names for instances, networks, and services
+* Follow naming conventions for consistency
+
+== Related Documentation
+
+* xref:adding-instances.adoc[Adding Instances and Containers]
+* xref:configuring-networking.adoc[Configuring Networking]
+* xref:configuring-firewall.adoc[Configuring Firewall Rules]
+* xref:creating-content.adoc[Creating Lab Content and UI Configuration]
+* xref:template-customization-guide.adoc[Template Customization Guide]
+
+== External Resources
+
+* https://github.com/rhpds/zerotouch-automation[Zero Touch Automation Repository]
+* https://github.com/rhpds/nookbag/[Nookbag Lab Interface]
+* https://docs.antora.org/[Antora Documentation Generator]
+* https://cloud-init.io/[Cloud-Init Documentation]

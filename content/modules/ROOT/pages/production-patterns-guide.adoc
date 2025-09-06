@@ -1,0 +1,198 @@
+= Production Lab Patterns Guide
+
+Based on analysis of actual converted Zero Touch labs, this guide shows the patterns used in production environments and how they differ from our training examples.
+
+== Key Production Patterns
+
+=== File Naming Conventions
+
+**Production Pattern** (recommended for actual labs):
+[source,text]
+----
+content/modules/ROOT/pages/
+├── 01-installation.adoc
+├── 02-configuration.adoc  
+├── 03-testing.adoc
+└── 04-validation.adoc
+----
+
+**Training Pattern** (good for learning):
+[source,text]
+----
+content/modules/ROOT/pages/
+├── module-1-1-understanding-concepts.adoc
+├── module-1-2-basic-setup.adoc
+└── module-2-1-hands-on-practice.adoc
+----
+
+=== VM Configuration Patterns
+
+**Production instances.yaml**:
+[source,yaml]
+----
+---
+virtualmachines:
+  - name: "rhel"                        # Simple, consistent naming
+    image: "rhel-10-0-07-09-25-3"       # Specific image versions
+    bootloader: efi                     # Always include for newer images
+    memory: "4G"
+    cores: 1
+    image_size: "40G"
+    tags:
+      - key: "AnsibleGroup"             # Consistent automation tag
+        value: "bastions"
+    networks:
+      - default
+    packages:                           # Pre-install required packages
+      - cockpit
+      - tmux
+    services:                           # Define services for web apps
+      - name: cockpit
+        ports:
+          - port: 9090
+            protocol: TCP
+            targetPort: 9090
+            name: cockpit
+    routes:                             # Define routes for external access
+      - name: cockpit
+        host: cockpit
+        service: cockpit
+        targetPort: 9090
+        tls: true
+        tls_termination: Edge
+----
+
+=== UI Configuration Patterns
+
+**Production ui-config.yml**:
+[source,yaml]
+----
+---
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: "01-installation"           # Match file naming
+      label: "Installation"            # Short, clear labels
+      solveButton: false              # Explicitly set (usually false)
+    - name: "02-configuration"
+      label: "Configuration"
+      solveButton: false
+
+tabs:
+  - name: ">_ terminal"                 # Standard terminal naming
+    url: /wetty/ssh/root               # Direct SSH path
+  - name: "RHEL Web Console"           # Descriptive service names
+    url: https://cockpit-${guid}.${domain}/   # Use platform variables
+----
+
+=== Content Style Patterns
+
+**Production AsciiDoc Style**:
+[source,asciidoc]
+----
+Install the network analysis application using DNF:
+
+.Command
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+dnf -y install wireshark
+----
+
+.Expected Output
+[source,text]
+----
+Dependencies resolved.
+==========================================================
+ Package           Arch    Version        Repository    Size
+==========================================================
+Installing:
+ wireshark         x86_64  1:4.4.2-3.el10 appstream    4.6 M
+----
+
+NOTE: The `-y` option automatically answers yes to prompts.
+----
+
+Key differences:
+- More concise explanations
+- `role=execute` for copy-run functionality
+- Include expected output sections
+- Use `.Command` and `.Expected Output` labels
+
+== Utility Scripts Pattern
+
+Production labs include a `utilities/` directory with development scripts:
+
+[source,bash]
+----
+# Example development commands
+antora generate       # Build documentation
+antora serve          # Test locally
+----
+
+**Example lab-serve script**:
+[source,bash]
+----
+#!/usr/bin/env bash
+CONTAINER_CMD="docker"
+if command -v podman &> /dev/null; then
+    CONTAINER_CMD="podman"
+fi
+$CONTAINER_CMD run -d --rm --name showroom-httpd \
+  -p 8443:80 -v "./www:/usr/local/apache2/htdocs/" \
+  docker.io/httpd:2.4
+echo "Serving lab content on http://localhost:8443/index.html"
+----
+
+== When to Use Each Pattern
+
+=== Use Training Patterns For:
+- ✅ **Learning materials** and self-paced training
+- ✅ **Template documentation** and guides  
+- ✅ **Multi-part educational series**
+- ✅ **Complex concept explanation**
+
+=== Use Production Patterns For:
+- ✅ **Customer-facing labs** and demos
+- ✅ **Conference workshops** and events
+- ✅ **Product documentation** integration
+- ✅ **Automated lab deployment**
+
+== Migration Checklist
+
+To convert our training template to production patterns:
+
+**File Structure**:
+- [ ] Rename content files to `01-*.adoc`, `02-*.adoc` format
+- [ ] Update module names in `ui-config.yml` to match
+- [ ] Add development scripts as needed for your specific lab
+
+**VM Configuration**:
+- [ ] Simplify VM names (`rhel` instead of `control-server`)
+- [ ] Add `bootloader: efi` to all VMs
+- [ ] Add `AnsibleGroup: bastions` tag
+- [ ] Include `services` and `routes` for web applications
+- [ ] Use specific image versions instead of generic ones
+
+**UI Configuration**:
+- [ ] Change terminal URLs to `/wetty/ssh/root`
+- [ ] Use platform variables `${guid}` and `${domain}`
+- [ ] Set `solveButton: false` explicitly
+- [ ] Use descriptive tab names
+
+**Content Style**:
+- [ ] Add `role=execute` to interactive code blocks
+- [ ] Include `.Command` and `.Expected Output` sections
+- [ ] Make explanations more concise and direct
+- [ ] Add helpful notes and tips
+
+== Hybrid Approach Recommendation
+
+For this template, consider a **hybrid approach**:
+
+1. **Keep training structure** for learning modules (1.1, 1.2, etc.)
+2. **Add production examples** showing the converted patterns
+3. **Include both styles** in reference documentation
+4. **Provide migration guidance** for moving from training to production
+
+This gives users the best of both worlds: comprehensive learning and production-ready patterns.
