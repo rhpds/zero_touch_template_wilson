@@ -27,38 +27,58 @@ antora:
       label: "2.2 Basic Networking"
       solveButton: false
     - name: module-2-3-simple-content
-      label: "2.3 Simple Content"
+      label: "2.3 Simple Content Creation"
       solveButton: false
     - name: module-2-4-deploy-test
       label: "2.4 Deploy & Test"
       solveButton: false
+    - name: module-2-5-containers-deep-dive
+      label: "2.5 Containers Deep Dive"
+      solveButton: false
     
-    # Core Reference Guides
+    # Quick Reference Guides (15-20 min each)
+    - name: vm-basics
+      label: "📖 VM Configuration Basics"
+      solveButton: false
+    - name: container-basics
+      label: "📖 Container Configuration Basics"
+      solveButton: false
+    - name: container-advanced
+      label: "📖 Advanced Container Configuration"
+      solveButton: false
+    - name: networking-basics
+      label: "📖 Networking Basics"
+      solveButton: false
+    - name: firewall-basics
+      label: "📖 Firewall Configuration Basics"
+      solveButton: false
+    - name: content-authoring-basics
+      label: "📖 Content Authoring Basics"
+      solveButton: false
+    
+    # Complete Reference Guides 
     - name: template-customization-guide
-      label: "📖 Template Customization Guide"
-      solveButton: false
-    - name: adding-instances
-      label: "📖 Adding Instances & Containers"
-      solveButton: false
-    - name: configuring-networking
-      label: "📖 Configuring Networking"
-      solveButton: false
-    - name: configuring-firewall
-      label: "📖 Configuring Firewall Rules"
-      solveButton: false
-    - name: creating-content
-      label: "📖 Creating Lab Content & UI"
-      solveButton: false
-    
-    # Advanced Patterns & Examples
-    - name: production-patterns-guide
-      label: "🏭 Production Lab Patterns"
-      solveButton: false
-    - name: enterprise-lab-patterns
-      label: "🏢 Enterprise Lab Patterns"
+      label: "📚 Template Customization Guide"
       solveButton: false
     - name: advanced-lab-features
-      label: "⚙️ Advanced Lab Features"
+      label: "📚 Advanced Lab Features"
+      solveButton: false
+    - name: production-patterns-guide
+      label: "📚 Production Lab Patterns"
+      solveButton: false
+    - name: enterprise-lab-patterns
+      label: "📚 Enterprise Lab Patterns"
+      solveButton: false
+    
+    # Platform Deep Dive
+    - name: deployment-architecture
+      label: "🏗️ Deployment Architecture"
+      solveButton: false
+    - name: git-integration-patterns
+      label: "🔄 Git Integration Patterns"
+      solveButton: false
+    - name: cnv-platform-features
+      label: "☸️ OpenShift CNV Platform Features"
       solveButton: false
     
     # Configuration Examples
@@ -68,10 +88,18 @@ antora:
     - name: example-enterprise-config
       label: "📋 Enterprise Config Example"
       solveButton: false
+    
+    # Development Environment
+    - name: vscode-development-environment
+      label: "💻 VS Code Development Environment"
+      solveButton: false
 
 tabs:
   - name: ">_ lab-server"
     url: /wetty/ssh/lab-server
+  - name: "💻 VS Code"
+    type: "website"
+    url: https://vscode-dev-${guid}.${domain}/
   - name: "Training Guide"
     type: "docs"
     url: /

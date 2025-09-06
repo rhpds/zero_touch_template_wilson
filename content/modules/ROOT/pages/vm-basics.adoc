@@ -1,0 +1,256 @@
+= VM Configuration Basics
+:estimated-time: 15-20 minutes
+
+== Overview
+
+Learn how to configure virtual machines for your lab environment by modifying the `config/instances.yaml` file. This guide covers essential VM setup and configuration.
+
+== Configuration File Structure
+
+The `instances.yaml` file defines your VMs and containers:
+
+[source,yaml]
+----
+---
+virtualmachines:
+  - name: "lab-server"
+    image: "rhel-9.6"
+    cores: 2
+    memory: "4G"
+    
+containers:
+  - name: "web-app"
+    image: "nginx:latest"
+----
+
+== Basic Virtual Machine Configuration
+
+=== Essential VM Parameters
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "web-server"           # Unique VM identifier
+    image: "rhel-9.6"           # Base OS image
+    cores: 2                    # CPU cores
+    memory: "4G"                # RAM allocation
+    image_size: "50G"           # Disk size
+----
+
+=== VM Configuration Parameters
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`name`
+|✅ Yes
+|Unique VM identifier (DNS-safe)
+
+|`image`  
+|✅ Yes
+|Operating system image name
+
+|`cores`
+|No
+|CPU cores (default: 1)
+
+|`memory`
+|No
+|RAM in GB format like "4G" (default: "2G")
+
+|`image_size`
+|No
+|Root disk size (default: "20G")
+
+|`networks`
+|No
+|List of networks to connect (default: ["default"])
+|===
+
+== Common VM Configurations
+
+=== Development Workstation
+
+[source,yaml]
+----
+- name: "dev-workstation"
+  image: "rhel-9.6"
+  cores: 4
+  memory: "8G"
+  image_size: "100G"
+  networks:
+    - default
+    - dev-network
+----
+
+=== Database Server
+
+[source,yaml]
+----
+- name: "postgres-db"
+  image: "rhel-9.6"
+  cores: 2
+  memory: "8G"
+  image_size: "200G"
+  networks:
+    - data-tier
+----
+
+=== Web Server
+
+[source,yaml]
+----
+- name: "apache-web"
+  image: "rhel-9.6"
+  cores: 2
+  memory: "4G"
+  networks:
+    - default
+    - web-tier
+----
+
+== Exposing Services
+
+Make services accessible from outside the lab:
+
+[source,yaml]
+----
+- name: "web-server"
+  image: "rhel-9.6"
+  cores: 2
+  memory: "4G"
+  services:
+    - name: web
+      ports:
+        - port: 80
+          protocol: TCP
+          targetPort: 80
+          name: http
+  routes:
+    - name: web
+      host: web
+      service: web
+      targetPort: 80
+      tls: true
+----
+
+This creates a web-accessible URL for your service.
+
+== User Configuration
+
+Set up default users with cloud-init:
+
+[source,yaml]
+----
+- name: "training-vm"
+  image: "rhel-9.6"
+  userdata: |
+    #cloud-config
+    users:
+      - name: student
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        lock_passwd: false
+        passwd: "{{ common_password | password_hash('sha512') }}"
+    
+    packages:
+      - vim
+      - git
+      - curl
+----
+
+== Multiple VMs Example
+
+Create a complete environment:
+
+[source,yaml]
+----
+---
+virtualmachines:
+  - name: "web-server"
+    image: "rhel-9.6" 
+    cores: 2
+    memory: "4G"
+    networks:
+      - default
+      - web-tier
+    services:
+      - name: http
+        ports:
+          - port: 80
+            protocol: TCP
+            targetPort: 80
+            name: http
+    routes:
+      - name: web
+        host: web
+        service: http
+        targetPort: 80
+        tls: true
+        
+  - name: "app-server"
+    image: "rhel-9.6"
+    cores: 4  
+    memory: "6G"
+    networks:
+      - web-tier
+      - app-tier
+      
+  - name: "database"
+    image: "rhel-9.6"
+    cores: 2
+    memory: "8G" 
+    image_size: "100G"
+    networks:
+      - app-tier
+----
+
+== Testing Your VMs
+
+After deployment, verify VM configuration:
+
+[source,bash]
+----
+# Check VM resources
+free -h                    # Memory
+nproc                     # CPU cores  
+df -h                     # Disk space
+
+# Test network connectivity
+ip addr show              # Network interfaces
+ping google.com           # Internet access
+----
+
+== Best Practices
+
+=== Resource Allocation
+* **Start small**: Begin with 2G RAM, expand as needed
+* **Monitor usage**: Use `htop` and `df -h` to check utilization
+* **Plan capacity**: Consider total resources across all VMs
+
+=== Naming Conventions
+* **Descriptive names**: `web-server` not `vm1`
+* **Environment prefixes**: `dev-web-server`, `prod-database`
+* **DNS-safe**: Use hyphens, not underscores
+
+=== Network Design
+* **Default access**: Include `default` network for internet
+* **Logical grouping**: Group related VMs on custom networks
+* **Security zones**: Separate tiers appropriately
+
+== Troubleshooting
+
+**VM won't start?**
+→ Check resource limits and image name
+
+**Can't access services?**
+→ Verify services and routes configuration
+
+**Out of memory?**
+→ Reduce VM memory or increase lab resources
+
+== Related Documentation
+
+* xref:networking-basics.adoc[Networking Basics] - Connect VMs to networks
+* xref:cnv-platform-features.adoc[OpenShift CNV Platform Features] - Advanced VM capabilities - EFI boot, cloud-init, etc.
+* xref:container-basics.adoc[Container Basics] - Add containers to your lab

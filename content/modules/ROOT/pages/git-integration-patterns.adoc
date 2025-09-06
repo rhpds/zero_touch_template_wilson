@@ -1,0 +1,284 @@
+= Git Integration Patterns
+
+Zero Touch labs use a sophisticated Git-based deployment system that dynamically fetches your lab configuration during deployment. Understanding these patterns is essential for advanced lab development.
+
+== 🔄 Dynamic Configuration Loading
+
+=== How It Works
+
+The deployment system fetches your configuration files directly from your Git repository using URL-based lookups:
+
+[source,yaml]
+----
+# From AgnosticV common.yaml
+git_config_directory: |-
+  {{ ocp4_workload_showroom_content_git_repo |
+    replace('.git','/refs/heads/' + ocp4_workload_showroom_content_git_repo_ref + '/config/') |
+    replace('github.com','raw.githubusercontent.com') }}
+
+# Dynamic loading of configuration files
+instances: "{{ lookup('ansible.builtin.url', git_config_directory + 'instances.yaml') | from_yaml }}"
+networks: "{{ lookup('ansible.builtin.url', git_config_directory + 'networks.yaml') | from_yaml }}"
+firewall_rules: "{{ lookup('ansible.builtin.url', git_config_directory + 'firewall.yaml') | from_yaml }}"
+----
+
+=== URL Transformation Example
+
+Given a repository: `https://github.com/rhpds/my-lab.git`
+
+**🔄 URL Transform**:
+```
+https://github.com/rhpds/my-lab.git
+         ↓ (replace .git with /refs/heads/main/config/)
+         ↓ (replace github.com with raw.githubusercontent.com)
+https://raw.githubusercontent.com/rhpds/my-lab/refs/heads/main/config/
+```
+
+**📁 File Access**:
+- `instances.yaml` → `https://raw.githubusercontent.com/.../config/instances.yaml`
+- `networks.yaml` → `https://raw.githubusercontent.com/.../config/networks.yaml`  
+- `firewall.yaml` → `https://raw.githubusercontent.com/.../config/firewall.yaml`
+
+== 🏗️ Repository Structure Requirements
+
+Your Git repository must follow this exact structure for the deployment system to find your configuration:
+
+[source,text]
+----
+your-lab-repo/
+├── config/                    ← Required directory name
+│   ├── instances.yaml         ← VM and container definitions
+│   ├── networks.yaml          ← Network configuration  
+│   └── firewall.yaml          ← Firewall rules
+├── content/                   ← Antora content
+├── setup-automation/          ← Pre-deployment scripts
+├── runtime-automation/        ← Runtime scripts
+├── site.yml                   ← Antora configuration
+└── ui-config.yml             ← UI settings
+----
+
+**⚠️ Critical**: The `config/` directory name and file names are hardcoded in the deployment system.
+
+== 🌟 Branch and Tag Strategy
+
+=== Development Workflow
+
+**🔧 Development Branch**: Use `main` or `development` for active development
+
+[source,yaml]
+----
+# In AgnosticV catalog entry
+ocp4_workload_showroom_content_git_repo: https://github.com/your-org/lab.git
+ocp4_workload_showroom_content_git_repo_ref: main
+----
+
+=== Production Deployment
+
+**🚀 Tagged Releases**: Use Git tags for production deployments
+
+[source,yaml]
+----
+# Production configuration
+ocp4_workload_showroom_content_git_repo_ref: v1.2.0
+----
+
+**📋 Tagging Best Practices**:
+```bash
+# Create semantic version tags
+git tag -a v1.0.0 -m "Release v1.0.0: Initial production release"
+git tag -a v1.1.0 -m "Release v1.1.0: Added advanced networking module"
+git push origin v1.1.0
+```
+
+=== Feature Branch Testing
+
+Test new features using feature branches:
+
+[source,yaml]
+----
+# Test branch configuration
+ocp4_workload_showroom_content_git_repo_ref: feature/new-vm-setup
+----
+
+== 🔒 Security Considerations
+
+=== Public Repository Access
+
+The deployment system accesses repositories via HTTPS without authentication:
+
+**✅ Supported**:
+- Public GitHub repositories
+- Public GitLab repositories  
+- Any publicly accessible Git hosting
+
+**❌ Not Supported**:
+- Private repositories requiring authentication
+- SSH-based Git URLs
+- Repositories behind VPNs or firewalls
+
+=== Sensitive Data Protection
+
+Since repositories are accessed publicly:
+
+**🔐 Never Include**:
+- Passwords or API keys
+- SSL certificates or private keys  
+- Personal or proprietary information
+- Production configuration secrets
+
+**✅ Use Instead**:
+- Placeholder values: `{{ common_password }}`
+- Template variables: `${guid}`, `${domain}`
+- Example/dummy data clearly marked
+- Environment-specific overrides in AgnosticV
+
+== 📊 Configuration Loading Patterns
+
+=== Error Handling
+
+The system gracefully handles missing files:
+
+[source,yaml]
+----
+# Safe loading with defaults
+containers: >-
+  {{ 
+    (lookup('ansible.builtin.url', git_config_directory + 'instances.yaml', 
+           split_lines=False, errors='warn') | 
+     default('{}') | from_yaml).containers | 
+    default([]) 
+  }}
+----
+
+**🛡️ Behavior**:
+- Missing files don't cause deployment failures
+- Invalid YAML files trigger warnings
+- Empty configurations use sensible defaults
+
+=== Caching and Performance
+
+**⚡ Caching**: Configuration files are cached during deployment
+**🔄 Updates**: Changes require new deployments to take effect
+**⏱️ Timeout**: URL lookups have built-in timeout protection
+
+== 🎯 Advanced Integration Patterns
+
+=== Multi-Environment Configuration
+
+Use Git branches for different environments:
+
+[source,text]
+----
+your-repo/
+├── main branch          → Development/testing
+├── staging branch       → Staging environment  
+├── production branch    → Production deployment
+└── v1.0.0 tag          → Stable release
+----
+
+=== Configuration Validation
+
+Add CI/CD validation to your repository:
+
+[source,yaml]
+----
+# .github/workflows/validate.yml
+name: Validate Configuration
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Validate YAML
+      run: |
+        yamllint config/*.yaml
+        # Custom validation scripts
+----
+
+=== Template Repositories
+
+Create reusable template repositories:
+
+[source,text]
+----
+template-repo/
+├── config/
+│   ├── instances.yaml.template
+│   ├── networks.yaml.template  
+│   └── firewall.yaml.template
+└── scripts/
+    └── customize-template.sh
+----
+
+== 🔧 Troubleshooting Git Integration
+
+=== Common Issues
+
+**❌ "Configuration not found"**
+- Check repository URL spelling
+- Verify branch/tag exists
+- Ensure `config/` directory exists
+- Confirm file names match exactly
+
+**❌ "Invalid YAML format"**  
+- Validate YAML syntax locally
+- Check for tabs vs spaces (use spaces)
+- Verify file encoding (UTF-8)
+- Test with `yamllint` tool
+
+**❌ "Network access error"**
+- Ensure repository is public
+- Check GitHub/GitLab service status
+- Verify raw content URLs work in browser
+
+=== Debugging Tools
+
+**🔍 Manual URL Testing**:
+```bash
+# Test your config URL directly
+curl -f https://raw.githubusercontent.com/your-org/lab/main/config/instances.yaml
+```
+
+**📋 YAML Validation**:
+```bash
+# Local validation
+yamllint config/instances.yaml
+python -c "import yaml; yaml.safe_load(open('config/instances.yaml'))"
+```
+
+**🌐 Browser Testing**:
+Navigate to raw GitHub URLs to verify accessibility and content.
+
+== 📈 Best Practices
+
+=== Repository Management
+
+**🏷️ Use Semantic Versioning**: `v1.0.0`, `v1.1.0`, `v2.0.0`
+**📝 Clear Commit Messages**: Describe configuration changes
+**🔀 Feature Branches**: Develop new features in isolation  
+**📋 Pull Requests**: Review configuration changes before merging
+
+=== Configuration Design
+
+**📦 Modular Structure**: Keep configuration files focused and clear
+**📚 Documentation**: Document configuration options inline
+**🧪 Testing**: Test configuration changes in development environment
+**🔒 Security**: Never commit sensitive information
+
+=== Deployment Strategy
+
+**🚀 Progressive Deployment**: Test → Staging → Production
+**🔄 Rollback Plan**: Keep stable tags for quick rollbacks
+**📊 Monitoring**: Monitor deployment success rates
+**📈 Version Control**: Track which versions are deployed where
+
+== 📚 Related Documentation
+
+* xref:deployment-architecture.adoc[Zero Touch Deployment Architecture]
+* xref:template-customization-guide.adoc[Template Customization Guide]
+* xref:module-1-3-configuration-files.adoc[1.3 Configuration Files]
+* xref:production-patterns-guide.adoc[Production Deployment Patterns]
+
+---
+**💡 Pro Tip**: The Git integration system is powerful but requires precise repository structure. Always test your repository URLs manually before deploying to ensure the deployment system can access your configuration files.

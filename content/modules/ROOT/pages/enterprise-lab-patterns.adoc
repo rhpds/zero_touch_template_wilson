@@ -161,7 +161,7 @@ containers:
         -u 'gitea:gitea'
         -d '{"clone_addr": "https://github.com/ansible-tmm/aap25-roadshow", "repo_name": "aap25-roadshow-content", "owner": "student", "uid": 2, "private": false}'
         http://localhost:3000/api/v1/repos/migrate
-    memory: 2Gi
+    memory: "2G"
     services:
       - name: gitea
         ports:
@@ -453,5 +453,5 @@ virtualmachines:
 
 * xref:production-patterns-guide.adoc[Production Lab Patterns Guide]
 * xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
-* xref:adding-instances.adoc[Adding Instances and Containers]
-* xref:configuring-networking.adoc[Configuring Networking]
+* xref:vm-basics.adoc[Adding Instances and Containers]
+* xref:networking-basics.adoc[Configuring Networking]

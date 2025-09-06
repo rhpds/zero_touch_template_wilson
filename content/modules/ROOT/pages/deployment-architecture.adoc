@@ -1,0 +1,263 @@
+= Zero Touch Deployment Architecture
+
+Understanding how your Zero Touch labs get deployed is crucial for advanced customization and troubleshooting. This guide explains the backend deployment process and integration patterns.
+
+== 🏗️ Architecture Overview
+
+Zero Touch labs use a sophisticated deployment pipeline that transforms your template repository into running lab environments:
+
+```
+[Your Lab Repo] → [AgnosticD] → [OpenShift CNV] → [Running Lab]
+      ↓               ↓              ↓              ↓
+   Template        Config        Infrastructure   Student
+   Content         Engine        Deployment       Experience
+```
+
+=== Key Components
+
+**🔧 AgnosticD**: The deployment engine that orchestrates infrastructure provisioning
+**📦 AgnosticV**: The catalog system that defines lab configurations and metadata  
+**🎨 Showroom**: The UI framework that presents your content to students
+**☁️ OpenShift CNV**: The virtualization platform hosting your lab VMs
+
+== 📁 Backend Repository Structure
+
+Your lab template integrates with two backend systems:
+
+=== AgnosticD Configuration
+Located at: `agnosticd/ansible/configs/zero-touch-base-rhel/`
+
+[source,yaml]
+----
+zero-touch-base-rhel/
+├── default_vars_openshift_cnv.yaml    # CNV platform defaults
+├── default_vars.yml                   # Base configuration
+├── software.yml                       # Software installation
+├── post_software.yml                  # Post-deployment tasks
+└── README.adoc                        # Config documentation
+----
+
+**Purpose**: Defines how infrastructure is created, configured, and managed.
+
+=== AgnosticV Catalog Entry  
+Located at: `agnosticv_all/zt-rhelbu-agnosticv/zt-rhelbu/[your-lab]/`
+
+[source,yaml]
+----
+your-lab/
+├── common.yaml        # Shared configuration
+├── dev.yaml          # Development settings  
+├── prod.yaml         # Production settings
+├── test.yaml         # Testing configuration
+└── description.adoc  # Catalog description
+----
+
+**Purpose**: Defines catalog metadata, deployment parameters, and environment-specific overrides.
+
+== 🔄 Deployment Process
+
+=== Phase 1: Configuration Resolution
+The deployment system dynamically fetches your lab configuration:
+
+[source,yaml]
+----
+# From AgnosticV common.yaml
+git_config_directory: |-
+  {{ ocp4_workload_showroom_content_git_repo |
+    replace('.git','/refs/heads/' + ref + '/config/') |
+    replace('github.com','raw.githubusercontent.com') }}
+
+# Dynamic configuration loading
+instances: "{{ lookup('url', git_config_directory + 'instances.yaml') | from_yaml }}"
+networks: "{{ lookup('url', git_config_directory + 'networks.yaml') | from_yaml }}"
+firewall: "{{ lookup('url', git_config_directory + 'firewall.yaml') | from_yaml }}"
+----
+
+**🔍 What This Means**: Your `config/` directory files are fetched directly from your Git repository during deployment.
+
+=== Phase 2: Infrastructure Provisioning
+AgnosticD uses your configuration to create:
+
+**🖥️ Virtual Machines**: Based on your `instances.yaml`
+**🌐 Networks**: Defined in `networks.yaml`  
+**🔥 Firewall Rules**: From `firewall.yaml`
+**🔒 Security Groups**: Automatically configured for isolation
+
+=== Phase 3: Software Installation
+The platform installs and configures:
+
+**📦 Base Packages**: RHEL repositories and essential software
+**👤 User Accounts**: Creates `rhel` user with secure password
+**🔑 SSH Access**: Configures terminal access for Showroom
+**🤖 Automation**: Runs your `setup-automation/` scripts
+
+=== Phase 4: Showroom Deployment
+Your content is packaged and deployed:
+
+**📚 Content Build**: Antora generates your documentation
+**🎨 UI Integration**: Showroom creates the student interface  
+**🔌 Terminal Access**: Wetty provides browser-based SSH
+**🌍 URL Generation**: Creates unique URLs for each lab instance
+
+== 🔧 Key Integration Points
+
+=== Git Repository Integration
+
+Your repository structure directly maps to deployment configuration:
+
+[source,yaml]
+----
+# Your repo structure
+your-lab/
+├── config/           → Fetched during deployment
+├── content/          → Built into Antora site  
+├── setup-automation/ → Executed during provisioning
+├── runtime-automation/ → Available during lab execution
+├── site.yml          → Antora configuration
+└── ui-config.yml     → Showroom UI settings
+----
+
+=== Password Management
+
+The platform generates secure passwords automatically:
+
+[source,yaml]
+----
+# From AgnosticD
+common_password: >-
+  {{
+    lookup('password', output_dir ~ '/common_password length=12 chars=ascii_letters,digits')
+  }}
+
+# Student access
+student_password: "{{ common_password }}"
+ansible_service_account_user_password: "{{ common_password }}"
+----
+
+**🔒 Security**: Each deployment gets a unique, randomly generated password.
+
+=== Environment Variables
+
+Your content has access to deployment-specific variables:
+
+[source,yaml]
+----
+# Available in your templates
+guid: "{{ guid }}"                    # Unique deployment ID
+domain: "{{ sandbox_openshift_apps_domain }}" # Platform domain
+common_password: "{{ common_password }}"      # Generated password
+----
+
+**💡 Usage**: Use these in your content with `{guid}`, `{domain}`, etc.
+
+== 🚀 Platform Features
+
+=== OpenShift CNV Integration
+
+Your VMs run on OpenShift Container Native Virtualization:
+
+**🔧 Features**:
+- **Kubernetes-native VM management**
+- **Automatic scheduling and resource management**  
+- **Network isolation between lab deployments**
+- **Persistent storage for VM disks**
+
+=== Showroom UI Framework
+
+The student interface provides:
+
+**🎯 Navigation**: Multi-module content organization
+**🖥️ Terminals**: Browser-based SSH access to your VMs
+**📱 Responsive**: Works on desktop and mobile devices
+**🎨 Customizable**: Configurable tabs, solve buttons, external links
+
+== 📊 Deployment Metadata
+
+=== Babylon/AgnosticV Integration
+
+Your labs integrate with Red Hat's lab catalog system:
+
+[source,yaml]
+----
+__meta__:
+  catalog:
+    namespace: babylon-catalog-prod
+    display_name: "Your Lab Name"
+    category: Workshops
+    keywords:
+      - rhel
+      - zero-touch
+  deployer:
+    execution_environment:
+      image: quay.io/agnosticd/ee-multicloud:v1.2
+----
+
+=== Resource Management
+
+**⏱️ Lifespan**: Labs have configurable runtime limits
+**🔒 Access Control**: Integration with Red Hat SSO
+**📈 Reporting**: Usage analytics and cost tracking
+**⚖️ Quotas**: Resource limits per user/organization
+
+== 🛠️ Advanced Configuration
+
+=== Custom Execution Environments
+
+For specialized deployments:
+
+[source,yaml]
+----
+__meta__:
+  deployer:
+    execution_environment:
+      image: quay.io/your-org/custom-ee:latest
+      pull: missing
+----
+
+=== Network Customization
+
+Advanced networking features:
+
+[source,yaml]
+----
+# Custom ingress/egress rules
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - ipBlock:
+          cidr: "10.0.0.0/8"
+    ports:
+      - protocol: TCP
+        port: 8080
+
+zero_touch_egress_lockdown_rules:
+  - ports:
+      - protocol: TCP
+        port: 443
+    to: []  # Allow HTTPS everywhere
+----
+
+== 🧰 Troubleshooting
+
+=== Common Deployment Issues
+
+**❌ Configuration Not Found**: Check your Git repository path and branch
+**❌ VM Creation Failed**: Verify your `instances.yaml` syntax
+**❌ Network Issues**: Review `firewall.yaml` and network policies
+**❌ Content Build Failed**: Validate `site.yml` Antora configuration
+
+=== Debugging Tools
+
+**🔍 AgnosticD Logs**: Available in deployment output directory
+**📊 OpenShift Console**: Monitor VM and pod status
+**🛠️ Bastion Access**: SSH to debug infrastructure issues
+**📋 Showroom Logs**: Container logs for UI troubleshooting
+
+== 📚 Related Documentation
+
+* xref:template-customization-guide.adoc[Template Customization Guide]
+* xref:advanced-lab-features.adoc[Advanced Lab Features]  
+* xref:production-patterns-guide.adoc[Production Deployment Patterns]
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Integration]
+
+---
+**💡 Pro Tip**: Understanding the deployment architecture helps you design more efficient labs and troubleshoot issues quickly. The platform handles complexity so you can focus on creating great learning experiences!

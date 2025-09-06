@@ -1,0 +1,295 @@
+= Firewall Configuration Basics
+:estimated-time: 15-20 minutes
+
+== Overview
+
+Learn how to configure firewall rules for your lab environment using the `config/firewall.yaml` file. This guide covers essential security controls for network access.
+
+== Configuration File Structure
+
+The `firewall.yaml` file defines network security rules:
+
+[source,yaml]
+----
+---
+egress:
+  - port: 80
+    protocol: tcp
+    description: "HTTP access"
+    
+ingress:
+  - port: 8080
+    protocol: tcp 
+    description: "Web application access"
+----
+
+== Understanding Traffic Direction
+
+=== Egress Rules (Outbound)
+Control what your VMs can access externally:
+* **Internet access** (HTTP, HTTPS, DNS)
+* **Package repositories** for software installation
+* **External APIs** and services
+
+=== Ingress Rules (Inbound)  
+Control external access to your lab services:
+* **SSH access** to VMs
+* **Web applications** 
+* **Database connections**
+* **API endpoints**
+
+== Basic Firewall Configuration
+
+=== Allow Common Internet Access
+
+[source,yaml]
+----
+---
+egress:
+  - port: 80
+    protocol: tcp
+    description: "HTTP traffic"
+    
+  - port: 443
+    protocol: tcp  
+    description: "HTTPS traffic"
+    
+  - port: 53
+    protocol: udp
+    description: "DNS queries"
+----
+
+=== Expose Lab Services
+
+[source,yaml]
+----
+---
+ingress:
+  - port: 22
+    protocol: tcp
+    description: "SSH access"
+    
+  - port: 80
+    protocol: tcp
+    description: "Web server access"
+    
+  - port: 8080
+    protocol: tcp
+    description: "Application server"
+----
+
+== Rule Parameters
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`port`
+|✅ Yes  
+|Port number or range
+
+|`protocol`
+|✅ Yes
+|`tcp`, `udp`, or `icmp`
+
+|`description`
+|No
+|Human-readable rule description
+
+|`cidr`
+|No
+|Restrict to specific IP ranges
+
+|`ports`
+|No
+|Alternative to `port` for ranges
+|===
+
+== Common Firewall Patterns
+
+=== Web Development Environment
+
+[source,yaml]
+----
+---
+egress:
+  - port: 80
+    protocol: tcp
+    description: "HTTP access"
+  - port: 443  
+    protocol: tcp
+    description: "HTTPS access"
+  - port: 53
+    protocol: udp
+    description: "DNS"
+
+ingress:
+  - port: 22
+    protocol: tcp
+    description: "SSH"  
+  - port: 80
+    protocol: tcp
+    description: "Web server"
+  - port: 3000
+    protocol: tcp
+    description: "Development server"
+----
+
+=== Database Laboratory
+
+[source,yaml]
+----
+---
+egress:
+  - port: 80
+    protocol: tcp
+  - port: 443
+    protocol: tcp
+  - port: 53
+    protocol: udp
+
+ingress:
+  - port: 22
+    protocol: tcp
+    description: "SSH access"
+  - port: 5432
+    protocol: tcp
+    description: "PostgreSQL"  
+  - port: 3306
+    protocol: tcp
+    description: "MySQL"
+----
+
+=== Container Platform Lab
+
+[source,yaml]
+----
+---
+egress:
+  - port: 80
+    protocol: tcp
+  - port: 443
+    protocol: tcp  
+  - port: 53
+    protocol: udp
+
+ingress:
+  - port: 22
+    protocol: tcp
+  - port: 6443
+    protocol: tcp
+    description: "Kubernetes API"
+  - port: 30000-32767
+    protocol: tcp
+    description: "NodePort services"
+----
+
+== Port Ranges
+
+Define ranges for multiple services:
+
+[source,yaml]
+----
+---
+ingress:
+  - ports: "8000-8099"
+    protocol: tcp
+    description: "Development services"
+    
+  - ports: "30000-32767" 
+    protocol: tcp
+    description: "Kubernetes NodePorts"
+----
+
+== Security Best Practices
+
+=== Principle of Least Privilege
+* **Start restrictive**: Only open ports you need
+* **Document rules**: Use clear descriptions
+* **Regular review**: Remove unused rules
+
+=== Common Required Ports
+* **Port 22**: SSH access (usually required)
+* **Port 80/443**: Web traffic (often needed)
+* **Port 53**: DNS (required for internet access)
+
+== Testing Firewall Rules  
+
+Verify connectivity after configuration:
+
+[source,bash]
+----
+# Test outbound connectivity
+curl -I https://google.com
+
+# Test service accessibility  
+nc -zv <lab-url> 8080
+
+# Check SSH access
+ssh user@<vm-ip>
+----
+
+## Example: Complete Web Lab
+
+[source,yaml]
+----
+---
+# Allow VMs to access internet for packages/updates
+egress:
+  - port: 80
+    protocol: tcp
+    description: "HTTP for package repos"
+  - port: 443
+    protocol: tcp
+    description: "HTTPS for secure repos"  
+  - port: 53
+    protocol: udp
+    description: "DNS resolution"
+
+# Allow external access to lab services  
+ingress:
+  - port: 22
+    protocol: tcp
+    description: "SSH administration"
+  - port: 80
+    protocol: tcp
+    description: "Apache web server"
+  - port: 443
+    protocol: tcp  
+    description: "HTTPS web server"
+  - port: 8080
+    protocol: tcp
+    description: "Tomcat application server"
+  - port: 3000
+    protocol: tcp
+    description: "Node.js development server"
+----
+
+== Troubleshooting
+
+**Can't access internet from VMs?**
+→ Check egress rules for ports 80, 443, 53
+
+**Can't reach lab services?**
+→ Verify ingress rules for your service ports
+
+**SSH connection refused?**
+→ Ensure port 22 is in ingress rules
+
+== Security Considerations
+
+=== Default Deny
+* All ports are **blocked by default**
+* Only explicitly allowed ports are accessible
+* This provides maximum security
+
+=== Documentation  
+* **Always describe rules** for future reference
+* **Group related rules** logically
+* **Review periodically** and remove unused rules
+
+== Related Documentation
+
+* xref:vm-basics.adoc[VM Configuration Basics] - Configure services that need firewall access
+* xref:networking-basics.adoc[Networking Basics] - Network topology and firewall interaction
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complex firewall scenarios - CIDR restrictions, complex rules

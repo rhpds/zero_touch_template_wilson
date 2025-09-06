@@ -1,461 +1,238 @@
 = Module 2.2: Basic Networking
-:estimated-time: 10-15 minutes
+:estimated-time: 15-20 minutes
 
 == Learning Objectives
 
 By the end of this module, you will:
 
-* Understand Zero Touch networking concepts
-* Create multiple networks for different purposes
-* Connect VMs to appropriate networks
-* Test network connectivity between systems
+* Configure basic networks for your lab
+* Connect VMs to custom networks
+* Understand network isolation concepts
+* Test network connectivity
 
 == Overview
 
-Zero Touch networking allows you to create isolated network segments for different parts of your lab. This is essential for:
+Networks define how your VMs communicate with each other and the internet. You'll create a simple multi-VM environment with network separation.
 
-* **Multi-tier applications** (web, app, database layers)
-* **Security scenarios** (DMZ, internal networks)
-* **Complex topologies** (simulating real environments)
+== 🛠️ Step 1: Understand Network Basics
 
-== 🏗️ Understanding Zero Touch Networks
+Your lab includes:
+* **Default network**: Provides internet access (automatic)
+* **Custom networks**: Isolate groups of VMs
 
-=== Default Network
+=== Default Network Behavior
 
-Every lab automatically includes a `default` network that provides:
-- ✅ **Internet connectivity** for package installation
-- ✅ **Platform access** for SSH and monitoring
-- ✅ **DNS resolution** for external services
-- ✅ **Inter-VM communication** when on the same network
+Every VM automatically gets:
+* Internet connectivity via NAT
+* Outbound access for package installation
+* Inbound access blocked (secure by default)
 
-=== Custom Networks
+== 🛠️ Step 2: Create Your First Custom Network
 
-You can create additional networks for:
-- **Isolation**: Separate different application tiers
-- **Security**: Control traffic flow between components
-- **Simulation**: Model real-world network topologies
-
-== 🛠️ Step 1: Current Network Configuration
-
-Let's examine our current network setup:
-
-[source,bash]
-----
-cat config/networks.yaml
-----
-
-You should see:
-[source,yaml]
-----
----
-- name: default
-----
-
-And in `instances.yaml`, our VM uses this network:
-[source,yaml]
-----
-virtualmachines:
-  - name: "lab-server"
-    # ... other config
-    networks:
-      - default
-----
-
-== 🛠️ Step 2: Design a Multi-Network Lab
-
-Let's expand our lab to demonstrate networking concepts:
-
-**Lab Scenario**: Web application with database  
-**Network Design**:
-- **`frontend`**: Web servers and load balancers
-- **`backend`**: Application servers and databases
-- **`default`**: Management and internet access
-
-=== Create the Network Configuration
-
-Update `config/networks.yaml`:
+Edit `config/networks.yaml`:
 
 [source,yaml]
 ----
 ---
-# Default network for management and internet access
-- name: default
+- name: "web-tier"
+  cidr: "10.10.0.0/24"  
+  description: "Web servers network"
 
-# Frontend network for web-facing services
-- name: frontend
-  cidr: "10.1.0.0/24"
-  description: "Web tier - public-facing services"
-
-# Backend network for databases and internal services  
-- name: backend
-  cidr: "10.2.0.0/24"
-  description: "Data tier - internal services only"
+- name: "db-tier"
+  cidr: "10.20.0.0/24"
+  description: "Database network"
 ----
 
-=== Understanding CIDR Notation
+=== Network Parameters
 
-* **`10.1.0.0/24`**: 
-  - Network: 10.1.0.0
-  - Subnet mask: 255.255.255.0 (/24)
-  - Available IPs: 10.1.0.1 - 10.1.0.254
-  - Hosts: 254 maximum
+* **name**: Unique identifier (use hyphens, not spaces)
+* **cidr**: IP address range in CIDR notation  
+* **description**: Human-readable explanation
 
-* **Common CIDR ranges**:
-  - `/24` = 254 hosts (most common for labs)
-  - `/16` = 65,534 hosts (large networks)
-  - `/28` = 14 hosts (small networks)
+== 🛠️ Step 3: Connect VMs to Networks
 
-== 🛠️ Step 3: Add VMs for Network Testing
-
-Let's add VMs to demonstrate network connectivity:
-
-Update `config/instances.yaml`:
+Update `config/instances.yaml` to use your networks:
 
 [source,yaml]
 ----
+---
 virtualmachines:
-  # Management/control server (has access to all networks)
-  - name: "control-server"
-    image: "rhel-9.6"
-    memory: "2G"
-    cores: 1
-    image_size: "30G"
-    networks:
-      - default
-      - frontend
-      - backend
-    packages:
-      - curl
-      - telnet
-      - nmap
-    tags:
-      - key: "Role"
-        value: "Management"
-
-  # Web server (frontend network)
   - name: "web-server"
-    image: "rhel-9.6"  
-    memory: "2G"
-    cores: 1
-    image_size: "30G"
-    networks:
-      - frontend
-    packages:
-      - httpd
-      - curl
-    tags:
-      - key: "Role"
-        value: "WebServer"
-      - key: "Tier"
-        value: "Frontend"
-
-  # Database server (backend network)
-  - name: "database-server"
     image: "rhel-9.6"
-    memory: "4G"
     cores: 2
-    image_size: "40G"
+    memory: "4G"
     networks:
-      - backend
-    packages:
-      - mariadb-server
-      - mariadb
-    tags:
-      - key: "Role"
-        value: "Database"
-      - key: "Tier"
-        value: "Backend"
+      - default      # Internet access
+      - web-tier     # Custom network
+      
+  - name: "database"
+    image: "rhel-9.6"
+    cores: 2
+    memory: "4G" 
+    networks:
+      - db-tier      # Isolated network only
 ----
 
-=== Understanding Network Assignments
+=== Network Assignment Rules
 
-[cols="2,3,3"]
-|===
-|VM |Networks |Purpose
+* **Include `default`** for internet access
+* **Use custom networks** for VM-to-VM communication
+* **VMs on same network** can communicate
+* **VMs on different networks** are isolated
 
-|`control-server`
-|default, frontend, backend
-|Management access to all tiers
+== 🛠️ Step 4: Configure Firewall for Networks
 
-|`web-server`
-|frontend only
-|Isolated in web tier
-
-|`database-server`
-|backend only
-|Isolated in data tier
-|===
-
-== 🛠️ Step 4: Update UI Configuration
-
-Update `ui-config.yml` to provide access to all VMs:
-
-[source,yaml]
-----
-antora:
-  name: modules
-  dir: www
-  modules:
-    - name: network-test
-      label: "Network Connectivity Test"
-      solveButton: true
-
-tabs:
-  - name: ">_ control"
-    url: /wetty
-    path: /ssh/control-server
-    
-  - name: ">_ web"
-    url: /wetty  
-    path: /ssh/web-server
-    
-  - name: ">_ database"
-    url: /wetty
-    path: /ssh/database-server
-    
-  - name: "Lab Guide"
-    type: "docs"
-    url: /
-----
-
-== 🛠️ Step 5: Configure Firewall for Network Communication
-
-Update `config/firewall.yaml` to allow inter-network communication:
+Update `config/firewall.yaml` to allow network communication:
 
 [source,yaml]
 ----
 ---
-# Allow outbound internet access
 egress:
-  - ports:
-      - protocol: TCP
-        port: 443  # HTTPS
-      - protocol: TCP
-        port: 80   # HTTP
-      - protocol: TCP
-        port: 3306 # MySQL (for web to database)
+  - port: 80
+    protocol: tcp
+    description: "HTTP for packages"
+  - port: 443
+    protocol: tcp
+    description: "HTTPS for packages"
+  - port: 53
+    protocol: udp
+    description: "DNS"
 
-# Allow inbound connections
 ingress:
-  - ports:
-      - protocol: TCP
-        port: 22   # SSH
-      - protocol: TCP
-        port: 80   # HTTP web server
-      - protocol: TCP
-        port: 3306 # MySQL database
-      - protocol: ICMP # Ping for testing
+  - port: 22
+    protocol: tcp
+    description: "SSH access"
+  - port: 80
+    protocol: tcp
+    description: "Web server access"
 ----
 
-== 🛠️ Step 6: Create Network Testing Content
+== 🛠️ Step 5: Deploy and Test
 
-Create a test file to validate network connectivity:
+Build your documentation:
 
 [source,bash]
 ----
-cat > content/modules/ROOT/pages/network-test.adoc << 'EOF'
-= Network Connectivity Test
-
-Let's test our multi-network setup and understand network isolation.
-
-== Network Overview
-
-Our lab has three networks:
-
-* **default**: Management and internet (10.0.x.x)
-* **frontend**: Web services (10.1.0.x)  
-* **backend**: Database services (10.2.0.x)
-
-== Step 1: Check Network Interfaces
-
-On each VM, check the network interfaces:
-
-**Control Server** (should have 3 interfaces):
-[source,bash]
-----
-ip addr show | grep "inet 10\."
+# Generate documentation
+antora generate site.yml
 ----
 
-**Web Server** (should have 1 frontend interface):
-[source,bash]  
-----
-ip addr show | grep "inet 10\."
-----
-
-**Database Server** (should have 1 backend interface):
-[source,bash]
-----
-ip addr show | grep "inet 10\."
-----
-
-== Step 2: Test Connectivity from Control Server
-
-The control server can reach all networks:
-
-**Test frontend network**:
-[source,bash]
-----
-ping -c 3 $(hostname -I | awk '{print $2}' | sed 's/\.[0-9]*$/\.1/')
-----
-
-**Test backend network**:
-[source,bash]
-----
-ping -c 3 $(hostname -I | awk '{print $3}' | sed 's/\.[0-9]*$/\.1/')
-----
-
-== Step 3: Test Network Isolation
-
-**From web-server**, try to reach backend network (should fail):
-[source,bash]
-----
-# This should timeout - networks are isolated
-ping -c 3 10.2.0.1
-----
-
-**From database-server**, try to reach frontend (should fail):
-[source,bash]
-----
-# This should also timeout
-ping -c 3 10.1.0.1
-----
-
-== Step 4: Test Internet Connectivity
-
-All VMs should have internet access through default network:
+After deployment, test your networks:
 
 [source,bash]
 ----
-curl -s https://httpbin.org/ip
+# On web-server VM
+hostname
+ip addr show
+
+# Test internet connectivity
+ping -c 3 google.com
+
+# Test connectivity to database (should fail - different networks)
+ping -c 3 database
 ----
-
-✅ If you see an IP address, internet connectivity works!
-
-== Understanding the Results
-
-* **Control server**: Multi-homed (connected to multiple networks)
-* **Web server**: Isolated to frontend network only
-* **Database server**: Isolated to backend network only
-* **Internet access**: Available through default network routing
-EOF
-----
-
-== 🛠️ Step 7: Validate Your Network Configuration
-
-=== Check Network References
-
-Verify all networks used by VMs are defined:
 
 [source,bash]
 ----
-echo "=== Networks used by VMs ==="
-grep -A 10 "networks:" config/instances.yaml | grep "^  *- " | sort -u
+# On database VM  
+hostname
+ip addr show
 
-echo "=== Networks defined ==="  
-grep "^- name:" config/networks.yaml
+# Database has no internet (no default network)
+ping -c 3 google.com  # This should fail
 ----
 
-=== Verify Resource Allocation
+== 🛠️ Step 6: Understanding Network Isolation
 
-Check total resource usage:
+Your configuration creates:
 
-[source,bash]
+=== Web Tier (web-server VM)
+* **Internet access**: Can download packages, reach external APIs
+* **Web tier access**: Can reach other web servers (if you add more)
+* **Database access**: **BLOCKED** - cannot reach database directly
+
+=== Database Tier (database VM)  
+* **Internet access**: **BLOCKED** - more secure
+* **Database access**: Can reach other database servers
+* **Web tier access**: **BLOCKED** - isolated from web tier
+
+This creates **defense in depth** - even if web server is compromised, database remains isolated.
+
+== 📝 Network Design Principles
+
+=== Security Through Isolation
+* **Separate tiers** with different trust levels
+* **Limit internet access** to only what's needed
+* **Control communication** between tiers
+
+=== Practical Lab Design
+* **Web servers**: Need internet + web tier
+* **Application servers**: Web tier + app tier  
+* **Databases**: App tier only (most secure)
+* **Jump boxes**: All networks (for administration)
+
+== ✅ Testing Your Network Design
+
+Verify your configuration works:
+
+- [ ] **Web server** has internet access
+- [ ] **Database** is isolated from internet  
+- [ ] **VMs on same network** can communicate
+- [ ] **VMs on different networks** are isolated
+- [ ] **SSH access** works through firewall
+
+== 🛠️ Common Networking Patterns
+
+=== Development Environment
+
+[source,yaml]
 ----
-echo "=== Resource Summary ==="
-echo "VMs: $(grep -c "^  - name:" config/instances.yaml)"
-echo "Total Memory: $(grep "memory:" config/instances.yaml | grep -o "[0-9]*G" | sed 's/G//' | awk '{sum+=$1} END {print sum "G"}')"
-echo "Total Cores: $(grep "cores:" config/instances.yaml | awk '{sum+=$2} END {print sum}')"
+- name: "dev-network"
+  cidr: "192.168.100.0/24"
+  description: "Development VMs"
 ----
 
-=== Test YAML Syntax
+=== Production-Like Separation
 
-[source,bash]
+[source,yaml]
 ----
-for file in config/*.yaml *.yml; do
-  if python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
-    echo "✅ $file: Valid YAML"
-  else
-    echo "❌ $file: YAML Error"
-  fi
-done
+- name: "dmz"
+  cidr: "10.1.0.0/24"
+  description: "Public-facing services"
+  
+- name: "internal"
+  cidr: "10.2.0.0/24" 
+  description: "Internal applications"
 ----
 
-== 📊 Network Architecture Diagram
+== 🛠️ Troubleshooting Networks
 
-Your lab now has this network topology:
+**VMs can't communicate?**
+→ Check they're on the same custom network
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  control-server │    │   web-server    │    │ database-server │
-│                 │    │                 │    │                 │
-│ default ────────┼────┼─ (internet) ────┼────┼─ (internet)     │
-│ frontend ───────┼────┼─ frontend       │    │                 │
-│ backend ────────┼────┼─                │    │ backend         │
-│                 │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        │                        │                        │
-        └──── Can access all ────┘                        │
-                                                          │
-                     Networks are isolated ──────────────┘
-```
+**No internet access?**
+→ Ensure VM includes `default` network  
 
-== ✅ Configuration Review Checklist
+**Can't SSH to VMs?**
+→ Check firewall allows port 22 ingress
 
-Verify you have:
-
-**Network Configuration**:
-- [ ] Three networks defined (default, frontend, backend)
-- [ ] CIDR ranges assigned to custom networks
-- [ ] Descriptive names and descriptions
-
-**VM Network Assignment**:
-- [ ] Control server on all three networks
-- [ ] Web server on frontend network only  
-- [ ] Database server on backend network only
-- [ ] All VMs can access internet via default network
-
-**UI Configuration**:
-- [ ] Terminal tabs for each VM
-- [ ] Descriptive tab names
-- [ ] Test content created
-
-**Firewall Configuration**:
-- [ ] Inter-network communication allowed where needed
-- [ ] ICMP enabled for ping testing
-- [ ] Service ports configured (HTTP, MySQL)
+**IP address conflicts?**
+→ Verify CIDR ranges don't overlap
 
 == 🎯 What You've Accomplished
 
-Excellent work! You've just:
+You now understand:
 
-✅ **Created a multi-network topology** with proper isolation  
-✅ **Configured VMs on different network segments**  
-✅ **Set up network communication rules**  
-✅ **Created test content** to validate connectivity  
-✅ **Learned network isolation concepts**  
+✅ **Network isolation** and security principles  
+✅ **Custom network creation** and configuration  
+✅ **VM-to-network assignment** patterns  
+✅ **Firewall integration** with networking  
+✅ **Testing and validation** of network design  
 
-== 🛠️ Quick Troubleshooting
+== 🚀 What's Next?
 
-**VM can't reach internet**:
-- Ensure VM is connected to `default` network
-- Check firewall egress rules allow HTTP/HTTPS
+Continue with:
+* xref:module-2-3-simple-content.adoc[Module 2.3: Simple Content Creation] - Add educational content
+* xref:networking-basics.adoc[Networking Basics Reference] - More advanced networking features
 
-**VMs on same custom network can't communicate**:
-- Verify both VMs are on the same network in `instances.yaml`
-- Check firewall ingress rules
-- Ensure CIDR ranges don't overlap
-
-**Network not found error**:
-- Verify network name spelling matches exactly
-- Ensure network is defined in `networks.yaml`
-
-== 🎯 What's Next?
-
-Your networking is configured! Next, let's create engaging content for your lab.
-
-**Next Module**: xref:module-2-3-simple-content.adoc[2.3 Simple Content] (15-20 min)
-
-== Related Resources
-
-* xref:configuring-networking.adoc[Configuring Networking] (Reference)
-* xref:module-2-1-single-vm-setup.adoc[Previous: Single VM Setup]
+You're building real skills in infrastructure design and security! 🔒

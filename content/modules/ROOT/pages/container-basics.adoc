@@ -1,0 +1,271 @@
+= Container Configuration Basics
+:estimated-time: 15-20 minutes
+
+== Overview
+
+Learn how to add containers to your lab environment alongside VMs. Containers provide lightweight, fast-starting services perfect for databases, web applications, and development tools.
+
+== Basic Container Configuration
+
+Add containers to your `config/instances.yaml` file:
+
+[source,yaml]
+----
+---
+containers:
+  - name: "redis-cache"
+    image: "redis:7-alpine"
+    ports:
+      - name: redis
+        containerPort: 6379
+        protocol: TCP
+        
+  - name: "web-app"
+    image: "nginx:latest" 
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+----
+
+== Container Configuration Parameters
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`name`
+|✅ Yes
+|Unique container identifier
+
+|`image`
+|✅ Yes
+|Container image (Docker Hub format)
+
+|`ports`
+|No
+|List of exposed ports
+
+|`environment`
+|No
+|Environment variables
+
+|`memory`
+|No
+|Memory limit (default: "32Mi")
+
+|`cpu`
+|No
+|CPU limit (default: 1)
+
+|`command`
+|No
+|Override container command
+
+|`volumeMounts`
+|No
+|Mount persistent storage
+|===
+
+== Common Container Examples
+
+=== Redis Cache
+
+[source,yaml]
+----
+- name: "redis-cache"
+  image: "redis:7-alpine"
+  memory: "256Mi"
+  cpu: "0.5"
+  ports:
+    - name: redis
+      containerPort: 6379
+      protocol: TCP
+  environment:
+    REDIS_PASSWORD: "{{ common_password }}"
+----
+
+=== PostgreSQL Database  
+
+[source,yaml]
+----
+- name: "postgres-db"
+  image: "postgres:15"
+  memory: "1G" 
+  cpu: "1"
+  ports:
+    - name: postgres
+      containerPort: 5432
+      protocol: TCP
+  environment:
+    POSTGRES_DB: "labdb"
+    POSTGRES_USER: "labuser"
+    POSTGRES_PASSWORD: "{{ common_password }}"
+  volumes:
+    - name: "postgres-data"
+      emptyDir: {}
+  volumeMounts:
+    - name: "postgres-data"
+      mountPath: "/var/lib/postgresql/data"
+----
+
+=== Web Application
+
+[source,yaml]
+----
+- name: "webapp"
+  image: "nginx:latest"
+  memory: "128Mi"
+  ports:
+    - name: http
+      containerPort: 80
+      protocol: TCP
+  volumes:
+    - name: "webapp-config"
+      configMap:
+        name: "nginx-config"
+  volumeMounts:
+    - name: "webapp-config"
+      mountPath: "/etc/nginx/conf.d"
+----
+
+== Container Networking
+
+Containers automatically get:
+* **Internal DNS**: Access via container name (e.g., `redis-cache`)
+* **Network connectivity**: Can connect to VMs and other containers
+* **Internet access**: For downloading packages and updates
+
+=== Connecting from VMs
+
+From your VMs, access containers by name:
+
+[source,bash]
+----
+# Connect to Redis from a VM
+redis-cli -h redis-cache -p 6379
+
+# Connect to PostgreSQL
+psql -h postgres-db -U labuser -d labdb
+
+# Test web application  
+curl http://webapp
+----
+
+== Environment Variables
+
+Pass configuration to containers:
+
+[source,yaml]
+----
+- name: "app-server"
+  image: "node:18-alpine"
+  environment:
+    NODE_ENV: "development"
+    DATABASE_URL: "postgres://labuser:{{ common_password }}@postgres-db/labdb"
+    REDIS_URL: "redis://redis-cache:6379"
+    API_KEY: "{{ common_password }}"
+----
+
+== Combining VMs and Containers
+
+Create hybrid environments:
+
+[source,yaml]
+----
+---
+virtualmachines:
+  - name: "app-server"
+    image: "rhel-9.6"
+    cores: 2
+    memory: "4G"
+    
+containers:
+  - name: "database"
+    image: "postgres:15"
+    memory: "1G"
+    environment:
+      POSTGRES_PASSWORD: "{{ common_password }}"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+      
+  - name: "cache"
+    image: "redis:7-alpine"
+    memory: "256Mi"
+    ports:
+      - name: redis
+        containerPort: 6379
+        protocol: TCP
+----
+
+From the VM, connect to containers:
+
+[source,bash]
+----
+# Install database client
+dnf install -y postgresql
+
+# Connect to containerized database
+psql -h database -U postgres
+----
+
+== Resource Management
+
+Set appropriate limits:
+
+[source,yaml]
+----
+- name: "resource-limited-app"
+  image: "nginx:latest"
+  memory: "128Mi"        # Memory limit
+  cpu: "0.5"            # CPU limit (0.5 cores)
+----
+
+## Testing Containers
+
+Verify container functionality:
+
+[source,bash]
+----
+# From a VM or bastion, test container connectivity
+curl http://webapp
+redis-cli -h redis-cache ping
+nc -zv postgres-db 5432
+----
+
+== Best Practices
+
+=== Resource Allocation
+* **Start small**: Begin with minimal memory/CPU
+* **Monitor usage**: Check container performance
+* **Set limits**: Prevent resource exhaustion
+
+=== Security
+* **Use variables**: Never hardcode passwords
+* **Latest images**: Keep container images updated
+* **Minimal images**: Use alpine versions when possible
+
+=== Networking
+* **DNS names**: Use container names for connectivity  
+* **Port planning**: Avoid port conflicts
+* **Service discovery**: Leverage automatic DNS
+
+== Troubleshooting
+
+**Container won't start?**
+→ Check image name and resource limits
+
+**Can't connect to container?**
+→ Verify port configuration and DNS name
+
+**Out of resources?**  
+→ Reduce container memory limits
+
+== Related Documentation
+
+* xref:vm-basics.adoc[VM Configuration Basics] - Set up VMs alongside containers
+* xref:networking-basics.adoc[Networking Basics] - Connect containers to custom networks  
+* xref:container-advanced.adoc[Advanced Container Configuration] - Complex deployment patterns
+* xref:module-2-5-containers-deep-dive.adoc[Module 2.5: Containers Deep Dive] - Hands-on advanced container training

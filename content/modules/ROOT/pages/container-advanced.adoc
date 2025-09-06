@@ -1,0 +1,664 @@
+= Advanced Container Configuration
+:estimated-time: 20-25 minutes
+
+== Overview
+
+Learn advanced container deployment patterns for the Zero Touch platform, including multi-container applications, persistent storage, networking, and production-ready configurations.
+
+== Advanced Container Deployment Patterns
+
+=== Multi-Container Application Stack
+
+Deploy complete application stacks using containers:
+
+[source,yaml]
+----
+---
+containers:
+  # Web Application Layer
+  - name: "webapp"
+    image: "nginx:latest"
+    memory: "256Mi"
+    cpu: "0.5"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "webapp-config"
+        configMap:
+          name: "nginx-config"
+    volumeMounts:
+      - name: "webapp-config"
+        mountPath: "/etc/nginx/conf.d"
+    environment:
+      BACKEND_URL: "http://api-server:8080"
+      
+  # API Server Layer  
+  - name: "api-server"
+    image: "node:18-alpine"
+    memory: "512Mi"
+    cpu: "1"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    command: ["node", "server.js"]
+    environment:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgres://{{ common_password }}:{{ common_password }}@database:5432/appdb"
+      REDIS_URL: "redis://cache:6379"
+      JWT_SECRET: "{{ common_password }}"
+    volumes:
+      - name: "app-code"
+        emptyDir: {}
+    volumeMounts:
+      - name: "app-code"
+        mountPath: "/app"
+        
+  # Database Layer
+  - name: "database"
+    image: "postgres:15-alpine"
+    memory: "1G"
+    cpu: "1"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "appdb"
+      POSTGRES_USER: "appuser"  
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - name: "postgres-data"
+        emptyDir: {}
+      - name: "postgres-init"
+        configMap:
+          name: "postgres-init-scripts"
+    volumeMounts:
+      - name: "postgres-data"
+        mountPath: "/var/lib/postgresql/data"
+      - name: "postgres-init"
+        mountPath: "/docker-entrypoint-initdb.d"
+        
+  # Cache Layer
+  - name: "cache"
+    image: "redis:7-alpine"
+    memory: "256Mi"
+    cpu: "0.5"
+    ports:
+      - name: redis
+        containerPort: 6379
+        protocol: TCP
+    command: ["redis-server", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "redis-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "redis-data"
+        mountPath: "/data"
+----
+
+=== Container Initialization and Lifecycle
+
+Control container startup and lifecycle:
+
+[source,yaml]
+----
+containers:
+  - name: "application-server"
+    image: "custom/app:v2.1.0"
+    memory: "512Mi"
+    
+    # Lifecycle management
+    lifecycle:
+      postStart:
+        exec:
+          command: 
+            - "/bin/sh"
+            - "-c"
+            - |
+              echo "Container started at $(date)" >> /var/log/startup.log
+              /app/init-scripts/setup.sh
+              
+      preStop:
+        exec:
+          command:
+            - "/bin/sh"
+            - "-c" 
+            - |
+              echo "Graceful shutdown initiated" >> /var/log/shutdown.log
+              /app/shutdown.sh
+              sleep 10
+    
+    # Resource limits and requests
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+        
+    # Health checks
+    readinessProbe:
+      httpGet:
+        path: "/health/ready"
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      
+    livenessProbe:
+      httpGet:
+        path: "/health/live"
+        port: 8080
+      initialDelaySeconds: 60
+      periodSeconds: 30
+----
+
+== Container Storage Patterns
+
+=== Persistent Data Storage
+
+Configure persistent storage for stateful containers:
+
+[source,yaml]
+----
+containers:
+  - name: "mysql-database"
+    image: "mysql:8.0"
+    memory: "1G"
+    ports:
+      - name: mysql
+        containerPort: 3306
+        protocol: TCP
+    environment:
+      MYSQL_ROOT_PASSWORD: "{{ common_password }}"
+      MYSQL_DATABASE: "labdb"
+      MYSQL_USER: "labuser"
+      MYSQL_PASSWORD: "{{ common_password }}"
+    
+    # Persistent volume configuration
+    volumes:
+      - name: "mysql-data"
+        persistentVolumeClaim:
+          claimName: "mysql-pvc"
+      - name: "mysql-config"
+        configMap:
+          name: "mysql-config"
+      - name: "mysql-init-scripts"
+        configMap:
+          name: "mysql-init"
+          
+    volumeMounts:
+      - name: "mysql-data"
+        mountPath: "/var/lib/mysql"
+      - name: "mysql-config"
+        mountPath: "/etc/mysql/conf.d"
+        readOnly: true
+      - name: "mysql-init-scripts"  
+        mountPath: "/docker-entrypoint-initdb.d"
+        readOnly: true
+----
+
+=== Shared Storage Between Containers
+
+Share data between containers:
+
+[source,yaml]
+----
+containers:
+  # Data processor container
+  - name: "data-processor"
+    image: "python:3.11-slim"
+    command: ["python", "/app/processor.py"]
+    volumes:
+      - name: "shared-data"
+        emptyDir: {}
+      - name: "processor-code"
+        configMap:
+          name: "processor-scripts"
+    volumeMounts:
+      - name: "shared-data"
+        mountPath: "/data"
+      - name: "processor-code"
+        mountPath: "/app"
+        
+  # Web server serving processed data
+  - name: "data-server"
+    image: "nginx:alpine"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "shared-data"
+        emptyDir: {}
+      - name: "nginx-config"
+        configMap:
+          name: "nginx-data-config"
+    volumeMounts:
+      - name: "shared-data"
+        mountPath: "/usr/share/nginx/html/data"
+        readOnly: true
+      - name: "nginx-config"
+        mountPath: "/etc/nginx/conf.d"
+----
+
+== Container Networking and Service Discovery
+
+=== Inter-Container Communication
+
+Containers automatically get DNS-based service discovery:
+
+[source,yaml]
+----
+containers:
+  # Frontend service
+  - name: "frontend"
+    image: "react-app:latest"
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      REACT_APP_API_URL: "http://backend:8080/api"
+      REACT_APP_AUTH_URL: "http://auth-service:9000/auth"
+      
+  # Backend API
+  - name: "backend"  
+    image: "spring-boot-api:latest"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    environment:
+      DATABASE_HOST: "postgres-db"
+      DATABASE_PORT: "5432"
+      CACHE_HOST: "redis-cache"
+      AUTH_SERVICE_URL: "http://auth-service:9000"
+      
+  # Authentication service
+  - name: "auth-service"
+    image: "auth-server:latest"
+    ports:
+      - name: http
+        containerPort: 9000
+        protocol: TCP
+    environment:
+      DATABASE_URL: "postgresql://postgres-db:5432/authdb"
+      JWT_SECRET: "{{ common_password }}"
+----
+
+=== Container Port Management
+
+Advanced port configuration and service exposure:
+
+[source,yaml]
+----
+containers:
+  - name: "multi-service-app"
+    image: "custom/multi-service:latest"
+    memory: "512Mi"
+    
+    # Multiple port exposure
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+        name: "http"
+        protocol: "TCP"
+      - port: 8443  
+        name: "https"
+        protocol: "TCP"
+      - name: metrics
+        containerPort: 9090
+        protocol: TCP
+        name: "metrics"
+        protocol: "TCP"
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+        name: "database"
+        protocol: "TCP"
+    
+    environment:
+      HTTP_PORT: "8080"
+      HTTPS_PORT: "8443"
+      METRICS_PORT: "9090"
+      DB_PORT: "5432"
+      TLS_CERT_PATH: "/certs/tls.crt"
+      TLS_KEY_PATH: "/certs/tls.key"
+      
+    volumes:
+      - name: "tls-certs"
+        secret:
+          secretName: "app-tls-certs"
+    volumeMounts:
+      - name: "tls-certs"
+        mountPath: "/certs"
+        readOnly: true
+----
+
+== Development and Testing Patterns
+
+=== Development Environment Containers
+
+Create development-focused container setups:
+
+[source,yaml]
+----
+containers:
+  # Code server (VS Code in browser)
+  - name: "code-server"
+    image: "codercom/code-server:latest"
+    memory: "2G"
+    cpu: "1"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    environment:
+      PASSWORD: "{{ common_password }}"
+      SUDO_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "workspace"
+        emptyDir: {}
+      - name: "code-server-config"
+        emptyDir: {}
+    volumeMounts:
+      - name: "workspace"
+        mountPath: "/home/coder/workspace"
+      - name: "code-server-config"
+        mountPath: "/home/coder/.config"
+        
+  # Development database
+  - name: "dev-postgres"
+    image: "postgres:15"
+    memory: "512Mi"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "devdb"
+      POSTGRES_USER: "developer"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    volumes:
+      - name: "dev-data"
+        emptyDir: {}
+      - name: "dev-init-scripts"
+        configMap:
+          name: "dev-db-init"
+    volumeMounts:
+      - name: "dev-data"
+        mountPath: "/var/lib/postgresql/data"
+      - name: "dev-init-scripts"
+        mountPath: "/docker-entrypoint-initdb.d"
+        
+  # Testing tools container
+  - name: "test-runner"
+    image: "cypress/included:latest"
+    environment:
+      CYPRESS_BASE_URL: "http://frontend:3000"
+      CYPRESS_API_URL: "http://backend:8080"
+    volumes:
+      - name: "test-results"
+        emptyDir: {}
+      - name: "test-specs"
+        configMap:
+          name: "cypress-tests"
+    volumeMounts:
+      - name: "test-results"
+        mountPath: "/cypress/results"
+      - name: "test-specs" 
+        mountPath: "/cypress/integration"
+----
+
+== Monitoring and Logging
+
+=== Container Monitoring Stack
+
+Deploy monitoring for your containerized applications:
+
+[source,yaml]
+----
+containers:
+  # Prometheus metrics collector
+  - name: "prometheus"
+    image: "prom/prometheus:latest"
+    memory: "512Mi"
+    ports:
+      - name: metrics
+        containerPort: 9090
+        protocol: TCP
+    volumes:
+      - name: "prometheus-config"
+        configMap:
+          name: "prometheus-config"
+      - name: "prometheus-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "prometheus-config"
+        mountPath: "/etc/prometheus"
+      - name: "prometheus-data"
+        mountPath: "/prometheus"
+        
+  # Grafana dashboard
+  - name: "grafana"
+    image: "grafana/grafana:latest"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ common_password }}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - name: "grafana-data"
+        emptyDir: {}
+      - name: "grafana-dashboards"
+        configMap:
+          name: "grafana-dashboards"
+    volumeMounts:
+      - name: "grafana-data"
+        mountPath: "/var/lib/grafana"
+      - name: "grafana-dashboards"
+        mountPath: "/etc/grafana/provisioning/dashboards"
+        
+  # Log aggregator
+  - name: "fluentd"
+    image: "fluentd/fluentd:latest"
+    memory: "256Mi"
+    environment:
+      FLUENTD_CONF: "fluent.conf"
+    volumes:
+      - name: "fluentd-config"
+        configMap:
+          name: "fluentd-config"
+      - name: "log-storage"
+        emptyDir: {}
+    volumeMounts:
+      - name: "fluentd-config"
+        mountPath: "/fluentd/etc"
+      - name: "log-storage"
+        mountPath: "/logs"
+----
+
+== Security and Best Practices
+
+=== Container Security Configuration
+
+Implement security best practices:
+
+[source,yaml]
+----
+containers:
+  - name: "secure-app"
+    image: "alpine/app:latest"
+    memory: "256Mi"
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_BIND_SERVICE
+          
+    # Resource limits (security through resource control)
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m" 
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+        
+    # Secret management
+    environment:
+      DATABASE_PASSWORD: "{{ common_password }}"
+      API_KEY: "{{ api_secret }}"
+      
+    volumes:
+      - name: "app-secrets"
+        secret:
+          secretName: "app-credentials"
+          defaultMode: 0400
+      - name: "tmp-volume"
+        emptyDir: {}
+      - name: "cache-volume"
+        emptyDir: {}
+        
+    volumeMounts:
+      - name: "app-secrets"
+        mountPath: "/secrets"
+        readOnly: true
+      - name: "tmp-volume"
+        mountPath: "/tmp"
+      - name: "cache-volume" 
+        mountPath: "/app/cache"
+----
+
+== Container Testing and Validation
+
+Test your container deployments:
+
+[source,bash]
+----
+# Test container connectivity
+curl -f http://webapp/health
+nc -zv database 5432
+redis-cli -h cache ping
+
+# Check container logs
+kubectl logs deployment/webapp
+kubectl logs deployment/api-server
+
+# Test application functionality
+curl -X POST http://api-server:8080/api/test \
+  -H "Content-Type: application/json" \
+  -d '{"test": "data"}'
+
+# Verify persistent storage
+kubectl exec -it deployment/database -- \
+  psql -U appuser -d appdb -c "SELECT NOW();"
+----
+
+== Complete Multi-Tier Example
+
+[source,yaml]
+----
+---
+# Complete containerized application
+virtualmachines:
+  - name: "bastion"
+    image: "rhel-9.6"
+    cores: 1
+    memory: "2G"
+    networks:
+      - default
+
+containers:
+  # Load balancer
+  - name: "loadbalancer"
+    image: "nginx:alpine"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+      - port: 443
+    volumes:
+      - name: "lb-config"
+        configMap:
+          name: "nginx-lb-config"
+    volumeMounts:
+      - name: "lb-config"
+        mountPath: "/etc/nginx/conf.d"
+        
+  # Application instances
+  - name: "app-1"
+    image: "myapp:v1.2.0"
+    memory: "512Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    environment:
+      DATABASE_URL: "postgres://database:5432/appdb"
+      CACHE_URL: "redis://cache:6379"
+      
+  - name: "app-2" 
+    image: "myapp:v1.2.0"
+    memory: "512Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    environment:
+      DATABASE_URL: "postgres://database:5432/appdb"
+      CACHE_URL: "redis://cache:6379"
+      
+  # Database
+  - name: "database"
+    image: "postgres:15"
+    memory: "1G"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "db-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "db-data"
+        mountPath: "/var/lib/postgresql/data"
+        
+  # Cache
+  - name: "cache"
+    image: "redis:7-alpine" 
+    memory: "256Mi"
+    ports:
+      - name: redis
+        containerPort: 6379
+        protocol: TCP
+----
+
+== Related Documentation
+
+* xref:container-basics.adoc[Container Configuration Basics] - Start here for basic container setup
+* xref:vm-basics.adoc[VM Configuration Basics] - Combine VMs with containers
+* xref:networking-basics.adoc[Networking Basics] - Container networking fundamentals
+* xref:module-2-1-single-vm-setup.adoc[Module 2.1: Single VM Setup] - Hands-on training with containers

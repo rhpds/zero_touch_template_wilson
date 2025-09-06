@@ -281,4 +281,4 @@ Now that you understand the template structure, let's dive into the configuratio
 == Related Resources
 
 * xref:template-customization-guide.adoc[Complete Template Customization Guide] (Reference)
-* xref:adding-instances.adoc[Adding Instances and Containers] (Reference)
+* xref:vm-basics.adoc[Adding Instances and Containers] (Reference)

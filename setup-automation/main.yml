@@ -43,10 +43,6 @@
       dest: "/tmp/setup-scripts/setup-{{ ansible_host }}.sh"
     register: r_result
 
-  - name: Install VS Code Server
-    ansible.builtin.include_tasks: vscode-server-tasks.yml
-    when: ansible_host == "vscode"
-
   - name: Execute module_stage-host.sh if it exists
     when: r_script_test.stat.exists
     shell: "sh -x /tmp/setup-scripts/setup-{{ ansible_host }}.sh > /tmp/setup-scripts/setup-{{ ansible_host }}.log 2>&1"

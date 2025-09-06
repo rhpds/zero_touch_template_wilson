@@ -93,16 +93,19 @@ Before customizing your template:
 
 === Core Configuration Guides
 
-* xref:adding-instances.adoc[Adding Instances and Containers]
-* xref:configuring-networking.adoc[Configuring Networking]  
-* xref:configuring-firewall.adoc[Configuring Firewall Rules]
-* xref:creating-content.adoc[Creating Lab Content and UI Configuration]
+* xref:vm-basics.adoc[VM Configuration Basics] and xref:container-basics.adoc[Container Basics]
+* xref:networking-basics.adoc[Networking Basics] 
+* xref:firewall-basics.adoc[Firewall Configuration Basics]
+* xref:content-authoring-basics.adoc[Content Authoring Basics]
 
 === Advanced Features
 
 * xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
 * xref:production-patterns-guide.adoc[Production Lab Patterns Guide]
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns]
+* xref:deployment-architecture.adoc[Zero Touch Deployment Architecture]
+* xref:git-integration-patterns.adoc[Git Integration Patterns]
+* xref:cnv-platform-features.adoc[OpenShift CNV Platform Features]
 
 == Getting Help
 

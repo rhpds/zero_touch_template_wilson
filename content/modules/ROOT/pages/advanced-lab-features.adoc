@@ -293,7 +293,7 @@ containers:
     volumes:
       - name: gitea-data
         emptyDir: {}
-    memory: 2Gi
+    memory: "2G"
 ----
 
 === Complex Container Configurations
@@ -323,7 +323,7 @@ containers:
     volumes:
       - name: kafka-varlog
         emptyDir: {}
-    memory: 4Gi
+    memory: "4G"
 ----
 
 == Troubleshooting Common Issues
@@ -418,10 +418,10 @@ containers:
 
 == Related Documentation
 
-* xref:adding-instances.adoc[Adding Instances and Containers]
-* xref:configuring-networking.adoc[Configuring Networking]
-* xref:configuring-firewall.adoc[Configuring Firewall Rules]
-* xref:creating-content.adoc[Creating Lab Content and UI Configuration]
+* xref:vm-basics.adoc[Adding Instances and Containers]
+* xref:networking-basics.adoc[Configuring Networking]
+* xref:firewall-basics.adoc[Configuring Firewall Rules]
+* xref:content-authoring-basics.adoc[Creating Lab Content and UI Configuration]
 * xref:template-customization-guide.adoc[Template Customization Guide]
 
 == External Resources

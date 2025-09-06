@@ -1,0 +1,313 @@
+= VS Code Development Environment
+:estimated-time: 15-20 minutes
+
+== Overview
+
+This template includes a pre-configured VS Code container that automatically clones the Zero Touch template repository, providing an integrated development environment for template customization and lab content creation.
+
+== VS Code Container Features
+
+The `vscode-dev` container provides:
+
+* **Browser-based VS Code** - Full VS Code experience in your web browser
+* **Automatic repository cloning** - Zero Touch template pre-loaded
+* **Development branch setup** - Ready for customization work
+* **Pre-installed extensions** - YAML, AsciiDoc, JSON support
+* **Integrated terminal** - Command-line access within VS Code
+* **Password protection** - Secured with lab credentials
+
+== Accessing VS Code
+
+=== Through Lab Interface
+
+After lab deployment:
+
+1. **Click the "💻 VS Code" tab** - Integrated iframe access in lab interface
+2. **Enter password** - Uses your lab's common password
+3. **Start developing** - Repository is pre-cloned and ready
+
+The VS Code environment loads directly in the lab interface, providing seamless access without leaving your training environment.
+
+=== Direct Access
+
+[source,bash]
+----
+# Access via lab URL (follows standard Zero Touch pattern)
+https://vscode-dev-${guid}.${domain}/
+
+# Login with lab credentials
+Password: [your-lab-password]
+----
+
+== Development Workflow
+
+=== Repository Structure
+
+The VS Code container automatically sets up:
+
+[source,bash]
+----
+/home/coder/workspace/zero_touch_template_wilson/
+├── config/                    # Lab configuration
+│   ├── instances.yaml        # VM and container definitions
+│   ├── networks.yaml         # Network topology
+│   └── firewall.yaml         # Security rules
+├── content/                   # Documentation and training
+│   └── modules/ROOT/pages/   # Lab content files
+├── ui-config.yml             # Navigation and UI
+└── site.yml                  # Antora configuration
+----
+
+=== Development Branch
+
+The container creates a `lab-development` branch:
+
+[source,bash]
+----
+# Check current branch
+git branch
+
+# Your changes are isolated from main
+# * lab-development  <- You're here
+#   main
+
+# Make changes and commit
+git add .
+git commit -m "Customize lab for my needs"
+
+# Push your development branch
+git push origin lab-development
+----
+
+=== Pre-Installed Extensions
+
+The VS Code environment includes:
+
+* **YAML Language Support** - Syntax highlighting for configuration files
+* **AsciiDoc** - Preview and editing support for content files  
+* **JSON** - Configuration file support
+* **Remote Containers** - Container development support
+
+== Common Development Tasks
+
+=== Editing Configuration Files
+
+[source,bash]
+----
+# Open configuration files
+# Click on config/ folder in VS Code Explorer
+# Edit instances.yaml, networks.yaml, firewall.yaml
+
+# Validate YAML syntax
+# VS Code will highlight syntax errors automatically
+----
+
+=== Creating Lab Content
+
+[source,bash]
+----
+# Navigate to content creation
+cd content/modules/ROOT/pages/
+
+# Create new lab module
+touch my-custom-module.adoc
+
+# Edit with AsciiDoc support
+# Use Ctrl+Shift+V to preview AsciiDoc
+----
+
+=== Testing Changes
+
+[source,bash]
+----
+# Use integrated terminal in VS Code (Terminal > New Terminal)
+
+# Test Antora build
+antora generate site.yml
+
+# Validate YAML files
+python3 -c "import yaml; yaml.safe_load(open('config/instances.yaml'))"
+----
+
+=== Version Control
+
+[source,bash]
+----
+# View changes
+git status
+git diff
+
+# Stage and commit changes  
+git add .
+git commit -m "Add custom lab configuration"
+
+# Push to your development branch
+git push origin lab-development
+----
+
+== Customization Examples
+
+=== Add Your Own VM
+
+Edit `config/instances.yaml` in VS Code:
+
+[source,yaml]
+----
+virtualmachines:
+  # Add your custom VM
+  - name: "my-custom-vm"
+    image: "rhel-9.6"
+    cores: 2
+    memory: "4G"
+    networks:
+      - default
+    services:
+      - name: webapp
+        ports:
+          - port: 8080
+            protocol: TCP
+            targetPort: 8080
+            name: webapp
+    routes:
+      - name: webapp
+        host: webapp
+        service: webapp
+        targetPort: 8080
+        tls: true
+----
+
+=== Create Custom Content
+
+Create `content/modules/ROOT/pages/my-lab-guide.adoc`:
+
+[source,asciidoc]
+----
+= My Custom Lab Guide
+
+== Learning Objectives
+
+By the end of this lab, you will:
+* Understand custom application deployment
+* Configure monitoring and logging
+* Troubleshoot application issues
+
+== Step 1: Deploy Application
+
+[source,bash]
+----
+# Deploy your application
+kubectl apply -f app-deployment.yaml
+----
+
+== Step 2: Verify Deployment
+
+Check that your application is running:
+
+[source,bash]
+----
+curl https://webapp-${guid}.${domain}/health
+----
+----
+
+=== Update Navigation  
+
+Edit `ui-config.yml` to include your content:
+
+[source,yaml]
+----
+modules:
+  # Add your custom module
+  - name: my-lab-guide
+    label: "My Custom Lab Guide"
+    solveButton: false
+----
+
+== Advanced Development
+
+=== Using Extensions
+
+**AsciiDoc Preview:**
+1. Open any `.adoc` file
+2. Press `Ctrl+Shift+V` for preview
+3. Edit and preview side-by-side
+
+**YAML Validation:**
+- Automatic syntax checking
+- Error highlighting
+- IntelliSense support
+
+**Integrated Git:**
+1. Use Source Control panel (Ctrl+Shift+G)  
+2. Stage changes visually
+3. Commit with messages
+4. Push to remote branches
+
+=== Container Development
+
+Since you're in a container environment:
+
+[source,bash]
+----
+# Install additional tools if needed
+sudo apt-get update
+sudo apt-get install -y your-tool
+
+# Tools are persistent in the container
+# But will reset when container restarts
+----
+
+== Troubleshooting
+
+**VS Code won't load?**
+→ Check container logs and ensure route is accessible
+
+**Repository not cloned?**
+→ Check container startup logs for git clone errors
+
+**Extensions not working?**  
+→ Restart VS Code or reinstall extensions from Extensions panel
+
+**Can't save files?**
+→ Check file permissions in workspace directory
+
+**Git authentication issues?**
+→ Set up SSH keys or use HTTPS with tokens
+
+== Best Practices
+
+=== Development Workflow
+
+1. **Always work in development branch** - Keep main branch clean
+2. **Regular commits** - Commit small, logical changes
+3. **Test changes** - Build documentation before committing
+4. **Document changes** - Use clear commit messages
+
+=== File Organization
+
+* **Keep configuration changes minimal** - Only change what you need
+* **Test locally** - Use Antora generate before deployment
+* **Back up work** - Push branches regularly
+* **Follow naming conventions** - Use consistent file names
+
+=== Security
+
+* **Don't commit secrets** - Use variables like `{{ common_password }}`
+* **Review changes** - Check diffs before committing  
+* **Use branches** - Isolate experimental work
+
+== Integration with Template
+
+The VS Code container works seamlessly with the Zero Touch template:
+
+* **Live editing** - Changes reflect in lab immediately after rebuild
+* **Full template access** - All files and configurations available
+* **Integrated workflow** - Edit, test, deploy from one interface
+* **Version control** - Track all changes with Git
+
+This provides the most efficient development experience for creating and customizing Zero Touch labs!
+
+== Related Documentation
+
+* xref:template-customization-guide.adoc[Template Customization Guide] - Overview of template structure
+* xref:content-authoring-basics.adoc[Content Authoring Basics] - Writing effective lab content
+* xref:container-basics.adoc[Container Configuration Basics] - Understanding the VS Code container setup

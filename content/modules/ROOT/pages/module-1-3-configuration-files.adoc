@@ -437,6 +437,6 @@ Now that you understand the configuration basics, let's put it into practice by 
 
 == Related Resources
 
-* xref:adding-instances.adoc[Adding Instances and Containers] (Reference)
-* xref:configuring-networking.adoc[Configuring Networking] (Reference)
-* xref:configuring-firewall.adoc[Configuring Firewall Rules] (Reference)
+* xref:vm-basics.adoc[Adding Instances and Containers] (Reference)
+* xref:networking-basics.adoc[Configuring Networking] (Reference)
+* xref:firewall-basics.adoc[Configuring Firewall Rules] (Reference)

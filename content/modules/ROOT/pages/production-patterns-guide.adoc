@@ -121,7 +121,7 @@ Key differences:
 
 == Utility Scripts Pattern
 
-Production labs include a `utilities/` directory with development scripts:
+Production labs may include development scripts for building and testing:
 
 [source,bash]
 ----

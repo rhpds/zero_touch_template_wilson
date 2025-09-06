@@ -1,0 +1,329 @@
+= Content Authoring Basics  
+:estimated-time: 15-20 minutes
+
+== Overview
+
+Learn the fundamentals of creating effective lab content using AsciiDoc. This guide covers the essential syntax and patterns for writing engaging educational content.
+
+== AsciiDoc Fundamentals
+
+=== Document Structure
+
+Every content file follows this structure:
+
+[source,asciidoc]
+----
+= Module Title
+:estimated-time: 15-20 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+* Objective 1
+* Objective 2
+
+== Section Title
+
+Content goes here...
+
+=== Subsection
+
+More detailed content...
+
+== Summary
+
+What students accomplished...
+----
+
+=== Essential Syntax
+
+[cols="1,2"]
+|===
+|Element |Syntax
+
+|**Title (Level 0)**
+|`= Module Title`
+
+|**Section (Level 1)**  
+|`== Section Title`
+
+|**Subsection (Level 2)**
+|`=== Subsection Title`
+
+|**Bold Text**
+|`*Bold text*`
+
+|**Italic Text**
+|`_Italic text_`
+
+|**Code Inline**
+|`\`command\``
+
+|**Note**
+|`NOTE: Important information`
+
+|**Warning**  
+|`WARNING: Critical information`
+|===
+
+== Code Blocks and Commands
+
+=== Interactive Commands
+
+Create copy+run buttons for student commands:
+
+[source,asciidoc]
+----
+[source,bash]
+----
+# Students can click to run this
+hostname
+date
+uname -a
+----
+----
+
+=== Expected Output
+
+Show students what to expect:
+
+[source,asciidoc]
+----
+.Expected Output
+----
+lab-server.example.com
+Wed Dec 13 10:30:45 EST 2023
+Linux lab-server 5.14.0-362.el9.x86_64 #1 SMP x86_64 GNU/Linux
+----
+----
+
+=== Multi-step Commands
+
+Break complex tasks into steps:
+
+[source,asciidoc]
+----
+== Step 1: Install Package
+
+[source,bash]
+----
+dnf install -y httpd
+----
+
+== Step 2: Start Service  
+
+[source,bash]
+----
+systemctl enable --now httpd
+----
+
+== Step 3: Verify Installation
+
+[source,bash]
+----
+systemctl status httpd
+----
+----
+
+== Content Organization Patterns
+
+=== Learning Module Template
+
+[source,asciidoc]
+----
+= Module Title
+:estimated-time: 15-20 minutes
+
+== Learning Objectives
+* Clear, measurable objectives
+* What students will accomplish
+
+== Overview
+Brief context and motivation
+
+== Step 1: First Task
+=== Action to Take
+Commands and explanation
+
+=== Validation  
+How to verify success
+
+== Step 2: Second Task
+=== Action to Take
+=== Validation
+
+== Summary
+What was accomplished
+What's next
+
+== Troubleshooting
+Common issues and solutions
+----
+
+=== Reference Guide Template
+
+[source,asciidoc]
+----
+= Reference Guide Title
+:estimated-time: 15-20 minutes
+
+== Overview  
+What this guide covers
+
+== Basic Configuration
+Essential patterns
+
+== Advanced Usage
+More complex scenarios
+
+== Examples
+Real-world use cases
+
+== Best Practices
+Recommendations and tips
+
+== Troubleshooting
+Common issues
+
+== Related Documentation
+Links to related guides
+----
+
+== Interactive Elements
+
+=== Admonitions  
+
+Use for important information:
+
+[source,asciidoc]
+----
+NOTE: This provides helpful context
+
+TIP: Pro tip for efficiency  
+
+IMPORTANT: Don't skip this step
+
+CAUTION: Be careful with this command
+
+WARNING: This can break your system
+----
+
+=== Cross-References
+
+Link to related content:
+
+[source,asciidoc]
+----
+For more details, see xref:vm-basics.adoc[VM Configuration Basics].
+
+Continue with xref:module-2-4-deploy-test.adoc[Module 2.4: Deploy & Test].
+----
+
+=== Variables and Substitution
+
+Use Zero Touch variables:
+
+[source,asciidoc]
+----
+Your lab GUID is: {{ guid }}
+Access your lab at: {{ lab_url }}
+Use password: {{ common_password }}
+----
+
+## Content Writing Best Practices
+
+=== Keep Students Engaged
+* **Clear objectives** at the start
+* **Step-by-step progression** with validation
+* **Immediate feedback** and results
+* **Real-world context** and examples
+
+=== Structure for Learning
+* **15-20 minute modules** maximum
+* **2-5 minute steps** within modules  
+* **One concept per section**
+* **Progressive complexity**
+
+=== Make Commands Clear
+* **Copy+run buttons** for all commands
+* **Expected output** for validation
+* **Context** before and after commands
+* **Troubleshooting** for common issues
+
+=== Write Effective Instructions
+
+**Good:**
+[source,asciidoc]
+----
+== Install and Configure Apache
+
+Install the Apache web server:
+
+[source,bash]
+----
+dnf install -y httpd
+----
+
+Start the service and enable it to start at boot:
+
+[source,bash]  
+----
+systemctl enable --now httpd
+----
+
+Verify Apache is running:
+
+[source,bash]
+----
+systemctl status httpd
+----
+
+.Expected Output
+----
+● httpd.service - The Apache HTTP Server
+   Active: active (running) since...
+----
+----
+
+**Avoid:**
+[source,asciidoc]
+----
+Run these commands:
+dnf install -y httpd
+systemctl enable --now httpd
+systemctl status httpd
+----
+
+== Testing Your Content
+
+=== Local Preview
+[source,bash]
+----
+# Build documentation locally
+antora generate site.yml
+
+# Check for formatting issues
+grep -r "xref:" content/modules/ROOT/pages/
+----
+
+=== Content Checklist
+- [ ] Clear learning objectives
+- [ ] Step-by-step progression
+- [ ] Copy+run buttons on commands
+- [ ] Expected output sections
+- [ ] Summary of accomplishments
+- [ ] Troubleshooting guidance
+
+== Common Mistakes to Avoid
+
+* **Too much information** in one module
+* **Missing context** for commands
+* **No validation steps** for students
+* **Broken cross-references** 
+* **Inconsistent formatting**
+
+== Related Documentation
+
+* xref:module-2-3-simple-content.adoc[Module 2.3: Simple Content Creation] - Hands-on content creation
+* xref:advanced-lab-features.adoc[Advanced Lab Features] - Complex content scenarios - Variables, includes, complex layouts
+* xref:template-customization-guide.adoc[Template Customization Guide] - Complete UI configuration reference

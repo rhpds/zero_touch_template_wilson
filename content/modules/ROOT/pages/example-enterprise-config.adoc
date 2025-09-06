@@ -39,7 +39,7 @@ containers:
       # Create admin user and organization
       - gitea admin user create --admin --username gitea --password gitea --email admin@demo.com --must-change-password=false
       - curl -X POST -H "Content-Type: application/json" -u 'gitea:gitea' -d '{"username": "student", "full_name": "Student User", "description": "Lab Student"}' http://localhost:3000/api/v1/orgs
-    memory: 2Gi
+    memory: "2G"
     services:
       - name: gitea
         ports:

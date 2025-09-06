@@ -1,0 +1,527 @@
+= Module 2.5: Containers Deep Dive
+:estimated-time: 25-30 minutes
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Deploy complex multi-container applications
+* Configure container storage and networking
+* Implement container security best practices  
+* Troubleshoot container deployments
+* Build production-ready container environments
+
+== Overview
+
+Containers in Zero Touch labs provide powerful capabilities beyond simple single-container deployments. This module teaches advanced container patterns used in enterprise environments.
+
+== 🛠️ Step 1: Multi-Container Application Stack
+
+Create a realistic multi-tier application with containers:
+
+=== Update instances.yaml
+
+[source,yaml]
+----
+---
+virtualmachines:
+  - name: "bastion-host"
+    image: "rhel-9.6"
+    cores: 1
+    memory: "2G"
+    networks:
+      - default
+
+containers:
+  # Frontend Web Server
+  - name: "frontend"
+    image: "nginx:alpine"
+    memory: "128Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    environment:
+      API_ENDPOINT: "http://api:8080"
+    volumes:
+      - name: "webapp-content"
+        configMap:
+          name: "webapp-files"
+    volumeMounts:
+      - name: "webapp-content" 
+        mountPath: "/usr/share/nginx/html"
+        
+  # API Server
+  - name: "api"
+    image: "node:18-alpine"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    command: ["node", "server.js"]
+    environment:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgresql://appuser:{{ common_password }}@database:5432/todoapp"
+      REDIS_URL: "redis://cache:6379"
+    volumes:
+      - name: "api-code"
+        configMap:
+          name: "api-server-code"
+    volumeMounts:
+      - name: "api-code"
+        mountPath: "/app"
+        
+  # Database
+  - name: "database"
+    image: "postgres:15-alpine"
+    memory: "512Mi"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "todoapp"
+      POSTGRES_USER: "appuser"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "postgres-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "postgres-data"
+        mountPath: "/var/lib/postgresql/data"
+        
+  # Cache
+  - name: "cache" 
+    image: "redis:7-alpine"
+    memory: "128Mi"
+    ports:
+      - name: redis
+        containerPort: 6379
+        protocol: TCP
+----
+
+=== Test the Application Stack
+
+After deployment, test the multi-container application:
+
+[source,bash]
+----
+# Test from bastion host
+ssh bastion-host
+
+# Check all containers are running
+curl http://frontend
+curl http://api:8080/health
+nc -zv database 5432
+redis-cli -h cache ping
+----
+
+== 🛠️ Step 2: Container Storage Patterns
+
+Learn advanced storage configurations:
+
+=== Shared Storage Between Containers
+
+[source,yaml]
+----
+containers:
+  # File processor
+  - name: "processor" 
+    image: "python:3.11-slim"
+    command: ["python", "/app/process_files.py"]
+    volumes:
+      - name: "shared-files"
+        emptyDir: {}
+      - name: "processor-script"
+        configMap:
+          name: "file-processor"
+    volumeMounts:
+      - name: "shared-files"
+        mountPath: "/data"
+      - name: "processor-script"
+        mountPath: "/app"
+        
+  # File server
+  - name: "fileserver"
+    image: "nginx:alpine"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "shared-files"
+        emptyDir: {}
+    volumeMounts:
+      - name: "shared-files"
+        mountPath: "/usr/share/nginx/html/files"
+        readOnly: true
+----
+
+=== Database with Initialization Scripts
+
+[source,yaml]
+----
+containers:
+  - name: "postgres-with-data"
+    image: "postgres:15"
+    memory: "1G"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "labdb"
+      POSTGRES_USER: "labuser"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "postgres-data"
+        emptyDir: {}
+      - name: "init-scripts"
+        configMap:
+          name: "database-init"
+    volumeMounts:
+      - name: "postgres-data"
+        mountPath: "/var/lib/postgresql/data"
+      - name: "init-scripts"
+        mountPath: "/docker-entrypoint-initdb.d"
+----
+
+== 🛠️ Step 3: Container Networking and Service Discovery
+
+Understand how containers communicate:
+
+=== Test Inter-Container Communication
+
+[source,bash]
+----
+# From bastion, test container DNS resolution
+nslookup frontend
+nslookup api
+nslookup database
+
+# Test API connectivity
+curl http://api:8080/api/todos
+
+# Test database connectivity
+psql -h database -U appuser -d todoapp -c "SELECT version();"
+
+# Test cache connectivity  
+redis-cli -h cache info server
+----
+
+=== Advanced Networking Example
+
+[source,yaml]
+----
+containers:
+  # Service mesh sidecar pattern
+  - name: "app"
+    image: "myapp:latest"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    environment:
+      PROXY_URL: "http://localhost:8000"
+      
+  - name: "proxy"
+    image: "envoyproxy/envoy:latest"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+      - name: admin
+        containerPort: 9901  # Admin interface
+        protocol: TCP
+    volumes:
+      - name: "envoy-config"
+        configMap:
+          name: "envoy-sidecar-config"
+    volumeMounts:
+      - name: "envoy-config"
+        mountPath: "/etc/envoy"
+----
+
+== 🛠️ Step 4: Container Lifecycle Management
+
+Control container startup and health:
+
+[source,yaml]
+----
+containers:
+  - name: "web-app"
+    image: "webapp:v2.0"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+      
+    # Lifecycle hooks
+    lifecycle:
+      postStart:
+        exec:
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              echo "$(date): Container started" >> /var/log/lifecycle.log
+              /app/warmup.sh
+              
+      preStop:
+        exec:
+          command:
+            - "/bin/sh" 
+            - "-c"
+            - |
+              echo "$(date): Graceful shutdown" >> /var/log/lifecycle.log
+              /app/shutdown.sh
+              
+    # Health checks
+    readinessProbe:
+      httpGet:
+        path: "/health/ready"
+        port: 8080
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      
+    livenessProbe:
+      httpGet:
+        path: "/health/live"
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+----
+
+== 🛠️ Step 5: Development and Testing Containers
+
+Deploy containers for development workflows:
+
+[source,yaml]
+----
+containers:
+  # Development environment
+  - name: "dev-env"
+    image: "codercom/code-server:latest"
+    memory: "1G"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80
+    environment:
+      PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "workspace"
+        emptyDir: {}
+    volumeMounts:
+      - name: "workspace"
+        mountPath: "/home/coder/workspace"
+        
+  # Hot-reload development server
+  - name: "dev-server"
+    image: "node:18"
+    command: ["npm", "run", "dev"]
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      NODE_ENV: "development"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - name: "source-code"
+        configMap:
+          name: "app-source"
+      - name: "node-modules"
+        emptyDir: {}
+    volumeMounts:
+      - name: "source-code"
+        mountPath: "/app/src"
+      - name: "node-modules"
+        mountPath: "/app/node_modules"
+        
+  # Testing container
+  - name: "test-runner"
+    image: "cypress/included:latest"
+    environment:
+      CYPRESS_BASE_URL: "http://dev-server:3000"
+    volumes:
+      - name: "test-specs"
+        configMap:
+          name: "cypress-tests"
+      - name: "test-results"
+        emptyDir: {}
+    volumeMounts:
+      - name: "test-specs"
+        mountPath: "/cypress/integration"
+      - name: "test-results"
+        mountPath: "/cypress/results"
+----
+
+== 🛠️ Step 6: Container Security Configuration
+
+Implement security best practices:
+
+[source,yaml]
+----
+containers:
+  - name: "secure-app"
+    image: "alpine/secure-app:latest"
+    memory: "256Mi"
+    
+    # Security context  
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      
+    # Environment variables from secrets
+    environment:
+      DB_PASSWORD: "{{ common_password }}"
+      JWT_SECRET: "{{ jwt_secret }}"
+      
+    # Secure volume mounts
+    volumes:
+      - name: "app-secrets"
+        secret:
+          secretName: "app-credentials"
+          defaultMode: 0400
+      - name: "tmp-volume"
+        emptyDir: {}
+        
+    volumeMounts:
+      - name: "app-secrets"
+        mountPath: "/secrets" 
+        readOnly: true
+      - name: "tmp-volume"
+        mountPath: "/tmp"
+----
+
+== 🛠️ Step 7: Testing Your Container Deployment
+
+Validate your container setup:
+
+[source,bash]
+----
+# Test application health
+curl http://frontend/
+curl http://api:8080/health
+
+# Test database connectivity
+psql -h database -U appuser -d todoapp -c "\dt"
+
+# Test cache functionality
+redis-cli -h cache set test "container-works"
+redis-cli -h cache get test
+
+# Check container logs
+kubectl logs deployment/frontend
+kubectl logs deployment/api
+
+# Test container scaling (if supported)
+kubectl scale deployment/api --replicas=2
+----
+
+== 🛠️ Step 8: Monitoring and Observability
+
+Add monitoring to your containers:
+
+[source,yaml]
+----
+containers:
+  # Application with metrics
+  - name: "monitored-app"
+    image: "myapp:instrumented"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP80  # Application
+      - port: 9090  # Metrics
+    environment:
+      METRICS_PORT: "9090"
+      METRICS_ENABLED: "true"
+      
+  # Metrics collector
+  - name: "prometheus"
+    image: "prom/prometheus:latest"
+    memory: "256Mi"
+    ports:
+      - port: 9090
+    volumes:
+      - name: "prometheus-config"
+        configMap:
+          name: "prometheus-config"
+    volumeMounts:
+      - name: "prometheus-config"
+        mountPath: "/etc/prometheus"
+        
+  # Dashboard
+  - name: "grafana"
+    image: "grafana/grafana:latest"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ common_password }}"
+----
+
+== ✅ Container Deployment Checklist
+
+Verify your advanced container deployment:
+
+- [ ] **Multi-container stack** deployed successfully
+- [ ] **Inter-container communication** working
+- [ ] **Persistent storage** configured properly  
+- [ ] **Environment variables** and secrets secure
+- [ ] **Health checks** responding correctly
+- [ ] **Logging** accessible and meaningful
+- [ ] **Resource limits** appropriate
+- [ ] **Security context** configured
+
+== 🛠️ Troubleshooting Containers
+
+Common issues and solutions:
+
+**Container won't start?**
+→ Check image name, resource limits, and environment variables
+
+**Can't connect between containers?**
+→ Verify container names and port configurations
+
+**Out of memory errors?**
+→ Increase memory limits or optimize applications
+
+**Storage issues?**
+→ Check volume mounts and permissions
+
+**Networking problems?**
+→ Verify DNS resolution and port accessibility
+
+== 🎯 What You've Accomplished
+
+You now have enterprise-level container skills:
+
+✅ **Multi-container applications** with proper service architecture  
+✅ **Advanced storage patterns** for data persistence and sharing  
+✅ **Container networking** and service discovery mastery  
+✅ **Security best practices** implementation  
+✅ **Development workflows** with containers  
+✅ **Monitoring and observability** setup  
+✅ **Troubleshooting expertise** for container issues  
+
+== 🚀 Next Steps
+
+=== Advanced Topics
+* xref:container-advanced.adoc[Advanced Container Configuration] - Deep-dive reference
+* xref:production-patterns-guide.adoc[Production Patterns] - Real-world container deployments
+* xref:enterprise-lab-patterns.adoc[Enterprise Patterns] - Scale container architectures
+
+=== Integration
+* xref:networking-basics.adoc[Networking Basics] - Container networking deep-dive  
+* xref:vm-basics.adoc[VM Configuration] - Hybrid VM+container environments
+
+You're now ready to build sophisticated container-based lab environments! 🐳

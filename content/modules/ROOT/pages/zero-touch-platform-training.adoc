@@ -135,16 +135,21 @@ Master complex scenarios and Business Unit requirements.
 Comprehensive guides for specific topics and advanced features.
 
 ==== Core Configuration Guides
-* xref:adding-instances.adoc[**Adding Instances and Containers**] - Complete VM and container reference
-* xref:configuring-networking.adoc[**Configuring Networking**] - Advanced networking patterns
-* xref:configuring-firewall.adoc[**Configuring Firewall Rules**] - Security and traffic control
-* xref:creating-content.adoc[**Creating Lab Content and UI Configuration**] - Content authoring reference
+* xref:vm-basics.adoc[**Adding Instances and Containers**] - Complete VM and container reference
+* xref:networking-basics.adoc[**Configuring Networking**] - Advanced networking patterns
+* xref:firewall-basics.adoc[**Configuring Firewall Rules**] - Security and traffic control
+* xref:content-authoring-basics.adoc[**Creating Lab Content and UI Configuration**] - Content authoring reference
 
 ==== Advanced Features
 * xref:advanced-lab-features.adoc[**Advanced Lab Features and Special Cases**] - Business Unit requirements, troubleshooting, and complex scenarios
 * xref:production-patterns-guide.adoc[**Production Lab Patterns Guide**] - Real-world patterns from converted labs
 * xref:enterprise-lab-patterns.adoc[**Enterprise Lab Patterns**] - Satellite, AAP, and multi-platform environments
 * xref:template-customization-guide.adoc[**Template Customization Guide**] - Complete overview and best practices
+
+==== Backend Architecture
+* xref:deployment-architecture.adoc[**Zero Touch Deployment Architecture**] - Backend systems, deployment process, and platform integration
+* xref:git-integration-patterns.adoc[**Git Integration Patterns**] - How Git repositories integrate with the deployment system
+* xref:cnv-platform-features.adoc[**OpenShift CNV Platform Features**] - Advanced virtualization capabilities and enterprise features
 
 == 🎓 Skill Progression
 

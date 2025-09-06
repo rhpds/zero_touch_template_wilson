@@ -1,0 +1,166 @@
+= Networking Basics
+:estimated-time: 15-20 minutes
+
+== Overview
+
+Learn the fundamentals of configuring networks in your Zero Touch lab environment. This guide covers the essential networking concepts and basic configurations.
+
+== Configuration File Structure
+
+The `config/networks.yaml` file defines your lab's network topology:
+
+[source,yaml]
+----
+---
+- name: "lab-network"
+  cidr: "10.1.0.0/24"
+  description: "Main lab network"
+
+- name: "dmz-network"  
+  cidr: "10.2.0.0/24"
+  description: "DMZ for public services"
+----
+
+== Default Network
+
+Every lab automatically includes a `default` network:
+* Provides internet access for VMs
+* Uses NAT for outbound connectivity
+* No additional configuration required
+
+== Creating Custom Networks
+
+=== Basic Network Configuration
+
+[source,yaml]
+----
+---
+- name: "backend-db"
+  cidr: "192.168.10.0/24"
+  description: "Database tier network"
+  
+- name: "frontend-web"
+  cidr: "192.168.20.0/24" 
+  description: "Web server network"
+----
+
+=== Network Parameters
+
+[cols="1,1,3"]
+|===
+|Parameter |Required |Description
+
+|`name`
+|✅ Yes
+|Unique network identifier (DNS-safe)
+
+|`cidr` 
+|✅ Yes
+|Network range in CIDR notation
+
+|`description`
+|No
+|Human-readable network description
+
+|`mtu`
+|No
+|Maximum Transmission Unit (default: 1500)
+|===
+
+== Common Network Patterns
+
+=== Development Environment
+
+[source,yaml]
+----
+---
+- name: "dev-network"
+  cidr: "10.100.0.0/24"
+  description: "Development environment"
+  
+- name: "test-network"
+  cidr: "10.200.0.0/24" 
+  description: "Testing environment"
+----
+
+=== Multi-Tier Architecture
+
+[source,yaml]
+----
+---
+- name: "web-tier"
+  cidr: "10.10.0.0/24"
+  description: "Web servers and load balancers"
+  
+- name: "app-tier"
+  cidr: "10.20.0.0/24"
+  description: "Application servers"
+  
+- name: "data-tier"
+  cidr: "10.30.0.0/24"
+  description: "Database and storage"
+----
+
+== Connecting VMs to Networks
+
+In your `config/instances.yaml`, specify networks for each VM:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "web-server"
+    image: "rhel-9.6"
+    networks:
+      - default        # Internet access
+      - web-tier      # Custom network
+    
+  - name: "database"
+    image: "rhel-9.6" 
+    networks:
+      - data-tier     # Isolated network
+----
+
+== Best Practices
+
+=== CIDR Planning
+* **Use private ranges**: 10.x.x.x, 172.16-31.x.x, 192.168.x.x
+* **Plan for growth**: Leave room for additional subnets
+* **Avoid conflicts**: Don't overlap with existing networks
+
+=== Network Design
+* **Default + Custom**: Always include default for internet access
+* **Logical separation**: Group related services on same network
+* **Security zones**: Separate tiers with different trust levels
+
+== Testing Your Networks
+
+After deploying, verify network configuration:
+
+[source,bash]
+----
+# On each VM, check interfaces
+ip addr show
+
+# Test connectivity between VMs on same network
+ping <other-vm-ip>
+
+# Verify internet access via default network
+ping google.com
+----
+
+== Troubleshooting
+
+**VMs can't communicate?**
+→ Check they're on the same custom network
+
+**No internet access?** 
+→ Ensure VMs include `default` network
+
+**IP conflicts?**
+→ Verify CIDR ranges don't overlap
+
+== Related Documentation
+
+* xref:vm-basics.adoc[Adding Instances] - Connect VMs to networks
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complex networking topologies - Complex topologies
+* xref:firewall-basics.adoc[Configuring Firewall Rules] - Network security
