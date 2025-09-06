@@ -7,14 +7,15 @@ This template includes a pre-configured VS Code container that automatically clo
 
 == VS Code Container Features
 
-The `vscode-dev` container provides:
+The `vscode` container provides:
 
-* **Browser-based VS Code** - Full VS Code experience in your web browser
+* **Browser-based VS Code** - Full VS Code experience in your web browser  
+* **OpenShift-compatible image** - `linuxserver/code-server` designed for container platforms
 * **Automatic repository cloning** - Zero Touch template pre-loaded
 * **Development branch setup** - Ready for customization work
-* **Pre-installed extensions** - YAML, AsciiDoc, JSON support
+* **Secure access** - HTTPS on port 8443 with password protection
 * **Integrated terminal** - Command-line access within VS Code
-* **Password protection** - Secured with lab credentials
+* **Persistent workspace** - Files saved in `/config/workspace/`
 
 == Accessing VS Code
 

@@ -1,37 +1,38 @@
 ---
 containers:
   - name: "vscode"
-    image: "codercom/code-server:latest"
+    image: "linuxserver/code-server:latest"
     memory: "4G"
     cpu: "1"
     ports:
       - name: vscode
-        containerPort: 8080
+        containerPort: 8443
         protocol: TCP
     environment:
+      PUID: "1001"
+      PGID: "1001"
       PASSWORD: "{{ common_password }}"
       SUDO_PASSWORD: "{{ common_password }}"
-      GIT_REPO: "https://github.com/rhpds/zero_touch_template_wilson.git"
-      DEFAULT_WORKSPACE: "/home/coder/workspace/zero_touch_template_wilson"
+      DEFAULT_WORKSPACE: "/config/workspace/zero_touch_template_wilson"
     commands:
-      - "mkdir -p /home/coder/workspace"
-      - "cd /home/coder/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
-      - "cd /home/coder/workspace/zero_touch_template_wilson && git checkout -b lab-development"
+      - "mkdir -p /config/workspace"
+      - "cd /config/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
+      - "cd /config/workspace/zero_touch_template_wilson && git checkout -b lab-development"
       - "git config --global user.name 'Lab Developer'"
       - "git config --global user.email 'developer@lab.local'"
-      - "chown -R coder:coder /home/coder/workspace"
+      - "chown -R abc:abc /config/workspace"
     services:
       - name: vscode
         ports:
-          - port: 8080
+          - port: 8443
             protocol: TCP
-            targetPort: 8080
+            targetPort: 8443
             name: vscode
     routes:
       - name: vscode
         host: vscode
         service: vscode
-        targetPort: 8080
+        targetPort: 8443
         tls: true
 virtualmachines:
   - name: "lab-server"
