@@ -68,47 +68,135 @@ virtualmachines:
 |List of networks to connect (default: ["default"])
 |===
 
-== Common VM Configurations
+== ⚠️ CRITICAL REQUIREMENT: Bastion Host
 
-=== Development Workstation
+**At least ONE VM MUST be tagged with the "bastions" Ansible group for proper deployment.**
 
 [source,yaml]
 ----
-- name: "dev-workstation"
+virtualmachines:
+  - name: "management-server"    # At least one bastion required
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"        # ← REQUIRED for Zero Touch deployment
+      - key: "ostype"
+        value: "linux"
+        
+  - name: "web-server"          # Other VMs can use different groups
+    tags:
+      - key: "AnsibleGroup"
+        value: "webservers"      # ← Different group OK
+      - key: "ostype"
+        value: "linux"
+        
+  - name: "database-server"     # Multiple groups possible
+    tags:
+      - key: "AnsibleGroup"
+        value: "databases"       # ← Different group OK
+      - key: "ostype"
+        value: "linux"
+----
+
+**Why At Least One Bastion Is Required:**
+- The Zero Touch deployer needs one "bastion" host for SSH access and management
+- Bastions configure user accounts, terminal integration, and lab access
+- Other VMs can use appropriate Ansible groups (webservers, databases, etc.)
+- Without any bastion, the deployment will **fail completely**
+
+== Common VM Configurations
+
+=== Multi-Tier Lab Example
+
+[source,yaml]
+----
+- name: "management-server"     # Bastion host (required)
+  image: "rhel-9.6"
+  cores: 2
+  memory: "4G"
+  tags:
+    - key: "AnsibleGroup"
+      value: "bastions"         # ← At least one bastion required
+    - key: "ostype"
+      value: "linux"
+  networks:
+    - management
+    
+- name: "web-server"           # Web tier
+  image: "rhel-9.6"
+  cores: 2
+  memory: "4G"
+  tags:
+    - key: "AnsibleGroup"
+      value: "webservers"       # ← Different group for web tier
+    - key: "ostype"
+      value: "linux"
+  networks:
+    - default
+    - web-tier
+
+- name: "database-server"      # Data tier
   image: "rhel-9.6"
   cores: 4
   memory: "8G"
-  image_size: "100G"
-  networks:
-    - default
-    - dev-network
-----
-
-=== Database Server
-
-[source,yaml]
-----
-- name: "postgres-db"
-  image: "rhel-9.6"
-  cores: 2
-  memory: "8G"
   image_size: "200G"
+  tags:
+    - key: "AnsibleGroup"
+      value: "databases"        # ← Different group for data tier
+    - key: "ostype"
+      value: "linux"
   networks:
     - data-tier
 ----
 
-=== Web Server
+=== Single VM Lab Example
 
 [source,yaml]
 ----
-- name: "apache-web"
+- name: "lab-server"           # Single VM serving as bastion
   image: "rhel-9.6"
   cores: 2
   memory: "4G"
+  tags:
+    - key: "AnsibleGroup"
+      value: "bastions"         # ← Required for any lab
+    - key: "ostype"
+      value: "linux"
   networks:
     - default
-    - web-tier
 ----
+
+== Common Ansible Groups
+
+Choose appropriate Ansible groups based on your VM's role:
+
+[cols="1,3"]
+|===
+|Ansible Group |Use Case
+
+|`bastions`
+|**Required** - Management servers, jump hosts, SSH access points
+
+|`webservers`
+|Apache, Nginx, application frontend servers
+
+|`databases`
+|PostgreSQL, MySQL, MongoDB, data storage servers
+
+|`loadbalancers`
+|HAProxy, Nginx load balancers, traffic distribution
+
+|`monitoring`
+|Prometheus, Grafana, monitoring and observability
+
+|`applications`
+|Custom application servers, microservices
+
+|`development`
+|Development workstations, IDE servers
+
+|`testing`
+|CI/CD runners, test environments
+|===
 
 == Exposing Services
 

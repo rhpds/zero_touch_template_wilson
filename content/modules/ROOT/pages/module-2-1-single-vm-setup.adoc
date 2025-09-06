@@ -72,10 +72,12 @@ virtualmachines:
       - tree
       - htop
     tags:
+      - key: "AnsibleGroup"
+        value: "bastions"        # ← REQUIRED for deployment
+      - key: "ostype"
+        value: "linux"
       - key: "Purpose"
         value: "Training"
-      - key: "AnsibleGroup"
-        value: "lab-servers"
 ----
 
 === Understanding Each Parameter
@@ -116,6 +118,13 @@ virtualmachines:
 |Key-value pairs
 |Metadata for automation and organization
 |===
+
+[IMPORTANT]
+====
+**At least ONE VM must have the "bastions" Ansible group tag** for Zero Touch deployment to succeed.
+
+The bastion host provides SSH access, user accounts, and terminal integration. In single-VM labs, this is your main server. In multi-tier labs, designate one VM as the bastion (usually a management/jump server) while others can use different Ansible groups like "webservers" or "databases".
+====
 
 == 🛠️ Step 3: Update the UI Configuration
 

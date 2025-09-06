@@ -85,6 +85,32 @@ Before customizing your template:
 * Test lab scenarios thoroughly before deployment
 * Consider platform architecture when designing complex labs
 
+== ⚠️ CRITICAL REQUIREMENTS
+
+=== Bastion Host Requirement
+
+**At least ONE VM MUST be tagged with the "bastions" Ansible group:**
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "bastion-host"         # At least one bastion required
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"        # ← REQUIRED for deployment
+      - key: "ostype"
+        value: "linux"
+        
+  - name: "web-server"          # Other VMs can use different groups
+    tags:
+      - key: "AnsibleGroup"
+        value: "webservers"      # ← Different group OK
+      - key: "ostype"
+        value: "linux"
+----
+
+The bastion host provides SSH access, user accounts, and terminal integration. Other VMs can use appropriate Ansible groups for their roles (webservers, databases, etc.). Without any bastion, deployment will **fail completely**.
+
 == Related Documentation
 
 === Self-Paced Training

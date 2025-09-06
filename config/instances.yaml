@@ -46,5 +46,10 @@ virtualmachines:
       - tmux
       - curl
       - wget
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"
+      - key: "ostype"
+        value: "linux"
     networks:
       - default
