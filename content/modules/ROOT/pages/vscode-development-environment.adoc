@@ -3,31 +3,98 @@
 
 == Overview
 
-This template includes a pre-configured VS Code container that automatically clones the Zero Touch template repository, providing an integrated development environment for template customization and lab content creation.
+This template includes a full VS Code development environment that automatically clones the Zero Touch template repository and installs code-server during deployment, providing a complete browser-based IDE for template customization and lab content creation.
 
 == VS Code Container Features
 
 The `vscode` container provides:
 
-* **Browser-based VS Code** - Full VS Code experience in your web browser  
-* **OpenShift-compatible image** - `linuxserver/code-server` designed for container platforms
-* **Automatic repository cloning** - Zero Touch template pre-loaded
-* **Development branch setup** - Ready for customization work
-* **Secure access** - HTTPS on port 8443 with password protection
-* **Integrated terminal** - Command-line access within VS Code
-* **Persistent workspace** - Files saved in `/config/workspace/`
+* **Full VS Code experience** - Complete browser-based VS Code IDE with all features
+* **Red Hat UBI Node.js base** - Reliable, OpenShift-compatible container platform
+* **Dynamic code-server installation** - Fresh installation of @coder/code-server via npm
+* **Automatic repository cloning** - Zero Touch template pre-loaded and ready
+* **Development branch setup** - Pre-configured `lab-development` branch for customization work  
+* **Password protection** - Secured with your lab's common password
+* **Git integration** - Repository cloned and configured for development
+* **Full terminal access** - Integrated terminal within VS Code
+* **Extension support** - Can install VS Code extensions as needed
 
-== Accessing VS Code
+== Accessing the Development Environment
 
 === Through Lab Interface
 
 After lab deployment:
 
 1. **Click the "💻 VS Code" tab** - Integrated iframe access in lab interface
-2. **Enter password** - Uses your lab's common password
+2. **Enter password** - Uses your lab's common password (same as SSH access)
+3. **Wait for startup** - Code-server installs and starts automatically (may take 30-60 seconds)
 3. **Start developing** - Repository is pre-cloned and ready
 
 The VS Code environment loads directly in the lab interface, providing seamless access without leaving your training environment.
+
+== Container Configuration
+
+The VS Code container uses a Red Hat UBI Node.js base image and installs code-server during deployment:
+
+[source,yaml]
+----
+containers:
+  - name: "vscode"
+    image: "registry.redhat.io/ubi9/nodejs-18:latest"
+    memory: "4G"
+    cpu: "1"
+    ports:
+      - name: vscode
+        containerPort: 8080
+        protocol: TCP
+    environment:
+      PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: workspace-data
+        emptyDir: {}
+      - name: vscode-config
+        emptyDir: {}
+    volumeMounts:
+      - name: workspace-data
+        mountPath: /opt/app-root/src/workspace
+      - name: vscode-config
+        mountPath: /opt/app-root/src/.local
+    commands:
+      - "npm install -g @coder/code-server"
+      - "mkdir -p /opt/app-root/src/workspace"
+      - "mkdir -p /opt/app-root/src/.local/share/code-server"  
+      - "cd /opt/app-root/src/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
+      - "cd /opt/app-root/src/workspace/zero_touch_template_wilson && git checkout -b lab-development"
+      - "git config --global user.name 'Lab Developer'"
+      - "git config --global user.email 'developer@lab.local'"
+      - "nohup code-server --bind-addr 0.0.0.0:8080 --password \"$PASSWORD\" --disable-telemetry --user-data-dir /opt/app-root/src/.local/share/code-server /opt/app-root/src/workspace/zero_touch_template_wilson > /tmp/code-server.log 2>&1 &"
+----
+
+=== Key Configuration Benefits
+
+* **🔒 OpenShift Compatible** - Red Hat UBI base image guaranteed to work
+* **📦 Dynamic Installation** - Fresh code-server installation via npm during startup
+* **🔐 Secure Access** - Password protection using lab credentials
+* **📁 Auto Setup** - Repository cloned and development branch created automatically  
+* **🖥️ Full IDE** - Complete VS Code experience with terminal and extension support
+* **💾 Persistent Storage** - Volumes ensure data persists across container restarts
+
+=== Volume Configuration
+
+**Workspace Volume** (`workspace-data`):
+- **Mount Point**: `/opt/app-root/src/workspace`
+- **Purpose**: Stores Git repository, user files, and project data
+- **Type**: `emptyDir` - Fast local storage within the pod
+
+**Configuration Volume** (`vscode-config`):
+- **Mount Point**: `/opt/app-root/src/.local`  
+- **Purpose**: Stores VS Code settings, extensions, and user preferences
+- **Type**: `emptyDir` - Persists VS Code customizations during lab session
+
+[NOTE]
+====
+**EmptyDir Volumes**: Data persists for the lifetime of the pod but is lost when the pod is deleted. This provides fast local storage perfect for lab sessions while keeping the environment clean between different lab deployments.
+====
 
 === Direct Access
 
@@ -48,7 +115,7 @@ The VS Code container automatically sets up:
 
 [source,bash]
 ----
-/home/coder/workspace/zero_touch_template_wilson/
+/opt/app-root/src/workspace/zero_touch_template_wilson/
 ├── config/                    # Lab configuration
 │   ├── instances.yaml        # VM and container definitions
 │   ├── networks.yaml         # Network topology

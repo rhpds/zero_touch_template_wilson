@@ -1,38 +1,47 @@
 ---
 containers:
   - name: "vscode"
-    image: "linuxserver/code-server:latest"
+    image: "registry.redhat.io/ubi9/nodejs-18:latest"
     memory: "4G"
     cpu: "1"
     ports:
       - name: vscode
-        containerPort: 8443
+        containerPort: 8080
         protocol: TCP
     environment:
-      PUID: "1001"
-      PGID: "1001"
       PASSWORD: "{{ common_password }}"
-      SUDO_PASSWORD: "{{ common_password }}"
-      DEFAULT_WORKSPACE: "/config/workspace/zero_touch_template_wilson"
+    volumes:
+      - name: workspace-data
+        emptyDir: {}
+      - name: vscode-config
+        emptyDir: {}
+    volumeMounts:
+      - name: workspace-data
+        mountPath: /opt/app-root/src/workspace
+      - name: vscode-config
+        mountPath: /opt/app-root/src/.local
     commands:
-      - "mkdir -p /config/workspace"
-      - "cd /config/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
-      - "cd /config/workspace/zero_touch_template_wilson && git checkout -b lab-development"
+      - "npm install -g @coder/code-server"
+      - "mkdir -p /opt/app-root/src/workspace"
+      - "mkdir -p /opt/app-root/src/.local/share/code-server"
+      - "cd /opt/app-root/src/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
+      - "cd /opt/app-root/src/workspace/zero_touch_template_wilson && git checkout -b lab-development"
       - "git config --global user.name 'Lab Developer'"
       - "git config --global user.email 'developer@lab.local'"
-      - "chown -R abc:abc /config/workspace"
+      - "nohup code-server --bind-addr 0.0.0.0:8080 --password \"$PASSWORD\" --disable-telemetry --user-data-dir /opt/app-root/src/.local/share/code-server /opt/app-root/src/workspace/zero_touch_template_wilson > /tmp/code-server.log 2>&1 &"
+      - "sleep 5"
     services:
       - name: vscode
         ports:
-          - port: 8443
+          - port: 8080
             protocol: TCP
-            targetPort: 8443
+            targetPort: 8080
             name: vscode
     routes:
       - name: vscode
         host: vscode
         service: vscode
-        targetPort: 8443
+        targetPort: 8080
         tls: true
 virtualmachines:
   - name: "lab-server"
