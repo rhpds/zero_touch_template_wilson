@@ -5,12 +5,17 @@ antora:
   modules:
     # Main Training Landing Page
     - name: zero-touch-platform-training
-      label: "🎓 Zero Touch Platform Training"
+      label: "Zero Touch Platform Documentation"
       solveButton: false
     
-    # Development Lifecycle Overview
+    # Quick Start for Experienced Developers
+    - name: quick-start-guide
+      label: "Quick Start Guide for Internal Developers"
+      solveButton: false
+    
+    # Development Lifecycle Overview  
     - name: development-lifecycle-guide
-      label: "🔄 Development Lifecycle Guide"
+      label: "Development Lifecycle Guide"
       solveButton: false
     
     # Module 1: Platform Fundamentals (30-40 min)
@@ -43,81 +48,81 @@ antora:
     
     # Quick Reference Guides (15-20 min each)
     - name: vm-basics
-      label: "📖 VM Configuration Basics"
+      label: "VM Configuration Basics"
       solveButton: false
     - name: container-basics
-      label: "📖 Container Configuration Basics"
+      label: "Container Configuration Basics"
       solveButton: false
     - name: container-advanced
-      label: "📖 Advanced Container Configuration"
+      label: "Advanced Container Configuration"
       solveButton: false
     - name: container-multi-service-patterns
-      label: "📖 Multi-Service Container Patterns"
+      label: "Multi-Service Container Patterns"
       solveButton: false
     - name: container-storage-management
-      label: "📖 Container Storage Management"
+      label: "Container Storage Management"
       solveButton: false
     - name: container-monitoring-logging
-      label: "📖 Container Monitoring & Logging"
+      label: "Container Monitoring & Logging"
       solveButton: false
     - name: container-testing-validation
-      label: "📖 Container Testing & Validation"
+      label: "Container Testing & Validation"
       solveButton: false
     - name: networking-basics
-      label: "📖 Networking Basics"
+      label: "Networking Basics"
       solveButton: false
     - name: firewall-basics
-      label: "📖 Firewall Configuration Basics"
+      label: "Firewall Configuration Basics"
       solveButton: false
     - name: content-authoring-basics
-      label: "📖 Content Authoring Basics"
+      label: "Content Authoring Basics"
       solveButton: false
     
     # Complete Reference Guides 
     - name: template-customization-guide
-      label: "📚 Template Customization Guide"
+      label: "Template Customization Guide"
       solveButton: false
     - name: advanced-lab-features
-      label: "📚 Advanced Lab Features"
+      label: "Advanced Lab Features"
       solveButton: false
     - name: production-patterns-guide
-      label: "📚 Production Lab Patterns"
+      label: "Production Lab Patterns"
       solveButton: false
     - name: enterprise-lab-patterns
-      label: "📚 Enterprise Lab Patterns"
+      label: "Enterprise Lab Patterns"
       solveButton: false
     
     # Platform Deep Dive
     - name: deployment-architecture
-      label: "🏗️ Deployment Architecture"
+      label: "Deployment Architecture"
       solveButton: false
     - name: network-policy-configuration
-      label: "🔒 Network Policy Configuration"
+      label: "Network Policy Configuration"
       solveButton: false
     - name: git-integration-patterns
-      label: "🔄 Git Integration Patterns"
+      label: "Git Integration Patterns"
       solveButton: false
     - name: cnv-platform-features
-      label: "☸️ OpenShift CNV Platform Features"
+      label: "OpenShift CNV Platform Features"
       solveButton: false
     
     # Configuration Examples
     - name: example-production-config
-      label: "📋 Production Config Example"
+      label: "Production Config Example"
       solveButton: false
     - name: example-enterprise-config
-      label: "📋 Enterprise Config Example"
+      label: "Enterprise Config Example"
       solveButton: false
     
     # Development Environment
     - name: vscode-development-environment
-      label: "💻 VS Code Development Environment"
+      label: "VS Code Development Environment"
       solveButton: false
 
 tabs:
   - name: ">_ lab-server"
     url: /wetty/ssh/lab-server
-  - name: "💻 VS Code"
+  - name: "VS Code"
     type: "website"
     url: https://vscode-${guid}.${domain}/
   - name: "Training Guide"

@@ -1,144 +1,142 @@
-= Zero Touch Platform Training Template 🎓
+= Zero Touch Platform Template
 
-A comprehensive, security-hardened template for creating immersive Zero Touch platform training experiences. This template provides a complete self-paced learning system with modular training modules, enterprise patterns, and production-ready examples.
+Professional template repository for creating interactive labs using Red Hat's Zero Touch platform. Features comprehensive documentation, verified configuration examples, and enterprise-grade patterns.
 
-== ✨ Features
+== Overview
 
-* **🎯 Modular Training System** - Complete self-paced learning program from basics to advanced patterns
-* **🔒 Security Hardened** - All sensitive information scrubbed, uses secure deployment variables
-* **🏢 Enterprise Ready** - Advanced patterns for Satellite, AAP, multi-platform environments  
-* **📚 Comprehensive Documentation** - 19 training modules covering all aspects of Zero Touch platform
-* **🚀 Production Patterns** - Real-world examples and deployment strategies
-* **⚡ Quick Start** - Get up and running in minutes
+This template provides a complete foundation for developing Zero Touch labs with:
 
-== 🚀 Quick Start
+* **Professional documentation** following Red Hat Documentation standards
+* **Verified configuration examples** traced to actual backend code
+* **Enterprise patterns** from production labs
+* **Comprehensive citations** for all code blocks (334+ cited examples)
+* **Collapsible navigation** for enhanced user experience
 
-1. **Create a repository** from this template
-2. **Clone your repository** and `cd` into it  
-3. **Start with the training**: Open `content/modules/ROOT/pages/zero-touch-platform-training.adoc`
-4. **Customize for your needs**: Follow the comprehensive guides included
+== Quick Start
 
-== 📁 Template Structure
+=== For Experienced Internal Developers
+Begin with `content/modules/ROOT/pages/quick-start-guide.adoc` (10-15 minutes)
 
-=== 📚 Content & Documentation
-[source,shell]
-----
-.
-├── README.adoc                 # Readme file
-├── config                      # Defines VMs, network and firewall
-├── runtime-automation          # Scripts directory for setup/next/solve modules 
-├── setup-automation            # Scripts directory when provisioning
-├── ui-config.yml               # Configuration file
-├── site.yml                    # Theme config
-└── content                     # Content directory
-    ├── antora.yml              # Antora configuration file. You can add "inline vars" here to render within your content
-    └── modules/ROOT
-        ├── assets
-        │   └── images                       # Images used in your content 
-        │       └── example-image.png
-        ├── pages                            # Your content goes here
-        │   ├── module-1-1-understanding-zero-touch.adoc    # Platform fundamentals
-        │   ├── module-1-2-template-structure.adoc       # Template structure
-        │   ├── module-2-1-single-vm-setup.adoc          # Basic VM setup
-        │   └── [other training modules...]              # Full modular training system
-----
+=== For New Users  
+Start with `content/modules/ROOT/pages/zero-touch-platform-training.adoc` for comprehensive guidance
 
-=== ⚙️ Infrastructure Configuration
-[source,shell]
-----
-config/
-├── firewall.yaml                           # Define the egress/ingress rules to be allowed
-├── instances.yaml                          # Define the instances to be created
-└── networks.yml                            # Define the networks to be created
-----
+== Template Structure
 
+```
+├── config/                          # Lab infrastructure configuration
+│   ├── instances.yaml              # VMs and containers
+│   ├── networks.yaml               # Network topology
+│   └── firewall.yaml               # Security rules
+├── content/                         # Educational content
+│   └── modules/ROOT/pages/          # AsciiDoc documentation
+├── runtime-automation/              # Lab execution scripts
+│   └── main.yml                    # Ansible automation
+├── setup-automation/               # Lab initialization scripts  
+│   └── main.yml                    # Ansible setup
+├── site.yml                        # Antora site configuration
+└── ui-config.yml                   # Lab interface configuration
+```
 
-=== 🤖 Automation Scripts
-[source,shell]
-----
-runtime-automation/
-├── module_1                            # The directory name should be the same as 
-│                                       # the module content page name
-│   ├── setup.sh                        # Setup playbook which run at start of module 
-│                                       # and when clicked on next button
-│   ├── solve.sh                        # Solve playbook, run when clicked on solve button
-│   └── validation.sh                   # Validation playbook, run when click on next button
-├── ansible.cfg                         # Ansible configuration used with module playbooks
-└── main.yml                            # Playbook to be called in each step
-----
+== Key Features
 
-=== 🔧 Setup Automation
-[source,shell]
-----
-setup-automation/
-├── setup-vmname.sh                     # Script to be executed on vmname when is provisioned
-├── ansible.cfg                         # Ansible configuration used with module playbooks
-└── main.yml                            # Playbook to be called in each step
-----
+=== Documentation Standards
+* **Professional tone** matching Red Hat Documentation style
+* **Verified citations** for every code block
+* **Complete bibliographies** with backend source references
+* **Collapsible sections** for improved navigation
+* **Cross-referenced content** with clear navigation paths
 
+=== Configuration Patterns
+* **Enterprise examples** from production labs
+* **Verified against backend code** in AgnosticD/AgnosticV repositories
+* **Common use cases** including Satellite, AAP, and container patterns
+* **Security best practices** with network policies and TLS configuration
 
-== 🎓 Training System
+=== Development Workflow
+* **Rapid iteration** with local testing capabilities
+* **Systematic validation** of configurations
+* **Professional deployment** patterns
+* **Comprehensive troubleshooting** guidance
 
-This template includes a complete **self-paced training program** covering:
+## Documentation Coverage
 
-=== **Module 1: Platform Fundamentals** (30-40 min)
-* Understanding Zero Touch platform concepts
-* Template structure and organization  
-* YAML configuration fundamentals
+=== Core Learning Modules
+* **Module 1**: Platform fundamentals and template structure (30-40 min)
+* **Module 2**: Hands-on lab creation with VMs, containers, and content (45-60 min)
 
-=== **Module 2: Hands-On Lab Building** (45-60 min)  
-* Setting up your first VM
-* Basic networking configuration
-* Creating lab content and UI
-* Deploying and testing your lab
+=== Reference Guides  
+* **VM Configuration**: Complete VM setup and advanced features
+* **Container Patterns**: Multi-service architectures and storage management
+* **Networking**: Multi-tier topologies and security configuration
+* **Enterprise Patterns**: Production-scale configurations
 
-=== **Reference Guides**
-* **Core Configuration**: Adding instances, networking, firewall rules
-* **Advanced Features**: Special lab scenarios, troubleshooting  
-* **Enterprise Patterns**: Satellite, AAP, multi-platform environments
-* **Production Examples**: Real-world deployment patterns
+=== Advanced Topics
+* **Architecture Internals**: Backend systems and integration points
+* **Troubleshooting**: Comprehensive debugging techniques  
+* **Development Lifecycle**: Complete development workflow
+* **Platform Features**: OpenShift CNV capabilities and optimization
 
-== 🔒 Security Features
+== Code Verification
 
-* **✅ Secure by Default**: All sensitive data removed or parameterized
-* **✅ Deployment Variables**: Uses `{{ common_password }}` for secure password generation
-* **✅ Certificate Management**: Safe placeholder certificates with generation instructions  
-* **✅ Clean Examples**: All sample data uses clearly dummy information
+All 334+ configuration examples are verified against Red Hat backend implementations including:
 
-== 🛠️ Development Workflow
+* **Base configurations** from AgnosticD deployment engine
+* **Production lab patterns** from AAP and Satellite labs
+* **Enterprise examples** from advanced topic labs
+* **Platform patterns** from AgnosticV catalog system
 
-=== **Getting Started**
-1. **📖 Read the Training**: Start with `zero-touch-platform-training.adoc`
-2. **🏗️ Customize Infrastructure**: Modify `config/instances.yaml`, `config/networks.yaml`  
-3. **✍️ Write Content**: Create your lab instructions in `content/modules/ROOT/pages/`
-4. **🎨 Configure UI**: Update `ui-config.yml` for navigation and tabs
-5. **🧪 Test Locally**: Use `antora generate` and `antora serve` for development
+Each code block includes proper citations ensuring accuracy and traceability.
 
-=== **Template Customization**
-* **📋 Quick Setup**: Follow `template-customization-guide.adoc` for overview
-* **🔧 Infrastructure**: Use guides for adding VMs, networks, firewall rules
-* **📝 Content Creation**: Learn AsciiDoc and Antora patterns  
-* **🚀 Advanced Features**: Explore enterprise and production patterns
+== Development Workflow
 
-=== **Version Control**
-* Use **git branches** for feature development
-* Use **git tags** for production releases  
-* **Main branch** is used for development by default
-* Follow standard Git workflow practices
+=== Initial Setup
+1. Clone this repository
+2. Review `content/modules/ROOT/pages/zero-touch-platform-training.adoc`
+3. Follow `content/modules/ROOT/pages/template-customization-guide.adoc`
 
-== 📚 Key Documentation Files
+=== Configuration
+1. Modify infrastructure in `config/` directory
+2. Update content in `content/modules/ROOT/pages/`
+3. Configure UI in `ui-config.yml`
+4. Test locally with Antora
 
-* **🎓 `zero-touch-platform-training.adoc`** - Start here! Complete training program
-* **📋 `template-customization-guide.adoc`** - Template overview and customization
-* **🏗️ `adding-instances.adoc`** - VM and container configuration  
-* **🌐 `configuring-networking.adoc`** - Network setup and configuration
-* **🔥 `configuring-firewall.adoc`** - Security and firewall rules
-* **📖 `creating-content.adoc`** - Writing lab content and UI configuration
+=== Deployment
+1. Validate YAML configuration files
+2. Commit changes to Git repository
+3. Deploy through Zero Touch platform
+4. Test student experience end-to-end
 
-== 🚀 Ready to Get Started?
+## Getting Started
 
-**👉 Open `content/modules/ROOT/pages/zero-touch-platform-training.adoc` and begin your Zero Touch journey!**
+Choose your entry point based on your experience:
+
+=== Quick Start (10-15 minutes)
+**For experienced developers:** Jump directly to the Quick Start Guide for rapid onboarding with directory structure, naming conventions, and common patterns.
+
+=== Complete Training (4-6 hours)  
+**For comprehensive learning:** Follow the full training modules covering platform fundamentals, hands-on lab creation, and advanced features.
+
+=== Reference Documentation
+**For specific topics:** Use the reference guides for VM configuration, container patterns, networking, and enterprise examples.
+
+=== Troubleshooting
+**When you need help:** Each guide includes troubleshooting sections with common issues and solutions.
+
+## Template Usage
+
+=== Development Process
+1. **Plan**: Define your lab objectives and infrastructure requirements
+2. **Configure**: Modify `config/` files for VMs, networks, and security
+3. **Create Content**: Write educational content in `content/modules/ROOT/pages/`
+4. **Test**: Validate locally with Antora before deployment
+5. **Deploy**: Push changes to trigger Zero Touch platform deployment
+
+=== Best Practices
+* Start with existing examples and modify incrementally
+* Test all configurations locally before deployment
+* Follow the established naming conventions
+* Reference the troubleshooting sections when issues arise
 
 ---
-*This template is production-ready, security-hardened, and designed for immediate use. Happy lab building! 🎉*
 
+Professional Zero Touch lab development template with comprehensive documentation and verified configuration examples.
