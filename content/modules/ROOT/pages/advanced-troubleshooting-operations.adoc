@@ -1,0 +1,511 @@
+= Advanced Troubleshooting & Operations
+:description: Production operations guide covering monitoring, troubleshooting, and disaster recovery for Zero Touch environments
+:keywords: troubleshooting, monitoring, backup, performance, operations
+:estimated-time: 25-35 minutes
+:page-level: advanced
+:page-role: reference
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Learning Outcomes
+
+Upon completion, you will understand:
+
+* Complex deployment failure diagnosis using logs, metrics, and distributed tracing
+* Root cause analysis on resource constraints and scheduling issues
+* Monitoring and alerting implementation for production Zero Touch environments  
+* Performance optimization through resource tuning and configuration adjustments
+* Disaster recovery and backup strategy design for lab environments
+
+== Production Troubleshooting Methodology
+
+=== Systematic Failure Analysis
+
+TIP: Always follow the three-tier diagnostic approach: Immediate Triage → Component Analysis → Infrastructure Analysis. This systematic method ensures no critical failure points are overlooked.
+
+.Deployment Failure Investigation Framework
+[source,text]
+----
+1. Immediate Triage                      # <1>
+   ├── Check AgnosticD deployment logs   
+   ├── Validate YAML configuration syntax  
+   ├── Verify resource quotas and limits
+   └── Check network policy conflicts
+
+2. Component-Level Analysis              # <2>
+   ├── CNV Controller status and events
+   ├── VM/VMI status and conditions  
+   ├── Pod scheduling and resource allocation
+   └── Storage provisioning and mounting
+
+3. Infrastructure Analysis               # <3>
+   ├── Node resource utilization
+   ├── Network connectivity and policies
+   ├── Storage backend health
+   └── Platform-level constraints
+----
+<1> Quick checks to identify obvious configuration or resource issues
+<2> Deep dive into Zero Touch and CNV component health
+<3> Platform-level investigation for complex infrastructure problems
+
+IMPORTANT: Document all findings during investigation. Complex issues often have multiple contributing factors that become clear only when viewed together.
+
+=== Advanced Log Analysis
+
+.Comprehensive Diagnostic Collection Script
+[source,bash]
+----
+#!/bin/bash
+# collect-deployment-logs.sh - Advanced diagnostic collection
+set -euo pipefail
+
+NAMESPACE="user-${1:?Username required}"              # <1>
+OUTPUT_DIR="/tmp/zero-touch-diagnostics-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$OUTPUT_DIR"
+
+log() { echo "[$(date +'%H:%M:%S')] $*" | tee -a "$OUTPUT_DIR/collection.log"; }
+
+# Deployment-level diagnostics
+log "=== Collecting AgnosticD Logs ==="
+oc logs -n gpte-automation deployment/ansible-automation-platform \
+    --since=2h > "$OUTPUT_DIR/agnosticd-logs.txt" 2>&1  # <2>
+
+# CNV and VM diagnostics
+log "=== CNV Virtual Machine Analysis ==="  
+oc get vm,vmi,pod -n "$NAMESPACE" -o wide \
+    > "$OUTPUT_DIR/vm-status.txt" 2>&1                 # <3>
+oc describe vm -n "$NAMESPACE" \
+    > "$OUTPUT_DIR/vm-details.txt" 2>&1
+
+# Resource constraint analysis
+log "=== Resource Constraint Analysis ==="
+oc describe nodes | grep -A 10 -B 5 "resource\|pressure" \
+    > "$OUTPUT_DIR/node-resources.txt"                 # <4>
+
+# Network troubleshooting  
+log "=== Network Policy Analysis ==="
+oc get networkpolicy -n "$NAMESPACE" -o yaml \
+    > "$OUTPUT_DIR/network-policies.yaml" 2>&1         # <5>
+oc get pods -n "$NAMESPACE" --show-labels \
+    > "$OUTPUT_DIR/pod-labels.txt" 2>&1
+
+# Event timeline reconstruction
+log "=== Event Timeline ==="
+oc get events -n "$NAMESPACE" --sort-by='.firstTimestamp' \
+    > "$OUTPUT_DIR/events.txt" 2>&1                    # <6>
+
+# Performance metrics (if Prometheus available)
+if command -v curl >/dev/null && oc get route prometheus -n openshift-monitoring &>/dev/null; then
+    log "=== Performance Metrics ==="
+    PROM_HOST=$(oc get route prometheus -n openshift-monitoring -o jsonpath='{.spec.host}')
+    
+    # Collect key metrics with error handling
+    curl -sf -G "https://$PROM_HOST/api/v1/query" \
+        --data-urlencode "query=kubevirt_vm_cpu_usage_seconds_total{namespace=\"$NAMESPACE\"}" \
+        > "$OUTPUT_DIR/cpu-metrics.json" 2>/dev/null || log "CPU metrics unavailable"  # <7>
+        
+    curl -sf -G "https://$PROM_HOST/api/v1/query" \
+        --data-urlencode "query=kubevirt_vm_memory_usage_bytes{namespace=\"$NAMESPACE\"}" \
+        > "$OUTPUT_DIR/memory-metrics.json" 2>/dev/null || log "Memory metrics unavailable"
+fi
+
+log "Diagnostics collected in: $OUTPUT_DIR"
+----
+<1> Parameter validation with meaningful error message
+<2> Capture deployment logs from last 2 hours with error handling
+<3> Get comprehensive VM state information
+<4> Analyze node resource pressure and allocation
+<5> Export network policies for connectivity analysis
+<6> Create event timeline for failure correlation
+<7> Collect performance metrics with graceful fallback
+
+WARNING: This script requires cluster-admin privileges for comprehensive node resource analysis.
+
+=== Common Production Issues & Solutions
+
+.Production Issue Summary
+[cols="2,1,2,3a"]
+|===
+|Issue |Severity |Symptoms |Quick Diagnosis
+
+|VM Scheduling Failures
+|🔴 Critical
+|VMs stuck in `Pending` state, `FailedScheduling` events
+|[source,bash]
+----
+oc describe vm <vm-name> \| grep -A 20 "Events:"
+oc describe node \| grep -A 5 "Allocatable:"
+----
+
+|Network Connectivity
+|🟡 High  
+|SSH timeouts, pod-to-VM connection refused
+|[source,bash]
+----
+oc get networkpolicy -n <namespace>
+oc get pods --show-labels \| grep vscode
+----
+
+|Performance Degradation
+|🟠 Medium
+|High response times, resource exhaustion alerts
+|[source,bash]  
+----
+oc top nodes
+oc describe vm <vm-name> \| grep -A 10 "Status:"
+----
+
+|Storage Provisioning  
+|🔴 Critical
+|PVC stuck in `Pending`, mount failures
+|[source,bash]
+----
+oc get pvc,storageclass  
+oc describe pvc <pvc-name>
+----
+|===
+
+==== Issue 1: VM Scheduling Failures
+
+IMPORTANT: VM scheduling failures are the most common production issue. Always check resource availability first, then investigate affinity/anti-affinity rules.
+
+.Root Cause Analysis Commands
+.VM Event Troubleshooting <<template-setup>>
+[source,bash]
+----
+# Check VM scheduling status and events
+oc describe vm <vm-name> | grep -A 20 "Events:"        # <1>
+
+# Verify node resource availability  
+oc describe node | grep -A 5 "Allocatable:\|Allocated resources:"  # <2>
+
+# Check VM affinity/anti-affinity rules
+oc get vm <vm-name> -o jsonpath='{.spec.template.spec.affinity}' | jq  # <3>
+
+# Advanced: Check scheduler predicates
+oc get events --field-selector reason=FailedScheduling -o wide  # <4>
+----
+<1> View VM-specific scheduling events and error messages
+<2> Compare resource requests against node capacity
+<3> Identify conflicting affinity/anti-affinity rules
+<4> Get detailed scheduler failure reasons across all resources
+
+*Advanced Solution:*
+[source,yaml]
+----
+# Implement intelligent resource planning
+virtualmachines:
+  - name: "resource-optimized-vm"
+    memory: "8G"
+    cores: 4
+    # Advanced scheduling constraints
+    placement:
+      # Prefer nodes with specific characteristics
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "node-type"
+              operator: In
+              values: ["compute-optimized"]
+      # Anti-affinity for high availability
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: "vm-type"
+              operator: In
+              values: ["database"]
+          topologyKey: "kubernetes.io/hostname"
+----
+
+**Issue 2: Network Connectivity Problems**
+
+*Advanced Network Debugging:*
+[source,bash]
+----
+# Comprehensive network diagnostics
+debug_network() {
+    local namespace=$1
+    local vm_name=$2
+    
+    echo "=== Network Policy Analysis ==="
+    # Check if VM pods are properly labeled for network policies
+    oc get pods -n "$namespace" -l kubevirt.io/vm="$vm_name" --show-labels
+    
+    # Test network policy rules
+    oc get networkpolicy -n "$namespace" -o yaml | grep -A 10 -B 5 "podSelector"
+    
+    echo "=== CNI Network Status ==="
+    # Check multus network attachments
+    oc get network-attachment-definitions -n "$namespace"
+    
+    # Advanced: Direct pod network debugging
+    POD=$(oc get pod -n "$namespace" -l kubevirt.io/vm="$vm_name" -o name | head -1)
+    oc exec -n "$namespace" "$POD" -c compute -- ip addr show
+    oc exec -n "$namespace" "$POD" -c compute -- ip route show
+}
+
+# Usage: debug_network user-wilson lab-server
+----
+
+**Issue 3: Performance Degradation**
+
+*Performance Tuning Strategy:*
+[source,yaml]
+----
+# High-performance configuration template
+virtualmachines:
+  - name: "performance-critical-vm"
+    memory: "16G"
+    cores: 8
+    # CPU performance optimization
+    cpu:
+      # Dedicate physical cores (requires sufficient node resources)
+      dedicatedCpuPlacement: true
+      # CPU feature requirements for performance
+      features:
+        - name: "invtsc"        # Invariant TSC for timing accuracy
+          policy: "require"
+        - name: "rdtscp"        # Read time-stamp counter
+          policy: "require"
+    
+    # Memory performance optimization
+    memory:
+      guest: "16Gi"
+      # Use huge pages for reduced TLB pressure
+      hugepages:
+        pageSize: "2Mi"
+        
+    # Advanced I/O optimization
+    devices:
+      disks:
+        - name: "high-perf-disk"
+          disk:
+            bus: "virtio"
+            cache: "none"         # Direct I/O for databases
+            io: "native"          # Native async I/O
+            # Advanced: I/O throttling
+            ioThreads: 4
+----
+
+== Monitoring & Observability
+
+=== Advanced Metrics Collection
+
+**Custom Prometheus Metrics for Zero Touch:**
+[source,yaml]
+----
+# ServiceMonitor for Zero Touch lab metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: zero-touch-metrics
+  namespace: zero-touch-monitoring
+spec:
+  selector:
+    matchLabels:
+      app: zero-touch-lab
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    
+---
+# Custom metrics exporter for lab health
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-metrics-exporter
+spec:
+  template:
+    spec:
+      containers:
+      - name: exporter
+        image: prom/node-exporter:latest
+        args:
+          - '--collector.systemd'
+          - '--collector.processes'
+          - '--collector.interrupts'
+        # Custom lab-specific metrics
+        env:
+        - name: LAB_NAMESPACE
+          value: "user-wilson"
+        - name: METRICS_PORT  
+          value: "9100"
+----
+
+=== Alerting Rules for Production
+
+**Critical Lab Infrastructure Alerts:**
+[source,yaml]
+----
+# PrometheusRule for Zero Touch lab monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: zero-touch-alerts
+spec:
+  groups:
+  - name: zero-touch-infrastructure
+    rules:
+    # VM availability monitoring
+    - alert: VMDown
+      expr: kubevirt_vm_up == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Virtual Machine {{ $labels.vm }} is down"
+        description: "VM {{ $labels.vm }} in namespace {{ $labels.namespace }} has been down for more than 5 minutes"
+    
+    # Resource exhaustion
+    - alert: NodeResourceExhaustion
+      expr: |
+        (
+          node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+        ) or (
+          (100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 90
+        )
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Node {{ $labels.instance }} is running low on resources"
+    
+    # Network policy violations
+    - alert: UnauthorizedNetworkTraffic
+      expr: increase(netpol_dropped_packets_total[5m]) > 100
+      labels:
+        severity: warning
+      annotations:
+        summary: "High number of dropped packets due to network policies"
+----
+
+== Disaster Recovery & Backup Strategies
+
+=== VM Backup Automation
+
+**Production Backup Strategy:**
+[source,bash]
+----
+#!/bin/bash
+# backup-zero-touch-lab.sh - Production backup automation
+
+set -euo pipefail
+
+NAMESPACE="$1"
+BACKUP_LOCATION="${BACKUP_LOCATION:-s3://zero-touch-backups}"
+RETENTION_DAYS="${RETENTION_DAYS:-30}"
+
+log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"; }
+
+# Create VM snapshots using CNV snapshot capabilities
+create_vm_snapshots() {
+    local namespace="$1"
+    
+    log "Creating VM snapshots for namespace: $namespace"
+    
+    # Get all VMs in namespace
+    oc get vm -n "$namespace" -o name | while read vm; do
+        vm_name=$(basename "$vm")
+        snapshot_name="${vm_name}-snapshot-$(date +%Y%m%d-%H%M%S)"
+        
+        log "Creating snapshot: $snapshot_name for VM: $vm_name"
+        
+        cat <<EOF | oc apply -f -
+apiVersion: kubevirt.io/v1beta1
+kind: VirtualMachineSnapshot
+metadata:
+  name: $snapshot_name
+  namespace: $namespace
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: $vm_name
+EOF
+    done
+}
+
+# Backup configuration files
+backup_configs() {
+    local namespace="$1"
+    local backup_dir="/tmp/backup-$namespace-$(date +%Y%m%d)"
+    
+    mkdir -p "$backup_dir"
+    
+    log "Backing up configurations to: $backup_dir"
+    
+    # Export all Zero Touch related resources
+    oc get vm,vmi,networkpolicy,pvc,configmap,secret -n "$namespace" -o yaml > "$backup_dir/resources.yaml"
+    
+    # Backup lab content repository info
+    oc get configmap -n "$namespace" -l "app=showroom" -o yaml > "$backup_dir/lab-content.yaml"
+    
+    # Create tarball and upload to backup location
+    tar czf "$backup_dir.tar.gz" -C /tmp "$(basename $backup_dir)"
+    
+    # Upload to object storage (AWS S3, etc.)
+    if command -v aws >/dev/null; then
+        aws s3 cp "$backup_dir.tar.gz" "$BACKUP_LOCATION/$namespace/"
+        log "Backup uploaded to: $BACKUP_LOCATION/$namespace/"
+    fi
+    
+    # Cleanup local files
+    rm -rf "$backup_dir" "$backup_dir.tar.gz"
+}
+
+# Main backup routine
+main() {
+    local namespace="$1"
+    
+    log "Starting backup for Zero Touch lab: $namespace"
+    
+    create_vm_snapshots "$namespace"
+    backup_configs "$namespace"
+    
+    # Cleanup old backups
+    if command -v aws >/dev/null; then
+        aws s3 ls "$BACKUP_LOCATION/$namespace/" | \
+        awk '{print $4}' | \
+        while read file; do
+            # Delete backups older than retention period
+            file_date=$(echo "$file" | grep -oE '[0-9]{8}')
+            if [[ -n "$file_date" ]] && [[ $(date -d "$file_date" +%s) -lt $(date -d "$RETENTION_DAYS days ago" +%s) ]]; then
+                aws s3 rm "$BACKUP_LOCATION/$namespace/$file"
+                log "Deleted old backup: $file"
+            fi
+        done
+    fi
+    
+    log "Backup completed successfully"
+}
+
+# Usage: ./backup-zero-touch-lab.sh user-wilson
+main "$@"
+----
+
+== Related Documentation
+
+* xref:advanced-architecture-internals.adoc[Advanced Architecture & Platform Internals]
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns]
+* xref:deployment-architecture.adoc[Deployment Architecture Overview]
+
+[bibliography]
+== References
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.

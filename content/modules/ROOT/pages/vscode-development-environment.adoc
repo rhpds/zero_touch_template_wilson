@@ -3,12 +3,12 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Access and use** the browser-based VS Code development environment
-* **Understand SSH integration** with lab VMs for seamless development
-* **Configure and customize** the development environment for your needs
-* **Apply best practices** for Zero Touch template development
+* Browser-based VS Code development environment access and usage
+* SSH integration with lab VMs for seamless development
+* Development environment configuration and customization
+* Best practices application for Zero Touch template development
 
 == Overview
 
@@ -16,10 +16,10 @@ The VS Code container provides a complete browser-based development environment 
 
 == Key Features
 
-**✅ Browser-Based IDE**: Complete VS Code experience in your browser  
-**✅ Auto-Setup**: Repository cloned, development branch created automatically  
-**✅ SSH Integration**: Seamless connection to lab VMs with pre-configured keys  
-**✅ Security**: Password-protected access using lab credentials  
+** Browser-Based IDE**: Complete VS Code experience in your browser  
+** Auto-Setup**: Repository cloned, development branch created automatically  
+** SSH Integration**: Seamless connection to lab VMs with pre-configured keys  
+** Security**: Password-protected access using lab credentials  
 
 [NOTE]
 ====
@@ -29,7 +29,7 @@ The VS Code container provides a complete browser-based development environment 
 == Quick Start
 
 **Accessing VS Code:**
-1. **Click "💻 VS Code" tab** in your lab interface
+1. **Click " VS Code" tab** in your lab interface
 2. **Enter password** (same as SSH access)
 3. **Wait 30-60 seconds** for startup
 4. **Start developing** - Repository is pre-loaded
@@ -38,7 +38,7 @@ The VS Code container provides a complete browser-based development environment 
 
 The VS Code container **automatically connects to lab VMs** using AgnosticD-generated SSH keys.
 
-**✅ What Works Automatically:**
+** What Works Automatically:**
 - SSH keys from AgnosticD deployment
 - Terminal profiles for lab-server connection
 - Passwordless SSH to VMs (when network policy configured)
@@ -84,10 +84,10 @@ zero_touch_ingress_lockdown_rules:
 - **Version Control**: Commit and push changes using integrated Git
 
 **Best Practices:**
-- ✅ Use consistent naming between configuration files
-- ✅ Test changes before committing
-- ✅ Keep DNS names aligned across `instances.yaml` and `ui-config.yml`
-- ✅ Use branches for experimental work
+-  Use consistent naming between configuration files
+-  Test changes before committing
+-  Keep DNS names aligned across `instances.yaml` and `ui-config.yml`
+-  Use branches for experimental work
 
 == Container Configuration Reference
 
@@ -130,17 +130,17 @@ containers:
 
 **Common Issues:**
 
-**🔧 VS Code Won't Load**
+** VS Code Won't Load**
 - Wait 60+ seconds for initial startup
 - Check browser console for errors
 - Verify route is accessible
 
-**🔧 SSH Connection Failed**
+** SSH Connection Failed**
 - Check network policy configuration
 - Verify AgnosticD SSH keys are available
 - Try manual password SSH as fallback
 
-**🔧 Repository Not Cloned**
+** Repository Not Cloned**
 - Check container logs for Git errors
 - Verify GitHub repository accessibility
 - Try manual clone if automatic fails
@@ -171,3 +171,12 @@ kubectl exec -it deployment/vscode -- /bin/bash
 * xref:vm-basics.adoc[**VM Basics**] - Understanding lab VMs
 
 **The VS Code development environment provides the fastest way to customize and develop Zero Touch lab templates directly in your browser!**
+
+[bibliography]
+== References
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

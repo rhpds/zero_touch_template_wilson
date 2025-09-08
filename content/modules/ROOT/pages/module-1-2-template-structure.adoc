@@ -3,12 +3,12 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Understand the Zero Touch template directory structure
-* Know the purpose of each key file and directory
-* Be able to navigate the template confidently
-* Understand how files relate to each other
+* Zero Touch template directory structure
+* Purpose of each key file and directory
+* Template navigation procedures
+* File relationships and dependencies
 
 == Template Directory Overview
 
@@ -39,7 +39,7 @@ zero_touch_template/
 
 == Key Directories Explained
 
-=== 🏗️ Infrastructure Configuration (`config/`)
+=== Infrastructure Configuration (`config/`)
 
 This is where you define **what** gets provisioned:
 
@@ -49,18 +49,18 @@ Defines virtual machines and containers for your lab:
 [source,yaml]
 ----
 virtualmachines:
-  - name: "control"
+  - name: "host1"
     image: "rhel-9.6"
     memory: "4G"
-    cores: 2
+    cores: 1
     image_size: "40G"
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"
     networks:
       - default
 
-containers:
-  - name: "database"
-    image: "postgres:15"
-    # ... configuration
+containers: []
 ----
 
 ==== `networks.yaml` 
@@ -92,7 +92,7 @@ ingress:                 # Inbound traffic rules
         port: 8080
 ----
 
-=== 📚 Educational Content (`content/`)
+===  Educational Content (`content/`)
 
 This is where you create the learning experience:
 
@@ -126,7 +126,7 @@ Scripts that run **before** the lab starts:
 * **`main.yml`** - Ansible playbook to configure infrastructure
 * Installs packages, configures services, sets up users
 
-=== 🎨 User Interface Configuration
+===  User Interface Configuration
 
 ==== `ui-config.yml`
 Defines the lab interface and navigation:
@@ -216,7 +216,7 @@ Understanding the relationships between files is crucial:
 
 == Template Customization Areas
 
-When creating your lab, you'll typically modify:
+When creating your lab, typically modify:
 
 === Always Customize
 - [ ] **`instances.yaml`** - Define your VMs and containers
@@ -233,7 +233,7 @@ When creating your lab, you'll typically modify:
 === Rarely Customize
 - [ ] **`README.adoc`** - Only if adding template-specific notes
 
-== 🔍 Exploring This Template
+==  Exploring This Template
 
 Let's look at the current template structure:
 
@@ -247,7 +247,7 @@ cat config/instances.yaml
 cat ui-config.yml
 ----
 
-== ✅ Knowledge Check
+== Knowledge Check
 
 Before moving to the next module, make sure you can:
 
@@ -257,22 +257,22 @@ Before moving to the next module, make sure you can:
 - [ ] Explain how infrastructure and content connect
 - [ ] Navigate the template directory structure confidently
 
-== 🛠️ Quick Exercise
+== Quick Exercise
 
-**Try This**: Open the current template files and identify:
+**Exercise**: Open the current template files and identify:
 
 1. What VM is currently defined in `instances.yaml`?
 2. What content files exist in `content/modules/ROOT/pages/`?
 3. What tabs are configured in `ui-config.yml`?
 4. What is the lab title in `site.yml`?
 
-**Answers**:
-1. A VM named "vscode" with RHEL 9.6, 4G RAM, 1 core
-2. Multiple `.adoc` files including our new modular training
-3. A vscode tab on port 3000
+**Expected answers** (from https://github.com/rhpds/lab_zero_touch_template.git):
+1. A VM named "host1" with RHEL 9.6, 4G RAM, 1 core, bastions tag
+2. Three module files: module-01.adoc, module-02.adoc, module-03.adoc
+3. A terminal tab: `/wetty_host1/ssh/root`
 4. Check `site.yml` for the current title
 
-== 🎯 What's Next?
+== Next Steps
 
 Now that you understand the template structure, let's dive into the configuration files themselves.
 
@@ -282,3 +282,15 @@ Now that you understand the template structure, let's dive into the configuratio
 
 * xref:template-customization-guide.adoc[Complete Template Customization Guide] (Reference)
 * xref:vm-basics.adoc[Adding Instances and Containers] (Reference)
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - setup-automation/main.yml. 2024.
+
+* [[[template-content]]] Red Hat GPTE Team. Zero Touch Template Content Examples. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - content/modules/ROOT/pages/. 2024.

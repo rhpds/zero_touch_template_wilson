@@ -2,15 +2,15 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Customize Zero Touch templates** to meet specific lab requirements
-* **Configure infrastructure components** (VMs, containers, networking, security)
-* **Design lab user experiences** with proper UI configuration and navigation
-* **Apply advanced extension patterns** using AgnosticD workloads and custom configurations
-* **Troubleshoot common customization issues** and implement best practices
+* Zero Touch template customization for specific lab requirements
+* Infrastructure component configuration (VMs, containers, networking, security)
+* Lab user experience design with proper UI configuration and navigation
+* Advanced extension patterns using AgnosticD workloads and custom configurations
+* Common customization troubleshooting and best practices
 
-💡 **New to Zero Touch?** Consider starting with our xref:zero-touch-platform-training.adoc[**Self-Paced Training Program**] for step-by-step guidance.
+**New to Zero Touch?** Consider starting with our xref:zero-touch-platform-training.adoc[Self-Paced Training Program] for step-by-step guidance.
 
 == Overview
 
@@ -93,7 +93,7 @@ Before customizing your template:
 * Test lab scenarios thoroughly before deployment
 * Consider platform architecture when designing complex labs
 
-== ⚠️ CRITICAL REQUIREMENTS
+== CRITICAL REQUIREMENTS
 
 === Bastion Host Requirement
 
@@ -146,17 +146,17 @@ The bastion host provides SSH access, user accounts, and terminal integration. O
 
 [source,yaml]
 ----
-# ✅ CORRECT in instances.yaml
+#  CORRECT in instances.yaml
 environment:
   PASSWORD: "{{ common_password }}"      # ← Quoted Jinja2
   SUDO_PASSWORD: "{{ common_password }}" # ← Quoted Jinja2
 
-# ✅ CORRECT in ui-config.yml  
+#  CORRECT in ui-config.yml  
 tabs:
   - name: "App"
     url: https://app-${guid}.${domain}/  # ← Unquoted shell-style
 
-# ❌ WRONG - causes YAML parsing errors
+#  WRONG - causes YAML parsing errors
 environment:
   PASSWORD: {{ common_password }}        # ← Unquoted Jinja2 breaks YAML
 ----
@@ -165,7 +165,7 @@ environment:
 
 [source,yaml]
 ----
-# ✅ CORRECT - Names must match between instances.yaml and ui-config.yml
+#  CORRECT - Names must match between instances.yaml and ui-config.yml
 
 # instances.yaml
 routes:
@@ -177,7 +177,7 @@ tabs:
   - name: "Web App"
     url: https://webapp-${guid}.${domain}/  # ← URL must match host name
 
-# ❌ WRONG - DNS mismatch causes 404 errors
+#  WRONG - DNS mismatch causes 404 errors
 # instances.yaml: host: webapp
 # ui-config.yml:  url: https://web-app-${guid}.${domain}/  # ← Different name!
 ----
@@ -188,7 +188,7 @@ tabs:
 
 **Beyond Custom Containers**: Zero Touch deployments support **200+ specialized workloads** for advanced lab requirements without custom configuration.
 
-**🔧 Alternative to Custom Containers:**
+** Alternative to Custom Containers:**
 Instead of configuring containers in `instances.yaml`, you can use pre-built workloads in your AgnosticV configuration:
 
 [source,yaml]
@@ -201,20 +201,20 @@ post_software_workloads:
     - ocp4_workload_jenkins          # CI/CD pipeline system
 ----
 
-**🚀 Popular Extension Workloads:**
+** Popular Extension Workloads:**
 - **Development**: `ocp4_workload_devspaces`, `ocp4_workload_codeserver`
 - **CI/CD**: `ocp4_workload_pipelines`, `ocp4_workload_gitops_bootstrap`
 - **Security**: `ocp4_workload_rhacs`, `ocp4_workload_cert_manager`
 - **Databases**: `ocp4_workload_postgresql`, `ocp4_workload_mongodb`
 - **Registries**: `ocp4_workload_quay_operator`, `ocp4_workload_nexus_operator`
 
-**✅ Workload Benefits:**
+** Workload Benefits:**
 - **Pre-configured**: Enterprise-ready with authentication and security
 - **Standardized**: Consistent deployment patterns across environments  
 - **Maintained**: Regularly updated by Red Hat engineering teams
 - **Integrated**: Access to `guid`, `common_password`, and lab variables
 
-**📚 Complete Reference**: xref:advanced-lab-features.adoc#agnosticd-workload-extensions[AgnosticD Workload Extensions]
+** Complete Reference**: xref:advanced-lab-features.adoc#agnosticd-workload-extensions[AgnosticD Workload Extensions]
 
 [TIP]
 ====
@@ -306,3 +306,18 @@ If you encounter issues during customization:
 . Review logs during provisioning
 . Consult the template documentation
 . Reach out to the platform team for support
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-content]]] Red Hat GPTE Team. Zero Touch Template Content Examples. 
+  `/home/wilson/Projects/zero_touch_template_wilson/content/modules/ROOT/pages/`. 2024.

@@ -11,7 +11,7 @@ Advanced container patterns for Zero Touch deployments, covering multi-service a
 **New Structure**: This guide has been reorganized into focused, digestible sections. Each area now has dedicated documentation with clear learning outcomes and practical examples.
 ====
 
-== 🎯 Advanced Container Topics
+== Advanced Container Topics
 
 === Multi-Service Application Patterns
 
@@ -25,7 +25,7 @@ Learn how to deploy and manage complex application stacks:
 * **Testing environment setup** - Automated testing with containerized services
 * **Resource planning and allocation** - Memory, CPU, and dependency management
 
-**⏱️ Time**: 15-20 minutes | **Level**: Intermediate
+** Time**: 15-20 minutes | **Level**: Intermediate
 
 ---
 
@@ -41,7 +41,7 @@ Master persistent data handling in containerized environments:
 * **Backup and recovery strategies** - Automated backup for container data
 * **Performance optimization** - Storage performance tuning and best practices
 
-**⏱️ Time**: 15-20 minutes | **Level**: Intermediate
+** Time**: 15-20 minutes | **Level**: Intermediate
 
 ---
 
@@ -57,7 +57,7 @@ Implement comprehensive monitoring for containerized applications:
 * **Performance monitoring** - APM integration and custom metrics
 * **Debugging techniques** - Log analysis and troubleshooting methods
 
-**⏱️ Time**: 15-20 minutes | **Level**: Intermediate
+** Time**: 15-20 minutes | **Level**: Intermediate
 
 ---
 
@@ -73,11 +73,11 @@ Develop comprehensive testing strategies for containers:
 * **Deployment validation** - Health checks and configuration validation
 * **Debugging and troubleshooting** - Systematic debugging approaches
 
-**⏱️ Time**: 15-20 minutes | **Level**: Intermediate
+** Time**: 15-20 minutes | **Level**: Intermediate
 
 ---
 
-## 🔒 Network Security Requirements for Container SSH Access
+## Network Security Requirements for Container SSH Access
 
 **CRITICAL**: Zero Touch deployments use network policies that **block SSH from containers to VMs** by default.
 
@@ -111,35 +111,35 @@ zero_touch_ingress_lockdown_rules:
         port: 22
 ----
 
-## 🎯 Choosing Your Path
+## Choosing Your Path
 
 === When to Use Each Pattern
 
-**🔧 Multi-Service Patterns** - Best for:
+**Multi-Service Patterns** - Best for:
 - Complex applications requiring multiple services
 - Microservices architectures
 - Development environments with multiple components
 - Applications requiring service-to-service communication
 
-**📦 Storage Management** - Essential when:
+** Storage Management** - Essential when:
 - Applications need persistent data
 - Sharing data between containers
 - Database deployments
 - File processing workflows
 
-**📊 Monitoring & Logging** - Critical for:
+** Monitoring & Logging** - Critical for:
 - Production deployments
 - Troubleshooting and debugging
 - Performance optimization
 - Compliance and audit requirements
 
-**🧪 Testing & Validation** - Required for:
+** Testing & Validation** - Required for:
 - Quality assurance processes
 - Continuous integration/deployment
 - Performance validation
 - Production readiness verification
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Quick Start Recommendations
 
@@ -158,7 +158,7 @@ Container Basics → Multi-Service Patterns → Storage Management
 Testing & Validation ← Monitoring & Logging
 ```
 
-## 📚 Related Documentation
+##  Related Documentation
 
 **Foundation Knowledge:**
 * xref:container-basics.adoc[**Container Basics**] - Start here for container fundamentals
@@ -175,3 +175,12 @@ Testing & Validation ← Monitoring & Logging
 * xref:cnv-platform-features.adoc[**OpenShift CNV Platform Features**] - Container platform capabilities
 
 **Advanced container patterns provide the foundation for building scalable, maintainable, and observable applications in Zero Touch lab environments!**
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.

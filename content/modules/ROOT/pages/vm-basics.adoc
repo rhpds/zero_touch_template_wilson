@@ -3,12 +3,13 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Configure virtual machines** with appropriate resources and networking
-* **Apply cloud-init patterns** for automated VM setup and user management
-* **Implement package installation** and service configuration
-* **Troubleshoot common VM deployment issues** and validate configurations
+* Basic VM configuration patterns and resource allocation
+* Cloud-init configuration for VM initialization and user management
+* Essential VM parameters including memory, CPU, and storage settings
+* VM networking and security configuration
+* VM configuration validation and troubleshooting
 
 == Overview
 
@@ -16,8 +17,11 @@ This guide covers essential VM setup and configuration by modifying the `config/
 
 == Configuration File Structure
 
+[%collapsible]
+====
 The `instances.yaml` file defines your VMs and containers:
 
+.Basic Configuration Structure <<template-instances>>
 [source,yaml]
 ----
 ---
@@ -32,10 +36,15 @@ containers:
     image: "nginx:latest"
 ----
 
+====
+
 == Basic Virtual Machine Configuration
 
+[%collapsible]
+====
 === Essential VM Parameters
 
+.Essential VM Configuration <<template-instances>>
 [source,yaml]
 ----
 virtualmachines:
@@ -53,11 +62,11 @@ virtualmachines:
 |Parameter |Required |Description
 
 |`name`
-|✅ Yes
+| Yes
 |Unique VM identifier (DNS-safe)
 
 |`image`  
-|✅ Yes
+| Yes
 |Operating system image name
 
 |`cores`
@@ -154,7 +163,7 @@ virtualmachines:
         - systemctl start app
 ----
 
-== ⚠️ CRITICAL REQUIREMENT: Bastion Host
+== CRITICAL REQUIREMENT: Bastion Host
 
 **At least ONE VM MUST be tagged with the "bastions" Ansible group for proper deployment.**
 
@@ -423,9 +432,9 @@ ping google.com           # Internet access
 **Out of memory?**
 → Reduce VM memory or increase lab resources
 
-== 🎯 Next Steps
+== Next Steps
 
-Now that you understand VM basics, continue your learning journey:
+Continue with the following topics:
 
 **Build on VM Knowledge:**
 * xref:container-basics.adoc[**Container Basics**] - Add lightweight services alongside your VMs
@@ -438,6 +447,18 @@ Now that you understand VM basics, continue your learning journey:
 **Advanced VM Features:**
 * xref:cnv-platform-features.adoc[**OpenShift CNV Platform Features**] - EFI boot, SecureBoot, enterprise configurations
 * xref:enterprise-lab-patterns.adoc[**Enterprise Lab Patterns**] - Real-world VM patterns for Satellite, AAP
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  AgnosticD Git Repository - ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml. 2024.
 
 == Related Documentation
 

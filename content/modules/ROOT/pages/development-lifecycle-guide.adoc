@@ -3,19 +3,19 @@
 
 This comprehensive guide walks through the complete Zero Touch lab development lifecycle, from initial template customization to deployed lab environment.
 
-== 🎯 Development Lifecycle Overview
+== Development Lifecycle Overview
 
 The Zero Touch development process involves multiple integrated systems working together to transform your Git repository into a live lab environment. Understanding this flow is essential for effective lab development.
 
 [mermaid]
 ....
 graph TB
-    subgraph "👨‍💻 Developer Workflow"
+    subgraph "Developer Workflow"
         DEV[Developer]
-        CLONE[🔄 Clone Template<br/>zero_touch_template_wilson]
-        CONFIG[⚙️ Configure Lab]
-        TEST[🧪 Local Testing<br/>antora generate/serve]
-        COMMIT[📝 Git Commit & Push]
+        CLONE[Clone Template<br/>zero_touch_template_wilson]
+        CONFIG[Configure Lab]
+        TEST[Local Testing<br/>antora generate/serve]
+        COMMIT[Git Commit & Push]
         
         DEV --> CLONE
         CLONE --> CONFIG
@@ -24,7 +24,7 @@ graph TB
         TEST --> COMMIT
     end
     
-    subgraph "📄 Configuration Files"
+    subgraph "Configuration Files"
         INSTANCES[instances.yaml<br/>VMs + Containers]
         NETWORKS[networks.yaml<br/>Network topology]  
         FIREWALL[firewall.yaml<br/>Security rules]
@@ -38,11 +38,11 @@ graph TB
         CONFIG --> UICONFIG
     end
     
-    subgraph "📋 AgnosticV Catalog"
+    subgraph "AgnosticV Catalog"
         CATALOG[AgnosticV Catalog<br/>babylon-catalog]
         COMMON[common.yaml<br/>Git integration logic]
         ENV[Environment Files<br/>dev.yaml / prod.yaml]
-        TRANSFORM[🔄 URL Transformation<br/>github → raw.githubusercontent]
+        TRANSFORM[URL Transformation<br/>github → raw.githubusercontent]
         
         COMMIT --> CATALOG
         CATALOG --> COMMON
@@ -50,11 +50,11 @@ graph TB
         COMMON --> TRANSFORM
     end
     
-    subgraph "🚀 AgnosticD Engine"
+    subgraph "AgnosticD Engine"
         AGNOSTICD[AgnosticD<br/>zero-touch-base-rhel]
-        FETCH[📥 Fetch Config Files<br/>URL lookup dynamic loading]
-        VARIABLES[📊 Variable Mapping<br/>containers, instances, networks]
-        ROLES[⚙️ Role Execution Chain<br/>12+ deployment roles]
+        FETCH[Fetch Config Files<br/>URL lookup dynamic loading]
+        VARIABLES[Variable Mapping<br/>containers, instances, networks]
+        ROLES[Role Execution Chain<br/>12+ deployment roles]
         
         TRANSFORM --> AGNOSTICD
         AGNOSTICD --> FETCH
@@ -62,11 +62,11 @@ graph TB
         VARIABLES --> ROLES
     end
     
-    subgraph "☁️ Infrastructure Deployment"
+    subgraph "Infrastructure Deployment"
         CNV[OpenShift CNV<br/>Virtualization Platform]
-        VMS[🖥️ Virtual Machines<br/>From instances.yaml]
-        CONTAINERS[📦 Containers<br/>Custom or Workloads]
-        NETWORKING[🌐 Network Policies<br/>Security + SSH rules]
+        VMS[Virtual Machines<br/>From instances.yaml]
+        CONTAINERS[Containers<br/>Custom or Workloads]
+        NETWORKING[Network Policies<br/>Security + SSH rules]
         
         ROLES --> CNV
         CNV --> VMS
@@ -74,10 +74,10 @@ graph TB
         CNV --> NETWORKING
     end
     
-    subgraph "🤔 Extension Decision"
+    subgraph "Extension Decision"
         DECISION{Extension Method?}
-        CUSTOM[🔧 Custom Containers<br/>Full control + education]
-        WORKLOADS[📦 AgnosticD Workloads<br/>200+ pre-built options]
+        CUSTOM[Custom Containers<br/>Full control + education]
+        WORKLOADS[AgnosticD Workloads<br/>200+ pre-built options]
         
         ROLES --> DECISION
         DECISION --> |"Custom approach"| CUSTOM
@@ -86,11 +86,11 @@ graph TB
         WORKLOADS --> CONTAINERS
     end
     
-    subgraph "🎨 Showroom Integration"
+    subgraph "Showroom Integration"
         SHOWROOM[Showroom Deployment<br/>Helm Chart v1.9.6/v1.9.10]
-        ANTORA[📖 Antora Build<br/>site.yml processing]
-        WETTY[💻 Wetty Terminals<br/>SSH integration]
-        ROUTES[🌍 Route Creation<br/>Unique URLs per lab]
+        ANTORA[Antora Build<br/>site.yml processing]
+        WETTY[Wetty Terminals<br/>SSH integration]
+        ROUTES[Route Creation<br/>Unique URLs per lab]
         
         ROLES --> SHOWROOM
         SHOWROOM --> ANTORA
@@ -98,11 +98,11 @@ graph TB
         SHOWROOM --> ROUTES
     end
     
-    subgraph "🎓 Final Lab Environment"
+    subgraph " Final Lab Environment"
         LAB[Live Lab Environment]
         STUDENTS[👥 Student Access<br/>Unique URLs + passwords]
-        TERMINAL[💻 Terminal Access<br/>SSH to VMs]
-        IDE[🛠️ Development Tools<br/>VS Code, Git, etc]
+        TERMINAL[ Terminal Access<br/>SSH to VMs]
+        IDE[ Development Tools<br/>VS Code, Git, etc]
         
         ANTORA --> LAB
         WETTY --> TERMINAL
@@ -111,7 +111,7 @@ graph TB
         LAB --> STUDENTS
     end
     
-    subgraph "🔄 URL Transformation Example"
+    subgraph " URL Transformation Example"
         GITURL["github.com/user/repo.git"]
         RAWURL["raw.githubusercontent.com/<br/>user/repo/refs/heads/main/config/"]
         CONFIGURL["config/instances.yaml<br/>config/firewall.yaml"]
@@ -121,7 +121,7 @@ graph TB
         CONFIGURL --> FETCH
     end
     
-    subgraph "📊 Variable Mapping Flow"
+    subgraph " Variable Mapping Flow"
         YAML1["instances.yaml.containers"]
         YAML2["instances.yaml.virtualmachines"] 
         YAML3["firewall.yaml.ingress"]
@@ -157,25 +157,25 @@ graph TB
     class DECISION,CUSTOM,WORKLOADS decision
 ....
 
-== 🔄 Phase-by-Phase Breakdown
+==  Phase-by-Phase Breakdown
 
 === Phase 1: Developer Workflow (Blue)
 
-**👨‍💻 Developer Activities:**
+**👨‍ Developer Activities:**
 
 1. **Clone Template** - Start with `zero_touch_template_wilson` base template
 2. **Configure Lab** - Customize configuration files for your specific requirements
 3. **Local Testing** - Use `antora generate` and `antora serve` for rapid iteration
 4. **Git Commit & Push** - Publish changes to trigger the deployment pipeline
 
-**🔧 Key Tools:**
+** Key Tools:**
 - Git for version control
 - Antora for local content testing
 - Text editor for YAML/AsciiDoc editing
 
 === Phase 2: Configuration Files (Purple)
 
-**📄 File Configuration:**
+** File Configuration:**
 
 - **`instances.yaml`** - Define VMs, containers, resources, and networking
 - **`networks.yaml`** - Configure network topology and connectivity
@@ -183,14 +183,14 @@ graph TB
 - **`content/`** - Create AsciiDoc learning modules
 - **`ui-config.yml`** - Configure UI tabs, navigation, and student experience
 
-**🎯 Critical Success Factors:**
+** Critical Success Factors:**
 - Consistent naming between files (instances → ui-config)
 - Valid YAML syntax and structure
 - Proper variable patterns for each file type
 
 === Phase 3: AgnosticV Catalog Integration (Green)
 
-**📋 Catalog Orchestration:**
+** Catalog Orchestration:**
 
 **AgnosticV automatically:**
 1. **Reads your Git repository** when lab deployment is requested
@@ -198,7 +198,7 @@ graph TB
 3. **Applies environment-specific overrides** (dev vs. prod configurations)
 4. **Passes configuration** to AgnosticD deployment engine
 
-**🔄 URL Transformation Process:**
+** URL Transformation Process:**
 ```
 https://github.com/user/repo.git
          ↓
@@ -209,20 +209,20 @@ https://raw.githubusercontent.com/user/repo/refs/heads/main/config/instances.yam
 
 === Phase 4: AgnosticD Deployment Engine (Orange)
 
-**🚀 Deployment Processing:**
+** Deployment Processing:**
 
 1. **Fetch Configuration Files** - Downloads YAML files from your Git repository
 2. **Variable Mapping** - Converts your YAML structures into Ansible variables
 3. **Role Execution Chain** - Runs 12+ specialized roles for complete deployment
 
-**📊 Variable Mapping Examples:**
+** Variable Mapping Examples:**
 - `instances.yaml.containers` → `containers: [...]`
 - `instances.yaml.virtualmachines` → `instances: [...]`
 - `firewall.yaml.ingress` → `zero_touch_ingress_lockdown_rules: [...]`
 
 === Phase 5: Infrastructure Deployment (Pink)
 
-**☁️ OpenShift CNV Deployment:**
+** OpenShift CNV Deployment:**
 
 - **Virtual Machines** - Created based on your `instances.yaml` specifications
 - **Containers** - Deployed with full networking, storage, and security configuration  
@@ -231,7 +231,7 @@ https://raw.githubusercontent.com/user/repo/refs/heads/main/config/instances.yam
 
 === Phase 6: Extension Decision Point (Yellow)
 
-**🤔 Two Deployment Approaches:**
+** Two Deployment Approaches:**
 
 **Custom Containers:**
 - Full control over container configuration
@@ -247,7 +247,7 @@ https://raw.githubusercontent.com/user/repo/refs/heads/main/config/instances.yam
 
 === Phase 7: Showroom Integration (Teal)
 
-**🎨 UI Framework Deployment:**
+** UI Framework Deployment:**
 
 - **Helm Chart Deployment** - Different versions for dev (v1.9.6) vs prod (v1.9.10)
 - **Antora Content Build** - Processes your `site.yml` and generates documentation site
@@ -256,32 +256,34 @@ https://raw.githubusercontent.com/user/repo/refs/heads/main/config/instances.yam
 
 === Phase 8: Final Lab Environment (Light Green)
 
-**🎓 Student-Ready Lab:**
+** Student-Ready Lab:**
 
 - **Live Lab Environment** - Fully functional, accessible to students
 - **Unique URLs** - Each student gets individual lab instance
 - **Terminal Access** - Browser-based SSH to all VMs
 - **Development Tools** - VS Code, Git, and custom tools ready for use
 
-== ⚡ Development Workflow Tips
+== Development Workflow Tips
 
 === Rapid Iteration
 
 **Local Development Loop:**
-```bash
+[source,bash]
+----
 # Make changes to configuration files
 vim config/instances.yaml
 
 # Test content locally
-antora generate && antora serve
+antora generate site.yml
+antora serve site.yml
 
-# Review in browser at http://localhost:8080
+# Review in browser at http://localhost:5000
 
 # When satisfied, commit and push
 git add .
 git commit -m "Add new VM configuration"
 git push origin main
-```
+----
 
 === Testing Strategy
 
@@ -293,7 +295,7 @@ git push origin main
 
 === Common Pitfalls
 
-**❌ Avoid These Issues:**
+** Avoid These Issues:**
 - **Name Mismatches** - Ensure consistent naming between `instances.yaml` and `ui-config.yml`
 - **Variable Pattern Confusion** - Use correct templating syntax for each file type
 - **Network Policy Oversight** - Configure SSH access rules for containers
@@ -323,7 +325,7 @@ git push origin main
 - Terminal proxy configuration
 - Route and service mesh setup
 
-== 📚 Related Documentation
+==  Related Documentation
 
 **For Detailed Information:**
 
@@ -333,13 +335,25 @@ git push origin main
 * xref:advanced-lab-features.adoc[**Advanced Lab Features**] - Extension capabilities and workload system
 * xref:template-customization-guide.adoc[**Template Customization Guide**] - Configuration reference
 
-== 🎯 Next Steps
+== Next Steps
 
 After understanding the development lifecycle:
 
-1. **🏁 Start Training** - Begin with xref:zero-touch-platform-training.adoc[Zero Touch Platform Training]
-2. **🔧 Configure Your Lab** - Use the lifecycle guide to plan your development approach
-3. **📦 Choose Extensions** - Decide between custom containers and AgnosticD workloads
-4. **🚀 Deploy and Iterate** - Use the rapid development loop for continuous improvement
+1. **Start Training** - Begin with xref:zero-touch-platform-training.adoc[Zero Touch Platform Training]
+2. **Configure Your Lab** - Use the lifecycle guide to plan your development approach
+3. **Choose Extensions** - Decide between custom containers and AgnosticD workloads
+4. **Deploy and Iterate** - Use the rapid development loop for continuous improvement
 
 **The development lifecycle provides a comprehensive framework for creating production-ready Zero Touch labs efficiently and effectively!**
+
+[bibliography]
+== References
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[template-content]]] Red Hat GPTE Team. Zero Touch Template Content Examples. 
+  `/home/wilson/Projects/zero_touch_template_wilson/content/modules/ROOT/pages/`. 2024.

@@ -2,19 +2,19 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Understand dynamic configuration loading** and how Git repositories are transformed during deployment
-* **Master URL transformation patterns** used by AgnosticV to fetch configuration files
-* **Implement advanced Git strategies** for multi-environment deployments and version control
-* **Design robust configuration patterns** with error handling and validation
-* **Troubleshoot Git integration issues** and optimize repository structures for deployment
+* Dynamic configuration loading and Git repository transformation during deployment
+* URL transformation patterns used by AgnosticV to fetch configuration files
+* Advanced Git strategies for multi-environment deployments and version control
+* Robust configuration pattern design with error handling and validation
+* Git integration issue troubleshooting and repository structure optimization for deployment
 
 == Overview
 
 Zero Touch labs use a sophisticated Git-based deployment system that dynamically fetches your lab configuration during deployment. Understanding these patterns is essential for advanced lab development.
 
-== 🔄 Dynamic Configuration Loading
+== Dynamic Configuration Loading
 
 === How It Works
 
@@ -40,7 +40,7 @@ zero_touch_ingress_lockdown_rules: "{{ (lookup('ansible.builtin.url', git_config
 
 Given a repository: `https://github.com/rhpds/my-lab.git`
 
-**🔄 URL Transform**:
+**URL Transform**:
 ```
 https://github.com/rhpds/my-lab.git
          ↓ (replace .git with /refs/heads/main/config/)
@@ -48,12 +48,12 @@ https://github.com/rhpds/my-lab.git
 https://raw.githubusercontent.com/rhpds/my-lab/refs/heads/main/config/
 ```
 
-**📁 File Access**:
+**File Access**:
 - `instances.yaml` → `https://raw.githubusercontent.com/.../config/instances.yaml`
 - `networks.yaml` → `https://raw.githubusercontent.com/.../config/networks.yaml`  
 - `firewall.yaml` → `https://raw.githubusercontent.com/.../config/firewall.yaml`
 
-== 🏗️ Repository Structure Requirements
+== Repository Structure Requirements
 
 Your Git repository must follow this exact structure for the deployment system to find your configuration:
 
@@ -71,13 +71,13 @@ your-lab-repo/
 └── ui-config.yml             ← UI settings
 ----
 
-**⚠️ Critical**: The `config/` directory name and file names are hardcoded in the deployment system.
+**Critical**: The `config/` directory name and file names are hardcoded in the deployment system.
 
-== 🌟 Branch and Tag Strategy
+== Branch and Tag Strategy
 
 === Development Workflow
 
-**🔧 Development Branch**: Use `main` or `development` for active development
+**Development Branch**: Use `main` or `development` for active development
 
 [source,yaml]
 ----
@@ -88,7 +88,7 @@ ocp4_workload_showroom_content_git_repo_ref: main
 
 === Production Deployment
 
-**🚀 Tagged Releases**: Use Git tags for production deployments
+**Tagged Releases**: Use Git tags for production deployments
 
 [source,yaml]
 ----
@@ -96,7 +96,7 @@ ocp4_workload_showroom_content_git_repo_ref: main
 ocp4_workload_showroom_content_git_repo_ref: v1.2.0
 ----
 
-**📋 Tagging Best Practices**:
+**Tagging Best Practices**:
 ```bash
 # Create semantic version tags
 git tag -a v1.0.0 -m "Release v1.0.0: Initial production release"
@@ -114,18 +114,18 @@ Test new features using feature branches:
 ocp4_workload_showroom_content_git_repo_ref: feature/new-vm-setup
 ----
 
-== 🔒 Security Considerations
+== Security Considerations
 
 === Public Repository Access
 
 The deployment system accesses repositories via HTTPS without authentication:
 
-**✅ Supported**:
+**Supported**:
 - Public GitHub repositories
 - Public GitLab repositories  
 - Any publicly accessible Git hosting
 
-**❌ Not Supported**:
+**Not Supported**:
 - Private repositories requiring authentication
 - SSH-based Git URLs
 - Repositories behind VPNs or firewalls
@@ -140,13 +140,13 @@ Since repositories are accessed publicly:
 - Personal or proprietary information
 - Production configuration secrets
 
-**✅ Use Instead**:
+**Use Instead**:
 - Placeholder values: `{{ common_password }}`
 - Template variables: `${guid}`, `${domain}`
 - Example/dummy data clearly marked
 - Environment-specific overrides in AgnosticV
 
-== 📊 Configuration Loading Patterns
+== Configuration Loading Patterns
 
 === Error Handling
 
@@ -164,18 +164,18 @@ containers: >-
   }}
 ----
 
-**🛡️ Behavior**:
+**Behavior**:
 - Missing files don't cause deployment failures
 - Invalid YAML files trigger warnings
 - Empty configurations use sensible defaults
 
 === Caching and Performance
 
-**⚡ Caching**: Configuration files are cached during deployment
-**🔄 Updates**: Changes require new deployments to take effect
-**⏱️ Timeout**: URL lookups have built-in timeout protection
+**Caching**: Configuration files are cached during deployment
+**Updates**: Changes require new deployments to take effect
+**Timeout**: URL lookups have built-in timeout protection
 
-== 🎯 Advanced Integration Patterns
+== Advanced Integration Patterns
 
 === Multi-Environment Configuration
 
@@ -254,69 +254,69 @@ template-repo/
     └── customize-template.sh
 ----
 
-== 🔧 Troubleshooting Git Integration
+== Troubleshooting Git Integration
 
 === Common Issues
 
-**❌ "Configuration not found"**
+**"Configuration not found"**
 - Check repository URL spelling
 - Verify branch/tag exists
 - Ensure `config/` directory exists
 - Confirm file names match exactly
 
-**❌ "Invalid YAML format"**  
+** "Invalid YAML format"**  
 - Validate YAML syntax locally
 - Check for tabs vs spaces (use spaces)
 - Verify file encoding (UTF-8)
 - Test with `yamllint` tool
 
-**❌ "Network access error"**
+** "Network access error"**
 - Ensure repository is public
 - Check GitHub/GitLab service status
 - Verify raw content URLs work in browser
 
 === Debugging Tools
 
-**🔍 Manual URL Testing**:
+** Manual URL Testing**:
 ```bash
 # Test your config URL directly
 curl -f https://raw.githubusercontent.com/your-org/lab/main/config/instances.yaml
 ```
 
-**📋 YAML Validation**:
+** YAML Validation**:
 ```bash
 # Local validation
 yamllint config/instances.yaml
 python -c "import yaml; yaml.safe_load(open('config/instances.yaml'))"
 ```
 
-**🌐 Browser Testing**:
+** Browser Testing**:
 Navigate to raw GitHub URLs to verify accessibility and content.
 
-== 📈 Best Practices
+==  Best Practices
 
 === Repository Management
 
-**🏷️ Use Semantic Versioning**: `v1.0.0`, `v1.1.0`, `v2.0.0`
-**📝 Clear Commit Messages**: Describe configuration changes
+**🏷 Use Semantic Versioning**: `v1.0.0`, `v1.1.0`, `v2.0.0`
+** Clear Commit Messages**: Describe configuration changes
 **🔀 Feature Branches**: Develop new features in isolation  
-**📋 Pull Requests**: Review configuration changes before merging
+** Pull Requests**: Review configuration changes before merging
 
 === Configuration Design
 
-**📦 Modular Structure**: Keep configuration files focused and clear
-**📚 Documentation**: Document configuration options inline
-**🧪 Testing**: Test configuration changes in development environment
-**🔒 Security**: Never commit sensitive information
+** Modular Structure**: Keep configuration files focused and clear
+** Documentation**: Document configuration options inline
+** Testing**: Test configuration changes in development environment
+** Security**: Never commit sensitive information
 
 === Deployment Strategy
 
-**🚀 Progressive Deployment**: Test → Staging → Production
-**🔄 Rollback Plan**: Keep stable tags for quick rollbacks
-**📊 Monitoring**: Monitor deployment success rates
-**📈 Version Control**: Track which versions are deployed where
+** Progressive Deployment**: Test → Staging → Production
+** Rollback Plan**: Keep stable tags for quick rollbacks
+** Monitoring**: Monitor deployment success rates
+** Version Control**: Track which versions are deployed where
 
-== 📚 Related Documentation
+==  Related Documentation
 
 * xref:deployment-architecture.adoc[Zero Touch Deployment Architecture]
 * xref:template-customization-guide.adoc[Template Customization Guide]
@@ -324,4 +324,16 @@ Navigate to raw GitHub URLs to verify accessibility and content.
 * xref:production-patterns-guide.adoc[Production Deployment Patterns]
 
 ---
-**💡 Pro Tip**: The Git integration system is powerful but requires precise repository structure. Always test your repository URLs manually before deploying to ensure the deployment system can access your configuration files.
+**Pro Tip**: The Git integration system is powerful but requires precise repository structure. Always test your repository URLs manually before deploying to ensure the deployment system can access your configuration files.
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

@@ -3,18 +3,18 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Write basic lab instructions using AsciiDoc
-* Create your first lab content file
-* Use Zero Touch copy+run features
-* Structure simple, effective learning content
+* Basic lab instruction creation using AsciiDoc
+* Lab content file creation procedures
+* Zero Touch copy+run feature usage
+* Simple, effective learning content structure
 
 == Overview
 
 Now that you have infrastructure running, let's create engaging content that guides students through your lab environment.
 
-== 🛠️ Step 1: AsciiDoc Essentials
+== Step 1: AsciiDoc Essentials
 
 === Basic Syntax You Need
 
@@ -46,9 +46,9 @@ hostname
 ip addr show
 ----
 
-Students click the button and commands execute automatically!
+Students click the button and commands execute automatically.
 
-== 🛠️ Step 2: Create Your First Module
+== Step 2: Create Your First Module
 
 === Create the Content File
 
@@ -119,9 +119,9 @@ ping -c 3 google.com
 == Summary
 
 You've successfully:
-✅ Explored your RHEL system
-✅ Checked network connectivity
-✅ Used basic Linux commands
+* Explored your RHEL system
+* Checked network connectivity
+* Used basic Linux commands
 
 == What's Next?
 
@@ -139,7 +139,7 @@ Add your new module to `ui-config.yml` modules list:
   solveButton: false
 ----
 
-== 🛠️ Step 3: Test Your Content
+== Step 3: Test Your Content
 
 Build and view your content:
 
@@ -152,7 +152,7 @@ antora generate site.yml
 antora serve site.yml
 ----
 
-== 📝 Content Writing Tips
+== Content Writing Tips
 
 === Keep It Simple
 * **One concept per section**
@@ -169,7 +169,7 @@ antora serve site.yml
 * **Step-by-step progression**
 * **Summary** with accomplishments
 
-== ✅ Quick Checklist
+== Quick Checklist
 
 Before moving on, verify:
 * [ ] Content file created
@@ -178,7 +178,7 @@ Before moving on, verify:
 * [ ] Navigation updated
 * [ ] Content builds without errors
 
-== 🎯 What You've Accomplished
+== Summary
 
 You now know how to:
 * Create engaging lab content using AsciiDoc
@@ -186,7 +186,7 @@ You now know how to:
 * Structure content for effective learning
 * Test your content locally
 
-== 🛠️ Troubleshooting
+== Troubleshooting
 
 **Commands don't have copy+run buttons?**  
 → Check that code blocks use proper `[source,bash]` format
@@ -201,3 +201,15 @@ You now know how to:
 
 * xref:content-authoring-basics.adoc[Complete Content Creation Guide] - Advanced content features
 * xref:module-2-4-deploy-test.adoc[Module 2.4: Deploy & Test] - Next training module
+
+[bibliography]
+== References
+
+* [[[template-content]]] Red Hat GPTE Team. Zero Touch Template Content Examples. 
+  `/home/wilson/Projects/zero_touch_template_wilson/content/modules/ROOT/pages/`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.

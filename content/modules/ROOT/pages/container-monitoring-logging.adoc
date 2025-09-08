@@ -4,23 +4,24 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Configure monitoring and metrics collection** for containers
-* **Implement centralized logging** across multi-container deployments
-* **Set up health checks and alerting** for containerized applications
-* **Debug container issues** using logs and metrics
+* Monitoring and metrics collection configuration for containers
+* Centralized logging implementation across multi-container deployments
+* Health check and alerting setup for containerized applications
+* Container issue debugging using logs and metrics
 
-== 📊 Container Monitoring Stack
+== Container Monitoring Stack
 
 === Prometheus Metrics Collection
 
 Deploy Prometheus to collect container metrics:
 
+.Prometheus Metrics Collection <<template-instances>>
 [source,yaml]
 ----
 containers:
-  # Prometheus metrics collector
+  # Prometheus metrics collector (Example)
   - name: "prometheus"
     image: "prom/prometheus:latest"
     memory: "512Mi"
@@ -144,7 +145,7 @@ containers:
         tls: true
 ----
 
-## 📝 Centralized Logging
+##  Centralized Logging
 
 === Fluentd Log Aggregation
 
@@ -351,7 +352,7 @@ containers:
       SLOW_QUERY_THRESHOLD: "500ms"
 ----
 
-## 🔍 Debugging and Troubleshooting
+##  Debugging and Troubleshooting
 
 === Log Analysis Patterns
 
@@ -411,7 +412,7 @@ containers:
         tls: true
 ----
 
-## 📈 Monitoring Dashboards
+##  Monitoring Dashboards
 
 === Essential Metrics to Monitor
 
@@ -486,20 +487,32 @@ alertmanager.yml: |
         - url: 'http://alert-handler:8080/webhook'
 ----
 
-## ✅ Monitoring Validation
+## Monitoring Validation
 
 Verify your monitoring setup:
 
-1. **✅ Metrics Collection**: Confirm Prometheus scrapes all targets
-2. **✅ Log Aggregation**: Verify logs appear in centralized system
-3. **✅ Health Checks**: Test health endpoints respond correctly
-4. **✅ Dashboards**: Ensure Grafana displays metrics properly
-5. **✅ Alerting**: Validate alerts trigger for test conditions
+1. **Metrics Collection**: Confirm Prometheus scrapes all targets
+2. **Log Aggregation**: Verify logs appear in centralized system
+3. **Health Checks**: Test health endpoints respond correctly
+4. **Dashboards**: Ensure Grafana displays metrics properly
+5. **Alerting**: Validate alerts trigger for test conditions
 
-## 🎯 Next Steps
+## Next Steps
 
 **Enhance your monitoring:**
 * xref:container-testing-validation.adoc[**Container Testing & Validation**] - Testing and validation strategies
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - setup-automation/main.yml. 2024.
 * xref:container-storage-management.adoc[**Storage Management**] - Monitor storage performance
 * xref:network-policy-configuration.adoc[**Network Policy Configuration**] - Monitor network security
 

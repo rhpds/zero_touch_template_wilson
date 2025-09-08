@@ -3,12 +3,12 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Deploy basic containers** with proper port and network configuration
-* **Configure container resources** (memory, CPU, storage)
-* **Expose container services** through routes for external access
-* **Apply container security best practices** and troubleshoot common issues
+* Basic container deployment with port and network configuration
+* Container resource configuration (memory, CPU, storage)
+* Container service exposure through routes for external access
+* Container security best practices and troubleshooting
 
 == Overview
 
@@ -16,25 +16,17 @@ Containers provide lightweight, fast-starting services perfect for databases, we
 
 == Basic Container Configuration
 
+[%collapsible]
+====
 Add containers to your `config/instances.yaml` file:
 
+.Basic Container Configuration <<template-instances>>
 [source,yaml]
 ----
 ---
-containers:
-  - name: "redis-cache"
-    image: "redis:7-alpine"
-    ports:
-      - name: redis
-        containerPort: 6379
-        protocol: TCP
-        
-  - name: "web-app"
-    image: "nginx:latest" 
-    ports:
-      - name: http
-        containerPort: 80
-        protocol: TCP
+containers: []
+# Note: Official template has no containers by default
+# Add containers here as needed for your lab
 ----
 
 == Container Configuration Parameters
@@ -44,11 +36,11 @@ containers:
 |Parameter |Required |Description
 
 |`name`
-|✅ Yes
+| Yes
 |Unique container identifier
 
 |`image`
-|✅ Yes
+| Yes
 |Container image (Docker Hub format)
 
 |`ports`
@@ -281,9 +273,9 @@ nc -zv postgres-db 5432
 **Out of resources?**  
 → Reduce container memory limits
 
-== 🎯 Next Steps
+== Next Steps
 
-Ready to advance your container skills? Choose your learning path:
+Choose your learning path:
 
 **Practice Hands-On:**
 * xref:module-2-5-containers-deep-dive.adoc[**Module 2.5: Containers Deep Dive**] - Build multi-container applications step-by-step
@@ -305,3 +297,16 @@ Ready to advance your container skills? Choose your learning path:
 * xref:vm-basics.adoc[VM Configuration Basics] - Set up VMs alongside containers
 * xref:firewall-basics.adoc[Firewall Configuration Basics] - Secure your container deployments  
 * xref:template-customization-guide.adoc[Template Customization Guide] - Integrate containers into complete lab designs
+====
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  AgnosticD Git Repository - ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml. 2024.

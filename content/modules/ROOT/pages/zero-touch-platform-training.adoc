@@ -1,64 +1,75 @@
-= Zero Touch Platform Training
+= Zero Touch Platform Documentation
 :estimated-time: 4-6 hours total
 
-Welcome to the comprehensive **Zero Touch Platform Training**! This self-paced program teaches you everything needed to create professional, interactive labs using Red Hat's Zero Touch platform.
+Configure and deploy interactive labs using Red Hat's Zero Touch platform for demonstrations, training, and product showcases.
 
-== 🎯 Training Overview
+== Overview
 
-This training is designed as a **progressive learning journey** that takes you from zero knowledge to building complete, professional labs. Each module builds on previous concepts while introducing new skills.
+This documentation provides comprehensive guidance for creating interactive lab environments. Each section builds on previous concepts while introducing advanced configuration options.
 
-=== Who This Training Is For
+=== Target Audience
 
-* **Lab Developers**: Create hands-on technical education
-* **Technical Writers**: Build interactive documentation  
-* **Solution Architects**: Design realistic demo environments
-* **Educators**: Develop engaging learning experiences
-* **DevOps Engineers**: Automate lab provisioning and management
+**Experienced Linux professionals including:**
 
-=== What You'll Build
+* DevOps Engineers - Automate lab provisioning and deployment patterns
+* Solution Architects - Design production-scale demo environments
+* Platform Engineers - Build and maintain lab infrastructure
+* Technical Leads - Architect multi-tier environments
+* Site Reliability Engineers - Implement monitoring and troubleshooting
 
-By the end of this training, you'll have created a **complete multi-server RHEL administration lab** featuring:
+**Prerequisites:**
+* Advanced Linux system administration experience
+* Container orchestration knowledge (Kubernetes/OpenShift)
+* YAML configuration management
+* Git workflow proficiency
+* Understanding of CI/CD principles
 
-* ✅ **Realistic Network Topology**: Multi-tier architecture with proper isolation
-* ✅ **Professional Content**: Engaging, step-by-step learning modules
-* ✅ **Interactive Experience**: Terminal access, copy-run commands, validation
-* ✅ **Security Best Practices**: Network segmentation and access controls
-* ✅ **Deployment Ready**: Validated configuration ready for production use
+=== Lab Environment Features
 
-== 📚 Learning Path
+Complete multi-server RHEL administration lab including:
 
-=== 🏗️ Module 1: Platform Fundamentals (30-40 min)
+* Realistic network topology with multi-tier architecture and isolation
+* Professional content with step-by-step learning modules
+* Interactive experience with terminal access and command validation
+* Security best practices including network segmentation and access controls
+* Production-ready validated configuration
+
+== Learning Path
+
+[%collapsible]
+====
+=== Module 1: Platform Fundamentals (30-40 min)
 
 Build your foundation with Zero Touch concepts and structure.
 
 ==== Module 1.1: Understanding Zero Touch (5-10 min)
-xref:module-1-1-understanding-zero-touch.adoc[**Start here →**]
+xref:module-1-1-understanding-zero-touch.adoc[Platform Overview]
 
-Learn what Zero Touch is, why it exists, and how it differs from traditional approaches.
+Platform purpose, architecture, and core components.
 
-**You'll Learn**:
+**Topics covered**:
 * Platform purpose and benefits
 * Core components and architecture  
 * User experience and developer workflow
 * Real-world use cases
 
 ==== Module 1.2: Template Structure (10-15 min)
-xref:module-1-2-template-structure.adoc[**Continue →**]
+xref:module-1-2-template-structure.adoc[Template Structure]
 
 Explore the template directory structure and understand how files work together.
 
-**You'll Learn**:
+**Topics covered**:
 * Directory organization and file purposes
 * Infrastructure vs content separation
 * Configuration file relationships
 * Navigation and file naming conventions
 
 ==== Module 1.3: Configuration Files (10-15 min)
-xref:module-1-3-configuration-files.adoc[**Continue →**]
+xref:module-1-3-configuration-files.adoc[Configuration Files]
 
 Master YAML syntax and Zero Touch configuration patterns.
 
-**You'll Learn**:
+**Topics covered**:
 * YAML fundamentals and best practices
 * Zero Touch-specific configuration formats
 * Validation techniques and error troubleshooting
@@ -66,7 +77,7 @@ Master YAML syntax and Zero Touch configuration patterns.
 
 ---
 
-=== 🛠️ Module 2: Your First Lab (50-70 min)
+=== Module 2: Your First Lab (50-70 min)
 
 Apply your knowledge by building a complete, working lab from scratch.
 
@@ -75,7 +86,7 @@ xref:module-2-1-single-vm-setup.adoc[**Build your first VM →**]
 
 Create and configure your first virtual machine with all essential components.
 
-**You'll Learn**:
+**Topics covered**:
 * VM configuration parameters
 * Package installation and tagging
 * UI integration and terminal access
@@ -86,7 +97,7 @@ xref:module-2-2-basic-networking.adoc[**Add networking →**]
 
 Expand to multiple VMs with network segmentation and security isolation.
 
-**You'll Learn**:
+**Topics covered**:
 * Multi-network topologies
 * Network isolation and security concepts
 * CIDR notation and subnet planning
@@ -97,7 +108,7 @@ xref:module-2-3-simple-content.adoc[**Create content →**]
 
 Write engaging, educational content using AsciiDoc and Zero Touch features.
 
-**You'll Learn**:
+**Topics covered**:
 * AsciiDoc syntax and formatting
 * Interactive content creation
 * Learning objectives and progression
@@ -108,7 +119,7 @@ xref:module-2-4-deploy-test.adoc[**Validate and deploy →**]
 
 Validate your complete lab and understand the deployment process.
 
-**You'll Learn**:
+**Topics covered**:
 * Comprehensive validation procedures
 * Deployment process and timeline
 * Quality assurance and testing
@@ -116,7 +127,7 @@ Validate your complete lab and understand the deployment process.
 
 ---
 
-=== 🚀 Module 3: Advanced Concepts (60-80 min)
+=== Module 3: Advanced Concepts (60-80 min)
 
 *Coming in future updates*
 
@@ -130,12 +141,12 @@ Master complex scenarios and Business Unit requirements.
 
 ---
 
-=== 📖 Reference Materials
+=== Reference Materials
 
 Comprehensive guides for specific topics and advanced features.
 
 ==== Essential References
-* xref:development-lifecycle-guide.adoc[**🔄 Development Lifecycle Guide**] - Complete development workflow with visual flowchart
+* xref:development-lifecycle-guide.adoc[**Development Lifecycle Guide**] - Complete development workflow with visual flowchart
 
 ==== Core Configuration Guides
 * xref:vm-basics.adoc[**VM Configuration Basics**] - Complete VM configuration reference
@@ -154,38 +165,44 @@ Comprehensive guides for specific topics and advanced features.
 * xref:deployment-architecture.adoc[**Zero Touch Deployment Architecture**] - Backend systems, deployment process, and platform integration
 * xref:git-integration-patterns.adoc[**Git Integration Patterns**] - How Git repositories integrate with the deployment system
 * xref:cnv-platform-features.adoc[**OpenShift CNV Platform Features**] - Advanced virtualization capabilities and enterprise features
+====
 
-== 🎓 Skill Progression
+== Skill Progression
 
+[%collapsible]
+====
 === Beginner (Modules 1-2)
-After completing the first two modules, you'll be able to:
+After completing the first two modules, you will understand:
 
-* ✅ **Understand** Zero Touch platform architecture and workflow
-* ✅ **Navigate** template structure and configuration files confidently  
-* ✅ **Create** basic VM configurations with proper networking
-* ✅ **Write** engaging educational content using AsciiDoc
-* ✅ **Validate** and deploy simple but complete labs
+* **Understand** Zero Touch platform architecture and workflow
+* **Navigate** template structure and configuration files confidently  
+* **Create** basic VM configurations with proper networking
+* **Write** engaging educational content using AsciiDoc
+* **Validate** and deploy simple but complete labs
 
 === Intermediate (Module 3+)
-Future modules will enable you to:
+Future modules will cover:
 
-* 🎯 **Design** complex multi-tier application environments
-* 🎯 **Implement** container-based microservices architectures
-* 🎯 **Apply** advanced security and networking patterns
-* 🎯 **Integrate** with Business Unit specific requirements
-* 🎯 **Automate** complex setup and validation procedures
+* **Design** complex multi-tier application environments
+* **Implement** container-based microservices architectures
+* **Apply** advanced security and networking patterns
+* **Integrate** with Business Unit specific requirements
+* **Automate** complex setup and validation procedures
 
 === Expert (Reference + Practice)
-With experience and reference materials, you'll master:
+With experience and reference materials, you will master:
 
-* 🏆 **Architecture** enterprise-grade lab environments
-* 🏆 **Optimize** for performance, security, and user experience
-* 🏆 **Troubleshoot** complex deployment and runtime issues
-* 🏆 **Mentor** other developers and share best practices
-* 🏆 **Contribute** to platform enhancement and community knowledge
+* **Architecture** enterprise-grade lab environments
+* **Optimize** for performance, security, and user experience
+* **Troubleshoot** complex deployment and runtime issues
+* **Mentor** other developers and share best practices
+* **Contribute** to platform enhancement and community knowledge
+====
 
-== 💡 Learning Tips for Success
+== Learning Tips for Success
 
+[%collapsible]
+====
 === Self-Paced Learning Best Practices
 
 **🕒 Time Management**:
@@ -200,7 +217,7 @@ With experience and reference materials, you'll master:
 * Explain concepts in your own words
 * Connect new learning to your existing experience
 
-**🔄 Iterative Improvement**:
+**Iterative Improvement**:
 * Start simple and add complexity gradually
 * Test frequently and validate each step
 * Keep notes of what works and what doesn't
@@ -219,10 +236,21 @@ With experience and reference materials, you'll master:
 * Community forums and documentation
 * Internal team knowledge sharing
 * Mentorship from experienced developers
+====
 
-== 🎯 Ready to Begin?
+== Getting Started
+
+[%collapsible]
+====
 
 Choose your starting point based on your current knowledge:
+
+=== Internal Developer Path
+**Start here**: xref:quick-start-guide.adoc[Internal Developer Quick Start Guide] (10-15 min)
+
+**Target audience:** Internal development team members who need rapid onboarding to Zero Touch patterns and conventions.
+
+**Topics covered:** Directory structure, naming conventions, configuration file patterns, UI tab setup, enterprise examples.
 
 === New to Zero Touch?
 **Start here**: xref:module-1-1-understanding-zero-touch.adoc[Module 1.1: Understanding Zero Touch]
@@ -241,10 +269,11 @@ Use comprehensive reference materials for specific topics.
 
 ---
 
-## 🚀 Start Your Zero Touch Journey!
+## Getting Started
 
-The Zero Touch platform empowers you to create amazing learning experiences. Whether you're building simple demonstrations or complex enterprise scenarios, this training provides the foundation you need.
+The Zero Touch platform enables creation of professional learning experiences. Whether building simple demonstrations or complex enterprise scenarios, this documentation provides the foundation needed.
 
-**Your first step**: xref:module-1-1-understanding-zero-touch.adoc[**Begin Module 1.1: Understanding Zero Touch →**]
+**First step**: xref:module-1-1-understanding-zero-touch.adoc[Begin Module 1.1: Understanding Zero Touch]
 
-Good luck, and enjoy building incredible labs! 🎉
+Professional Zero Touch lab development starts here.
+====

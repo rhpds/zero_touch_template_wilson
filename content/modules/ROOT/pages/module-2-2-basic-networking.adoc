@@ -3,18 +3,18 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Configure basic networks for your lab
-* Connect VMs to custom networks
-* Understand network isolation concepts
-* Test network connectivity
+* Basic network configuration for labs
+* VM connection to custom networks
+* Network isolation concepts
+* Network connectivity testing
 
 == Overview
 
-Networks define how your VMs communicate with each other and the internet. You'll create a simple multi-VM environment with network separation.
+Networks define how your VMs communicate with each other and the internet. This module covers creating a simple multi-VM environment with network separation.
 
-== 🛠️ Step 1: Understand Network Basics
+== Step 1: Understand Network Basics
 
 Your lab includes:
 * **Default network**: Provides internet access (automatic)
@@ -27,13 +27,17 @@ Every VM automatically gets:
 * Outbound access for package installation
 * Inbound access blocked (secure by default)
 
-== 🛠️ Step 2: Create Your First Custom Network
+== Step 2: Create Your First Custom Network
 
 Edit `config/networks.yaml`:
 
+.Multi-Tier Network Configuration <<agnosticd-base>>
 [source,yaml]
 ----
 ---
+# Default network exists by default, specify here always.
+- name: default
+
 - name: "web-tier"
   cidr: "10.10.0.0/24"  
   description: "Web servers network"
@@ -49,7 +53,7 @@ Edit `config/networks.yaml`:
 * **cidr**: IP address range in CIDR notation  
 * **description**: Human-readable explanation
 
-== 🛠️ Step 3: Connect VMs to Networks
+== Step 3: Connect VMs to Networks
 
 Update `config/instances.yaml` to use your networks:
 
@@ -80,7 +84,7 @@ virtualmachines:
 * **VMs on same network** can communicate
 * **VMs on different networks** are isolated
 
-== 🛠️ Step 4: Configure Firewall for Networks
+== Step 4: Configure Firewall for Networks
 
 Update `config/firewall.yaml` to allow network communication:
 
@@ -107,7 +111,7 @@ ingress:
     description: "Web server access"
 ----
 
-== 🛠️ Step 5: Deploy and Test
+== Step 5: Deploy and Test
 
 Build your documentation:
 
@@ -142,7 +146,7 @@ ip addr show
 ping -c 3 google.com  # This should fail
 ----
 
-== 🛠️ Step 6: Understanding Network Isolation
+== Step 6: Understanding Network Isolation
 
 Your configuration creates:
 
@@ -158,7 +162,7 @@ Your configuration creates:
 
 This creates **defense in depth** - even if web server is compromised, database remains isolated.
 
-== 📝 Network Design Principles
+==  Network Design Principles
 
 === Security Through Isolation
 * **Separate tiers** with different trust levels
@@ -171,7 +175,7 @@ This creates **defense in depth** - even if web server is compromised, database 
 * **Databases**: App tier only (most secure)
 * **Jump boxes**: All networks (for administration)
 
-== ✅ Testing Your Network Design
+==  Testing Your Network Design
 
 Verify your configuration works:
 
@@ -181,7 +185,7 @@ Verify your configuration works:
 - [ ] **VMs on different networks** are isolated
 - [ ] **SSH access** works through firewall
 
-== 🛠️ Common Networking Patterns
+== Common Networking Patterns
 
 === Development Environment
 
@@ -205,7 +209,7 @@ Verify your configuration works:
   description: "Internal applications"
 ----
 
-== 🛠️ Troubleshooting Networks
+== Troubleshooting Networks
 
 **VMs can't communicate?**
 → Check they're on the same custom network
@@ -219,20 +223,29 @@ Verify your configuration works:
 **IP address conflicts?**
 → Verify CIDR ranges don't overlap
 
-== 🎯 What You've Accomplished
+== Summary
 
 You now understand:
 
-✅ **Network isolation** and security principles  
-✅ **Custom network creation** and configuration  
-✅ **VM-to-network assignment** patterns  
-✅ **Firewall integration** with networking  
-✅ **Testing and validation** of network design  
+* **Network isolation** and security principles  
+* **Custom network creation** and configuration  
+* **VM-to-network assignment** patterns  
+* **Firewall integration** with networking  
+* **Testing and validation** of network design  
 
-== 🚀 What's Next?
+== Next Steps
 
 Continue with:
 * xref:module-2-3-simple-content.adoc[Module 2.3: Simple Content Creation] - Add educational content
 * xref:networking-basics.adoc[Networking Basics Reference] - More advanced networking features
 
-You're building real skills in infrastructure design and security! 🔒
+You're building real skills in infrastructure design and security! 
+
+[bibliography]
+== References
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

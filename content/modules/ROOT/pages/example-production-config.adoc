@@ -268,3 +268,15 @@ For this template, we recommend keeping both patterns:
 - **Utilities** for local development and testing
 
 This approach serves both educational and practical needs effectively.
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.

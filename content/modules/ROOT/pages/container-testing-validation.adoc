@@ -4,23 +4,24 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Design comprehensive testing strategies** for containerized applications
-* **Implement automated testing pipelines** using containers
-* **Validate container deployments** with systematic testing approaches
-* **Debug and troubleshoot** container deployment issues
+* Comprehensive testing strategy design for containerized applications
+* Automated testing pipeline implementation using containers
+* Container deployment validation with systematic testing approaches
+* Container deployment debugging and troubleshooting
 
-== 🧪 Container Testing Strategies
+== Container Testing Strategies
 
 === Unit Testing in Containers
 
 Create isolated test environments:
 
+.Test Application Container <<template-instances>>
 [source,yaml]
 ----
 containers:
-  # Application under test
+  # Application under test (Example)
   - name: "app-under-test"
     image: "myapp:test"
     memory: "256Mi"
@@ -95,7 +96,7 @@ containers:
     command: ["cypress", "run", "--headless"]
 ----
 
-## 🔍 End-to-End Testing
+## End-to-End Testing
 
 === Browser-Based Testing
 
@@ -184,7 +185,7 @@ containers:
         readOnly: true
 ----
 
-## 📊 Performance Testing
+## Performance Testing
 
 === Load Testing with K6
 
@@ -277,7 +278,7 @@ export default function () {
 }
 ----
 
-## ✅ Deployment Validation
+## Deployment Validation
 
 === Health Check Validation
 
@@ -312,24 +313,24 @@ containers:
         
         # Test basic health endpoint
         if curl -f -s http://webapp-health:8081/health > /tmp/health.json; then
-          echo '✅ Health endpoint responded';
+          echo 'Health endpoint responded';
           cat /tmp/health.json;
         else
-          echo '❌ Health endpoint failed';
+          echo 'Health endpoint failed';
         fi;
         
         # Test readiness endpoint
         if curl -f -s http://webapp-health:8081/ready; then
-          echo '✅ Readiness check passed';
+          echo 'Readiness check passed';
         else
-          echo '❌ Readiness check failed';
+          echo 'Readiness check failed';
         fi;
         
         # Test liveness endpoint
         if curl -f -s http://webapp-health:8081/alive; then
-          echo '✅ Liveness check passed';
+          echo 'Liveness check passed';
         else
-          echo '❌ Liveness check failed';
+          echo 'Liveness check failed';
         fi;
         
         sleep 30;
@@ -362,8 +363,8 @@ containers:
       
       # Test network connectivity
       echo 'Network Connectivity:';
-      nc -zv database 5432 && echo '✅ Database reachable' || echo '❌ Database unreachable';
-      nc -zv cache 6379 && echo '✅ Cache reachable' || echo '❌ Cache unreachable';
+      nc -zv database 5432 && echo ' Database reachable' || echo ' Database unreachable';
+      nc -zv cache 6379 && echo ' Cache reachable' || echo ' Cache unreachable';
       
       # Keep container running for inspection
       tail -f /dev/null;
@@ -382,7 +383,7 @@ containers:
         mountPath: "/app/data"
 ----
 
-## 🛠️ Debugging Techniques
+##  Debugging Techniques
 
 === Container Debugging Tools
 
@@ -445,7 +446,7 @@ kubectl top pods
 kubectl get events --sort-by=.metadata.creationTimestamp
 ----
 
-## 🚀 Continuous Testing
+##  Continuous Testing
 
 === Automated Test Pipeline
 
@@ -479,50 +480,50 @@ containers:
       echo 'Running E2E tests...';
       npm run test:e2e || exit 1;
       
-      echo 'All tests passed ✅';
+      echo 'All tests passed ';
     "]
     environment:
       TEST_DATABASE_URL: "postgres://test:{{ common_password }}@test-db:5432/testdb"
       WEBAPP_URL: "http://webapp:8080"
 ----
 
-## 📋 Testing Checklist
+##  Testing Checklist
 
 === Pre-Deployment Testing
 
-**✅ Unit Tests**
+** Unit Tests**
 - All business logic tested
 - Database interactions validated
 - Error handling verified
 
-**✅ Integration Tests**
+** Integration Tests**
 - Service communication tested
 - API contracts validated
 - Data flow verified
 
-**✅ Performance Tests**
+** Performance Tests**
 - Load testing completed
 - Response times acceptable
 - Resource usage optimized
 
 === Post-Deployment Validation
 
-**✅ Health Checks**
+** Health Checks**
 - All health endpoints responding
 - Dependencies accessible
 - Error rates acceptable
 
-**✅ Functionality Tests**
+** Functionality Tests**
 - Critical user paths working
 - API endpoints responding
 - Database operations successful
 
-**✅ Security Tests**
+** Security Tests**
 - Network policies enforced
 - Authentication working
 - Authorization rules applied
 
-## 🎯 Next Steps
+##  Next Steps
 
 **Expand your testing knowledge:**
 * xref:container-multi-service-patterns.adoc[**Multi-Service Patterns**] - Test service interactions
@@ -536,3 +537,15 @@ containers:
 * Create debugging and troubleshooting runbooks
 
 **Comprehensive testing ensures reliable, high-quality container deployments in Zero Touch environments!**
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - setup-automation/main.yml. 2024.

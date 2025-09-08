@@ -4,13 +4,13 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Understand YAML syntax and formatting rules
-* Know the specific configuration format used by Zero Touch
-* Use correct variable patterns for different file types
-* Be able to validate and troubleshoot configuration files
-* Understand common configuration patterns and best practices
+* YAML syntax and formatting rules
+* Zero Touch configuration format requirements
+* Variable patterns for different file types
+* Configuration file validation and troubleshooting
+* Common configuration patterns and best practices
 
 == YAML Fundamentals
 
@@ -19,6 +19,7 @@ Zero Touch uses YAML files for all configuration. YAML is human-readable and fol
 === Basic YAML Syntax
 
 ==== Key-Value Pairs
+.Basic YAML Key-Value Pairs <<template-instances>>
 [source,yaml]
 ----
 name: "web-server"
@@ -27,6 +28,7 @@ cores: 2
 ----
 
 ==== Lists (Arrays)
+.YAML Array Syntax <<agnosticd-base>>
 [source,yaml]
 ----
 networks:
@@ -36,6 +38,7 @@ networks:
 ----
 
 ==== Nested Objects
+.YAML Nested Object Structure <<roadshow-instances>>
 [source,yaml]
 ----
 virtualmachines:
@@ -46,6 +49,7 @@ virtualmachines:
 ----
 
 ==== Comments
+.YAML Comment Syntax <<template-instances>>
 [source,yaml]
 ----
 # This is a comment
@@ -56,23 +60,24 @@ virtualmachines:
 
 === YAML Formatting Rules
 
-⚠️ **Critical Rules** (breaking these causes errors):
+**Critical Rules** (breaking these causes errors):
 
 ==== Indentation
 * Use **spaces only** (never tabs)
 * Use **2 spaces** per level
 * Be **consistent** throughout the file
 
+.YAML Indentation Examples <<agnosticd-base>>
 [source,yaml]
 ----
-# ✅ Correct
+# Correct
 virtualmachines:
   - name: "server1"
     memory: "4G"
     networks:
       - default
 
-# ❌ Wrong (inconsistent indentation)
+# Wrong (inconsistent indentation)
 virtualmachines:
 - name: "server1"
   memory: "4G"
@@ -84,15 +89,16 @@ virtualmachines:
 * Use quotes for **strings with special characters**
 * Use quotes for **values that might be interpreted as numbers/booleans**
 
+.YAML Quoting Best Practices <<template-instances>>
 [source,yaml]
 ----
-# ✅ Good practices
+# Good practices
 name: "web-server"
 port: "8080"        # Quoted to ensure it's treated as string
 memory: "4G"        # Quoted because of the 'G' suffix
 enabled: true       # Boolean, no quotes needed
 
-# ❌ Potential issues
+# Potential issues
 name: web-server    # Works, but inconsistent
 port: 8080          # Might be interpreted as number
 version: 1.0        # Might become 1.0 instead of "1.0"
@@ -101,14 +107,14 @@ version: 1.0        # Might become 1.0 instead of "1.0"
 ==== Lists vs Objects
 [source,yaml]
 ----
-# ✅ List of objects
+# List of objects
 virtualmachines:
   - name: "server1"
     memory: "4G"
   - name: "server2"
     memory: "2G"
 
-# ❌ Common mistake (missing dash)
+# Common mistake (missing dash)
 virtualmachines:
   name: "server1"    # This creates one object, not a list
   memory: "4G"
@@ -124,14 +130,15 @@ virtualmachines:
 
 Use **Jinja2 templating** with **required quotes**:
 
+.AgnosticD Variable Syntax <<roadshow-instances>>
 [source,yaml]
 ----
-# ✅ CORRECT in instances.yaml
+# CORRECT in instances.yaml
 environment:
   PASSWORD: "{{ common_password }}"      # ← Must be quoted
   DATABASE_URL: "{{ db_connection }}"    # ← Must be quoted
 
-# ❌ WRONG - causes deployment failure  
+# WRONG - causes deployment failure  
 environment:
   PASSWORD: {{ common_password }}        # ← Unquoted breaks YAML parsing
 ----
@@ -140,14 +147,15 @@ environment:
 
 Use **shell-style variables** with **no quotes**:
 
+.UI Configuration Variable Syntax <<satellite-ui>>
 [source,yaml]
 ----
-# ✅ CORRECT in ui-config.yml
+# CORRECT in ui-config.yml
 tabs:
   - name: "Web App"
     url: https://webapp-${guid}.${domain}/    # ← Shell-style, no quotes
 
-# ❌ WRONG for UI config
+# WRONG for UI config
     url: https://webapp-{{ guid }}.{{ domain }}/  # ← Wrong syntax for UI
 ----
 
@@ -186,11 +194,12 @@ containers:
 ----
 
 ==== `networks.yaml`
+.Network Configuration Structure <<agnosticd-base>>
 [source,yaml]
 ----
----  # Document separator (recommended)
-# List of network definitions
-- name: default      # Default network (always present)
+---
+# Default network exists by default, specify here always.
+- name: default
 - name: web-tier
   cidr: "10.1.0.0/24"
   description: "Frontend network"
@@ -200,22 +209,15 @@ containers:
 ----
 
 ==== `firewall.yaml`
+.Firewall Rules Configuration <<agnosticd-base>>
 [source,yaml]
 ----
----  # Document separator (recommended)
-# Egress rules (outbound traffic)
+---
+# By default egress traffic is not allowed, define below the ports allowed.
 egress:
   - ports:
       - protocol: TCP
         port: 443
-      - protocol: TCP
-        port: 80
-
-# Ingress rules (inbound traffic)  
-ingress:
-  - ports:
-      - protocol: TCP
-        port: 8080
 ----
 
 === Configuration Validation
@@ -224,52 +226,56 @@ ingress:
 
 Each configuration has required and optional fields:
 
+.Required vs Optional VM Fields <<template-instances>>
 [source,yaml]
 ----
 virtualmachines:
-  - name: "my-server"          # ✅ Required
-    image: "rhel-9.6"          # ✅ Required  
-    memory: "4G"               # ✅ Required
-    cores: 2                   # ✅ Required
-    image_size: "40G"          # ✅ Required
-    networks:                  # ✅ Required
+  - name: "my-server"          # Required
+    image: "rhel-9.6"          # Required  
+    memory: "4G"               # Required
+    cores: 2                   # Required
+    image_size: "40G"          # Required
+    networks:                  # Required
       - default
     
     # Optional fields
-    packages:                  # ⚪ Optional
+    packages:                  # Optional
       - git
       - vim
-    tags:                      # ⚪ Optional
+    tags:                      # Optional
       - key: "Environment"
         value: "Lab"
-    bootloader: efi            # ⚪ Optional
-    disk_type: "scsi"          # ⚪ Optional
+    bootloader: efi            # Optional
+    disk_type: "scsi"          # Optional
 ----
 
 ==== Common Validation Errors
 
 **Missing Required Fields**:
+.Missing Required Fields Error <<template-instances>>
 [source,yaml]
 ----
-# ❌ Error: Missing required fields
+#  Error: Missing required fields
 virtualmachines:
   - name: "test-server"
     # Missing: image, memory, cores, image_size, networks
 ----
 
 **Invalid Data Types**:
+.Invalid Data Type Error <<template-instances>>
 [source,yaml]
 ----
-# ❌ Error: cores should be a number, not string
+#  Error: cores should be a number, not string
 virtualmachines:
   - name: "test-server"
     cores: "two"        # Should be: cores: 2
 ----
 
 **Invalid Network References**:
+.Invalid Network Reference Error <<agnosticd-base>>
 [source,yaml]
 ----
-# ❌ Error: network "frontend" not defined in networks.yaml
+#  Error: network "frontend" not defined in networks.yaml
 virtualmachines:
   - name: "test-server"
     networks:
@@ -280,15 +286,16 @@ virtualmachines:
 
 ==== Naming Conventions
 
+.Naming Convention Best Practices <<roadshow-instances>>
 [source,yaml]
 ----
-# ✅ Good naming practices
+#  Good naming practices
 virtualmachines:
   - name: "control-node"      # Descriptive, kebab-case
   - name: "web-server-01"     # Clear purpose, numbered
   - name: "database-primary"  # Role-based naming
 
-# ❌ Poor naming
+#  Poor naming
 virtualmachines:
   - name: "vm1"               # Not descriptive
   - name: "test_server"       # Mixed case style  
@@ -299,7 +306,7 @@ virtualmachines:
 
 [source,yaml]
 ----
-# ✅ Appropriate resource allocation
+#  Appropriate resource allocation
 virtualmachines:
   - name: "control-node"
     memory: "4G"              # Sufficient for management
@@ -316,7 +323,7 @@ virtualmachines:
 
 [source,yaml]
 ----
-# ✅ Well-documented configuration
+#  Well-documented configuration
 virtualmachines:
   # Control node for Ansible automation
   - name: "control-node"
@@ -344,6 +351,7 @@ virtualmachines:
 * **YAML Validator**: https://yamlchecker.com/
 
 ==== Command Line Tools
+.YAML Validation Commands <<template-setup>>
 [source,bash]
 ----
 # If yamllint is available
@@ -376,6 +384,7 @@ grep "memory:" config/instances.yaml
 == Common Configuration Examples
 
 === Single VM Lab
+.Simple Single VM Configuration <<template-instances>>
 [source,yaml]
 ----
 # instances.yaml
@@ -390,6 +399,7 @@ virtualmachines:
 
 # networks.yaml
 ---
+# Default network exists by default, specify here always.
 - name: default
 
 # firewall.yaml
@@ -443,7 +453,7 @@ ingress:
         port: 5432  # Database traffic
 ----
 
-== ✅ Knowledge Check
+==  Knowledge Check
 
 Before moving to the next module, make sure you can:
 
@@ -453,15 +463,16 @@ Before moving to the next module, make sure you can:
 - [ ] Validate YAML syntax and catch common errors
 - [ ] Follow naming conventions and best practices
 
-== 🛠️ Practice Exercise
+== Practice Exercise
 
-**Try This**: Create a simple configuration for a web development lab:
+**Exercise**: Create a simple configuration for a web development lab:
 
 1. **Design**: One VM for development, one container for database
 2. **Configure**: Write the YAML files
 3. **Validate**: Check your syntax and relationships
 
 **Template to start**:
+.Practice Exercise Template <<template-instances>>
 [source,yaml]
 ----
 # In instances.yaml
@@ -474,9 +485,9 @@ containers:
     # Add your configuration here...
 ----
 
-== 🎯 What's Next?
+== Next Steps
 
-Now that you understand the configuration basics, let's put it into practice by creating your first lab!
+Now that you understand the configuration basics, put it into practice by creating your first lab.
 
 **Next Module**: xref:module-2-1-single-vm-setup.adoc[2.1 Single VM Setup] (15-20 min)
 
@@ -485,3 +496,21 @@ Now that you understand the configuration basics, let's put it into practice by 
 * xref:vm-basics.adoc[Adding Instances and Containers] (Reference)
 * xref:networking-basics.adoc[Configuring Networking] (Reference)
 * xref:firewall-basics.adoc[Configuring Firewall Rules] (Reference)
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  AgnosticD Git Repository - ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml. 2024.
+
+* [[[satellite-ui]]] Red Hat Satellite Team. Satellite Advanced Topics 6.17 UI Configuration. 
+  `/home/wilson/Projects/mad-scientist/tests/converted_labs/zt-satellite-advanced-topics-6-17/ui-config.yml`. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.

@@ -2,19 +2,19 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Understand the complete deployment pipeline** from Git repository to running lab
-* **Comprehend the role of each system component** (AgnosticV, AgnosticD, OpenShift CNV, Showroom)
-* **Trace the configuration transformation process** and variable mapping between systems
-* **Debug deployment issues** by understanding where failures can occur in the pipeline
-* **Optimize lab designs** based on deployment architecture constraints and capabilities
+* Complete deployment pipeline from Git repository to running lab
+* Role of each system component (AgnosticV, AgnosticD, OpenShift CNV, Showroom)
+* Configuration transformation process and variable mapping between systems
+* Deployment issue debugging by understanding where failures can occur in the pipeline
+* Lab design optimization based on deployment architecture constraints and capabilities
 
 == Overview
 
 Understanding how your Zero Touch labs get deployed is crucial for advanced customization and troubleshooting. This guide explains the backend deployment process and integration patterns.
 
-== 🏗️ Architecture Overview
+== Architecture Overview
 
 Zero Touch labs use a sophisticated deployment pipeline that transforms your template repository into running lab environments:
 
@@ -27,12 +27,12 @@ Zero Touch labs use a sophisticated deployment pipeline that transforms your tem
 
 === Key Components
 
-**🔧 AgnosticD**: The deployment engine that orchestrates infrastructure provisioning
-**📦 AgnosticV**: The catalog system that defines lab configurations and metadata  
-**🎨 Showroom**: The UI framework that presents your content to students
-**☁️ OpenShift CNV**: The virtualization platform hosting your lab VMs
+**AgnosticD**: The deployment engine that orchestrates infrastructure provisioning
+**AgnosticV**: The catalog system that defines lab configurations and metadata  
+**Showroom**: The UI framework that presents your content to students
+**OpenShift CNV**: The virtualization platform hosting your lab VMs
 
-== 📁 Backend Repository Structure
+== Backend Repository Structure
 
 Your lab template integrates with two backend systems:
 
@@ -90,7 +90,7 @@ https://raw.githubusercontent.com/rhpds/zero_touch_template_wilson/refs/heads/ma
 https://raw.githubusercontent.com/rhpds/zero_touch_template_wilson/refs/heads/main/config/instances.yaml
 ```
 
-== 🔄 Deployment Process
+== Deployment Process
 
 === Phase 1: Configuration Resolution
 The deployment system dynamically fetches your lab configuration:
@@ -109,20 +109,20 @@ networks: "{{ lookup('url', git_config_directory + 'networks.yaml') | from_yaml 
 firewall: "{{ lookup('url', git_config_directory + 'firewall.yaml') | from_yaml }}"
 ----
 
-**🔍 What This Means**: Your `config/` directory files are fetched directly from your Git repository during deployment.
+**What This Means**: Your `config/` directory files are fetched directly from your Git repository during deployment.
 
 === Phase 2: Infrastructure Provisioning
 AgnosticD uses your configuration to create:
 
-**🖥️ Virtual Machines**: Based on your `instances.yaml`
-**🌐 Networks**: Defined in `networks.yaml`  
-**🔥 Firewall Rules**: From `firewall.yaml`
-**🔒 Security Groups**: Automatically configured for isolation
+**Virtual Machines**: Based on your `instances.yaml`
+**Networks**: Defined in `networks.yaml`  
+**Firewall Rules**: From `firewall.yaml`
+**Security Groups**: Automatically configured for isolation
 
 === Phase 3: Software Installation
 The platform executes comprehensive role-based configuration:
 
-**🔧 Pre-Software Roles**:
+**Pre-Software Roles**:
 - `create_ssh_provision_key` - Generates SSH keys for deployment
 - `set-repositories` - Configures RHEL repositories (Satellite integration)
 - `common` - Installs common packages from your `instances.yaml`
@@ -130,11 +130,11 @@ The platform executes comprehensive role-based configuration:
 - `zero_touch_rhel_user` - Creates the `rhel` lab user
 - `asset_injector` - Injects custom assets (if configured)
 
-**📦 Software Installation**:
+**Software Installation**:
 - Installs packages defined in your `instances.yaml` per VM/container
 - Executes configurable `software_workloads` (extensions available)
 
-**🔧 Available Workload Extensions**:
+**Available Workload Extensions**:
 - `ocp4_workload_codeserver` - VS Code browser-based IDE
 - `ocp4_workload_gitea_operator` - Git repository hosting
 - `ocp4_workload_jenkins` - CI/CD pipeline integration
@@ -144,26 +144,27 @@ The platform executes comprehensive role-based configuration:
 === Phase 4: Showroom Deployment
 Your content is packaged and deployed via Helm:
 
-**🎨 Showroom Helm Chart Deployment**:
+**Showroom Helm Chart Deployment**:
 - **Dev**: `showroom-single-pod v1.9.6` (development environments)
 - **Prod**: `zerotouch v1.9.10` (production environments)
 - **UI Bundle**: `nookbag-v0.0.5` (Zero Touch UI framework)
 
-**📚 Content Integration**:
+**Content Integration**:
 - Antora processes your `site.yml` playbook
 - Content served via `showroom-content:v1.2` image (prod)
 - Dynamic Git repository content fetching
 
-**🔌 Terminal Integration**:
+**Terminal Integration**:
 - Wetty SSH terminals: `quay.io/rhpds/wetty`
 - Auto-SSH to bastion: `ssh rhel@{{ groups['bastions'][0] }}`
 - Environment variables: `guid`, `domain`, `common_password`
 
-**🌍 URL Generation**: Creates unique URLs for each lab instance
-- Showroom UI: `https://showroom-{{ guid }}.{{ domain }}/`  
-- Container routes: `https://{{ container-name }}-{{ guid }}.{{ domain }}/`
+**URL Generation**: Creates unique URLs for each lab instance
+- Application routes: `https://satellite-${guid}.${domain}/` (example from satellite lab)
+- Container routes: `https://control-${guid}.${domain}/` (example from AAP lab)
+- Service-specific: `https://node03-${guid}.${domain}/index.html` (example from roadshow)
 
-== 🔧 Key Integration Points
+== Key Integration Points
 
 === Git Repository Integration
 
@@ -198,7 +199,7 @@ student_password: "{{ common_password }}"
 ansible_service_account_user_password: "{{ common_password }}"
 ----
 
-**🔒 Security**: Each deployment gets a unique, randomly generated password.
+** Security**: Each deployment gets a unique, randomly generated password.
 
 === Environment Variables
 
@@ -212,15 +213,15 @@ domain: "{{ sandbox_openshift_apps_domain }}" # Platform domain
 common_password: "{{ common_password }}"      # Generated password
 ----
 
-**💡 Usage**: Use these in your content with `{guid}`, `{domain}`, etc.
+**Usage**: Use these in your content with `{guid}`, `{domain}`, etc.
 
-== 🚀 Platform Features
+== Platform Features
 
 === OpenShift CNV Integration
 
 Your VMs run on OpenShift Container Native Virtualization:
 
-**🔧 Features**:
+** Features**:
 - **Kubernetes-native VM management**
 - **Automatic scheduling and resource management**  
 - **Network isolation between lab deployments**
@@ -230,12 +231,12 @@ Your VMs run on OpenShift Container Native Virtualization:
 
 The student interface provides:
 
-**🎯 Navigation**: Multi-module content organization
-**🖥️ Terminals**: Browser-based SSH access to your VMs
-**📱 Responsive**: Works on desktop and mobile devices
-**🎨 Customizable**: Configurable tabs, solve buttons, external links
+**Navigation**: Multi-module content organization
+**Terminals**: Browser-based SSH access to your VMs
+**Responsive**: Works on desktop and mobile devices
+**Customizable**: Configurable tabs, solve buttons, external links
 
-== 📊 Deployment Metadata
+== Deployment Metadata
 
 === Babylon/AgnosticV Integration
 
@@ -258,12 +259,12 @@ __meta__:
 
 === Resource Management
 
-**⏱️ Lifespan**: Labs have configurable runtime limits
-**🔒 Access Control**: Integration with Red Hat SSO
-**📈 Reporting**: Usage analytics and cost tracking
-**⚖️ Quotas**: Resource limits per user/organization
+**Lifespan**: Labs have configurable runtime limits
+**Access Control**: Integration with Red Hat SSO
+**Reporting**: Usage analytics and cost tracking
+**Quotas**: Resource limits per user/organization
 
-== 🛠️ Advanced Configuration
+== Advanced Configuration
 
 === Custom Execution Environments
 
@@ -373,23 +374,23 @@ Containers and VMs deploy to the **SAME CNV namespace**, not separate namespaces
 * More restrictive than traditional cross-namespace security
 ====
 
-== 🧰 Troubleshooting
+== Troubleshooting
 
 === Common Deployment Issues
 
-**❌ Configuration Not Found**: Check your Git repository path and branch
-**❌ VM Creation Failed**: Verify your `instances.yaml` syntax
-**❌ Network Issues**: Review `firewall.yaml` and network policies
-**❌ Content Build Failed**: Validate `site.yml` Antora configuration
+** Configuration Not Found**: Check your Git repository path and branch
+** VM Creation Failed**: Verify your `instances.yaml` syntax
+** Network Issues**: Review `firewall.yaml` and network policies
+** Content Build Failed**: Validate `site.yml` Antora configuration
 
 === Debugging Tools
 
-**🔍 AgnosticD Logs**: Available in deployment output directory
-**📊 OpenShift Console**: Monitor VM and pod status
-**🛠️ Bastion Access**: SSH to debug infrastructure issues
-**📋 Showroom Logs**: Container logs for UI troubleshooting
+** AgnosticD Logs**: Available in deployment output directory
+** OpenShift Console**: Monitor VM and pod status
+** Bastion Access**: SSH to debug infrastructure issues
+** Showroom Logs**: Container logs for UI troubleshooting
 
-== 📚 Related Documentation
+==  Related Documentation
 
 * xref:template-customization-guide.adoc[Template Customization Guide]
 * xref:advanced-lab-features.adoc[Advanced Lab Features]  
@@ -397,4 +398,16 @@ Containers and VMs deploy to the **SAME CNV namespace**, not separate namespaces
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Integration]
 
 ---
-**💡 Pro Tip**: Understanding the deployment architecture helps you design more efficient labs and troubleshoot issues quickly. The platform handles complexity so you can focus on creating great learning experiences!
+**Pro Tip**: Understanding the deployment architecture helps you design more efficient labs and troubleshoot issues quickly. The platform handles complexity so you can focus on creating great learning experiences.
+
+[bibliography]
+== References
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

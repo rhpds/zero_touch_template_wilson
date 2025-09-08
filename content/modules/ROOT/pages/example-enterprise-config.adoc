@@ -405,3 +405,15 @@ output:
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complete enterprise patterns guide
 * xref:production-patterns-guide.adoc[Production Lab Patterns Guide] - Real-world deployment patterns
 * xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases] - Business Unit specific requirements
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

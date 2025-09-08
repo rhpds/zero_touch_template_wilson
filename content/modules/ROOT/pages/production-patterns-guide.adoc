@@ -2,13 +2,13 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Apply production-ready patterns** from real Zero Touch lab deployments
-* **Implement professional naming conventions** and file organization
-* **Configure enterprise-grade resource allocation** and performance settings
-* **Use advanced features** like versioned images and specific platform requirements
-* **Adopt best practices** proven in live production environments
+* Production-ready pattern application from real Zero Touch lab deployments
+* Professional naming convention implementation and file organization
+* Enterprise-grade resource allocation configuration and performance settings
+* Advanced feature usage including versioned images and specific platform requirements
+* Best practices adoption proven in live production environments
 
 == Overview
 
@@ -159,16 +159,16 @@ echo "Serving lab content on http://localhost:8443/index.html"
 == When to Use Each Pattern
 
 === Use Training Patterns For:
-- ✅ **Learning materials** and self-paced training
-- ✅ **Template documentation** and guides  
-- ✅ **Multi-part educational series**
-- ✅ **Complex concept explanation**
+-  **Learning materials** and self-paced training
+-  **Template documentation** and guides  
+-  **Multi-part educational series**
+-  **Complex concept explanation**
 
 === Use Production Patterns For:
-- ✅ **Customer-facing labs** and demos
-- ✅ **Conference workshops** and events
-- ✅ **Product documentation** integration
-- ✅ **Automated lab deployment**
+-  **Customer-facing labs** and demos
+-  **Conference workshops** and events
+-  **Product documentation** integration
+-  **Automated lab deployment**
 
 == Migration Checklist
 
@@ -208,3 +208,15 @@ For this template, consider a **hybrid approach**:
 4. **Provide migration guidance** for moving from training to production
 
 This gives users the best of both worlds: comprehensive learning and production-ready patterns.
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

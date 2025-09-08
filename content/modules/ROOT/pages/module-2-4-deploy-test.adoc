@@ -3,18 +3,18 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Deploy your lab to the Zero Touch platform
-* Test your lab environment functionality
-* Verify student access and experience
-* Troubleshoot common deployment issues
+* Lab deployment to the Zero Touch platform
+* Lab environment functionality testing
+* Student access and experience verification
+* Common deployment issue troubleshooting
 
 == Overview
 
 You've configured infrastructure, networking, and content. Now it's time to deploy your lab and make sure everything works as expected for students.
 
-== 🛠️ Step 1: Pre-Deployment Checklist
+== Step 1: Pre-Deployment Checklist
 
 Before deploying, verify your configuration:
 
@@ -47,7 +47,7 @@ python3 -c "import yaml; yaml.safe_load(open('config/firewall.yaml'))"
 
 If no errors appear, your YAML is valid.
 
-== 🛠️ Step 2: Build Documentation
+== Step 2: Build Documentation
 
 Generate your lab content:
 
@@ -73,7 +73,7 @@ antora serve site.yml
 
 Navigate to `http://localhost:5000` to preview your lab.
 
-== 🛠️ Step 3: Commit and Deploy
+== Step 3: Commit and Deploy
 
 Push your changes to trigger deployment:
 
@@ -89,7 +89,7 @@ git commit -m "Lab ready for deployment"
 git push origin main
 ----
 
-== 🛠️ Step 4: Test Lab Access
+== Step 4: Test Lab Access
 
 Once deployed, test the student experience:
 
@@ -128,7 +128,7 @@ curl http://container-name:port
 nc -zv container-name port
 ----
 
-== 🛠️ Step 5: Student Experience Test
+== Step 5: Student Experience Test
 
 Navigate through your content as a student would:
 
@@ -137,7 +137,7 @@ Navigate through your content as a student would:
 3. **Complete each step** - Validation points clear?
 4. **Check navigation** - Can students find their way?
 
-== ✅ Deployment Checklist
+== Deployment Checklist
 
 Verify each item works:
 
@@ -150,7 +150,7 @@ Verify each item works:
 - [ ] **Content** displays properly
 - [ ] **Links** functional
 
-== 🛠️ Common Issues & Solutions
+== Common Issues & Solutions
 
 **Lab doesn't load?**
 → Check YAML syntax in configuration files
@@ -170,19 +170,19 @@ Verify each item works:
 **Navigation missing?**
 → Verify ui-config.yml module names match files
 
-== 🎯 What You've Accomplished
+== Summary
 
 Congratulations! You have:
 
-✅ **Built a complete lab environment** with VMs, containers, and networking  
-✅ **Created engaging educational content** with interactive features  
-✅ **Deployed to the Zero Touch platform** successfully  
-✅ **Tested the student experience** end-to-end  
-✅ **Learned troubleshooting techniques** for common issues  
+* **Built a complete lab environment** with VMs, containers, and networking  
+* **Created engaging educational content** with interactive features  
+* **Deployed to the Zero Touch platform** successfully  
+* **Tested the student experience** end-to-end  
+* **Learned troubleshooting techniques** for common issues  
 
 You're now ready to create professional, interactive labs for your students!
 
-== 🚀 What's Next?
+== Next Steps
 
 === Enhance Your Lab
 * xref:production-patterns-guide.adoc[Production Patterns] - Learn from real-world labs
@@ -199,4 +199,16 @@ You're now ready to create professional, interactive labs for your students!
 * Join the Zero Touch community
 * Build more advanced lab environments
 
-Welcome to the Zero Touch platform developer community! 🎉
+Welcome to the Zero Touch platform developer community.
+
+[bibliography]
+== References
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.

@@ -3,13 +3,13 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Configure enterprise-scale labs** with realistic resource requirements
-* **Implement advanced networking patterns** for multi-platform environments
-* **Deploy complex applications** like Satellite and Ansible Automation Platform
-* **Apply enterprise security patterns** and certificate management
-* **Use isolation strategies** for pre-built enterprise images
+* Enterprise-scale lab configuration with realistic resource requirements
+* Advanced networking patterns for multi-platform environments
+* Complex application deployment including Satellite and Ansible Automation Platform
+* Enterprise security patterns and certificate management
+* Isolation strategies for pre-built enterprise images
 
 == Overview
 
@@ -24,6 +24,8 @@ Enterprise labs require sophisticated configurations to simulate real-world envi
 
 == Satellite Lab Patterns
 
+[%collapsible]
+====
 Satellite labs demonstrate enterprise system management scenarios with multiple servers and complex networking.
 
 [TIP]
@@ -40,7 +42,7 @@ Satellite requires substantial resources for realistic operation:
 ----
 virtualmachines:
   - name: "satellite"
-    image: "satellite-server-rhdp-1-6-17-07-30-25"
+    image: "satellite-server-rhdp-1-6-17-07-02-25"
     bootloader: efi
     register_satellite: false          # Satellite doesn't register to itself
     memory: "32G"                      # Enterprise-scale memory
@@ -68,7 +70,7 @@ Advanced labs include multiple Satellite servers for disaster recovery scenarios
 virtualmachines:
   # Primary Satellite
   - name: "satellite"
-    image: "satellite-server-rhdp-1-6-17-07-30-25"
+    image: "satellite-server-rhdp-1-6-17-07-02-25"
     # ... configuration as above
     
   # Secondary Satellite  
@@ -381,19 +383,19 @@ Enterprise labs require careful resource planning:
 
 === Resource Management
 
-✅ **Plan for Scale**: Enterprise labs often need 50G+ total memory  
-✅ **Use Isolation**: Mark pre-built VMs as `isolated` to prevent automation conflicts  
-✅ **FQDN Configuration**: Always set proper hostnames for enterprise applications  
-✅ **Certificate Management**: Use reencrypt termination for self-signed certificates  
+* **Plan for Scale**: Enterprise labs often need 50G+ total memory  
+* **Use Isolation**: Mark pre-built VMs as `isolated` to prevent automation conflicts  
+* **FQDN Configuration**: Always set proper hostnames for enterprise applications  
+* **Certificate Management**: Use reencrypt termination for self-signed certificates  
 
 === Security Configuration
 
 **Network Policy Requirements for Enterprise Labs:**
 
-✅ **Container SSH Access**: Configure network policies for development/admin containers  
-✅ **Multi-Container Environments**: Each SSH-enabled container needs explicit policy rules  
-✅ **Security Isolation**: Leverage network policies to isolate different application tiers  
-✅ **Monitoring Integration**: Enable SSH access for enterprise monitoring containers
+* **Container SSH Access**: Configure network policies for development/admin containers  
+* **Multi-Container Environments**: Each SSH-enabled container needs explicit policy rules  
+* **Security Isolation**: Leverage network policies to isolate different application tiers  
+* **Monitoring Integration**: Enable SSH access for enterprise monitoring containers
 
 === Enterprise Workload Extensions
 
@@ -401,7 +403,7 @@ Enterprise labs require careful resource planning:
 
 Enterprise Zero Touch labs can leverage **200+ specialized workloads** for comprehensive training environments:
 
-**🔧 Development & IDE Integration**:
+** Development & IDE Integration**:
 [source,yaml]
 ----
 # In AgnosticV common.yaml - Development workloads
@@ -412,7 +414,7 @@ post_software_workloads:
     - ocp4_workload_gitea_operator   # Self-hosted Git repositories
 ----
 
-**🚀 Enterprise CI/CD & Automation**:
+** Enterprise CI/CD & Automation**:
 [source,yaml]
 ----
 software_workloads:
@@ -434,7 +436,7 @@ post_software_workloads:
     - ocp4_workload_authentication   # Advanced authentication systems
 ----
 
-**📦 Enterprise Registry & Artifact Management**:
+** Enterprise Registry & Artifact Management**:
 [source,yaml]
 ----
 post_software_workloads:
@@ -444,7 +446,7 @@ post_software_workloads:
     - ocp4_workload_minio            # S3-compatible object storage
 ----
 
-**✅ Enterprise Workload Benefits**:
+** Enterprise Workload Benefits**:
 - **Standardized Deployment**: Consistent patterns across all lab environments
 - **Enterprise Integration**: Pre-configured with enterprise authentication and security
 - **Scalable Architecture**: Supports multi-user and multi-tenant deployments  
@@ -492,24 +494,24 @@ zero_touch_ingress_lockdown_rules:
 
 === Multi-Platform Considerations
 
-✅ **Interface Compatibility**: Use `e1000e` for Windows VMs  
-✅ **OS Diversity**: Include different RHEL versions to simulate real environments  
-✅ **Container Integration**: Combine containers and VMs for modern architectures  
-✅ **External Applications**: Use `external: true` for apps that need new windows  
+ **Interface Compatibility**: Use `e1000e` for Windows VMs  
+ **OS Diversity**: Include different RHEL versions to simulate real environments  
+ **Container Integration**: Combine containers and VMs for modern architectures  
+ **External Applications**: Use `external: true` for apps that need new windows  
 
 === UI/UX Design
 
-✅ **Module-Specific Tabs**: Show only relevant interfaces per module  
-✅ **Per-VM Access**: Provide dedicated terminal access for each system  
-✅ **Descriptive Naming**: Use service-oriented tab names ("Satellite Web UI")  
-✅ **Platform Variables**: Always use `${guid}` and `${domain}` for URLs  
+ **Module-Specific Tabs**: Show only relevant interfaces per module  
+ **Per-VM Access**: Provide dedicated terminal access for each system  
+ **Descriptive Naming**: Use service-oriented tab names ("Satellite Web UI")  
+ **Platform Variables**: Always use `${guid}` and `${domain}` for URLs  
 
 === Content Structure
 
-✅ **Progressive Complexity**: Start simple, add enterprise features gradually  
-✅ **Real-World Scenarios**: Mirror actual enterprise architectures  
-✅ **Validation Points**: Include checks for enterprise-specific functionality  
-✅ **Troubleshooting**: Document common enterprise configuration issues  
+ **Progressive Complexity**: Start simple, add enterprise features gradually  
+ **Real-World Scenarios**: Mirror actual enterprise architectures  
+ **Validation Points**: Include checks for enterprise-specific functionality  
+ **Troubleshooting**: Document common enterprise configuration issues  
 
 == Migration from Basic to Enterprise
 
@@ -539,7 +541,7 @@ virtualmachines:
 ----
 virtualmachines:
   - name: "satellite"
-    image: "satellite-server-rhdp-1-6-17-07-30-25"
+    image: "satellite-server-rhdp-1-6-17-07-02-25"
     bootloader: efi
     register_satellite: false
     memory: "32G"
@@ -579,3 +581,21 @@ virtualmachines:
 * xref:advanced-lab-features.adoc[Advanced Lab Features and Special Cases]
 * xref:vm-basics.adoc[Adding Instances and Containers]
 * xref:networking-basics.adoc[Configuring Networking]
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[satellite-instances]]] Red Hat Satellite Team. Satellite Advanced Topics 6.17 Instance Configuration. 
+  AgnosticV Git Repository - zt-satellite-advanced-topics-6-17/config/instances.yaml. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  AgnosticD Git Repository - ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml. 2024.
+
+* [[[satellite-ui]]] Red Hat Satellite Team. Satellite Advanced Topics 6.17 UI Configuration. 
+  AgnosticV Git Repository - zt-satellite-advanced-topics-6-17/ui-config.yml. 2024.

@@ -3,12 +3,12 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Design network topologies** with proper CIDR allocation and segmentation
-* **Configure multi-network environments** for complex lab scenarios
-* **Implement network isolation** between different lab components
-* **Troubleshoot network connectivity** and resolve common networking issues
+* Network topology design with proper CIDR allocation and segmentation
+* Multi-network environment configuration for complex lab scenarios
+* Network isolation implementation between different lab components
+* Network connectivity troubleshooting and common networking issue resolution
 
 == Overview
 
@@ -18,9 +18,13 @@ This guide covers essential networking concepts and configurations for Zero Touc
 
 The `config/networks.yaml` file defines your lab's network topology:
 
+.Basic Network Configuration <<agnosticd-base>>
 [source,yaml]
 ----
 ---
+# Default network exists by default, specify here always.
+- name: default
+
 - name: "lab-network"
   cidr: "10.1.0.0/24"
   description: "Main lab network"
@@ -60,11 +64,11 @@ Every lab automatically includes a `default` network:
 |Parameter |Required |Description
 
 |`name`
-|✅ Yes
+| Yes
 |Unique network identifier (DNS-safe)
 
 |`cidr` 
-|✅ Yes
+| Yes
 |Network range in CIDR notation
 
 |`description`
@@ -251,3 +255,12 @@ zero_touch_ingress_lockdown_rules:
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complex networking topologies - Complex topologies
 * xref:firewall-basics.adoc[Configuring Firewall Rules] - External network security
 * xref:network-policy-configuration.adoc[Network Policy Configuration] - Internal container SSH security
+
+[bibliography]
+== References
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

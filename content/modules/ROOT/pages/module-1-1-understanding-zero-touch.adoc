@@ -3,15 +3,17 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Understand what the Zero Touch platform is and why it exists
-* Know the key components and how they work together
-* Understand the basic workflow for creating labs
-* Be ready to explore the template structure
+* Zero Touch platform purpose and architecture
+* Key components and their integration
+* Basic workflow for creating labs
+* Template structure fundamentals
 
 == What is Zero Touch?
 
+[%collapsible]
+====
 Zero Touch is Red Hat's platform for creating and delivering **interactive demos, labs, workshops, and lessons** that showcase Red Hat products through hands-on experiences.
 
 === Purpose
@@ -21,13 +23,17 @@ Zero Touch is Red Hat's platform for creating and delivering **interactive demos
 
 === Key Benefits
 
-✅ **Fast Provisioning**: Labs ready in 5-10 minutes  
-✅ **Interactive Learning**: Step-by-step instructions with validation  
-✅ **Integrated Experience**: Terminal, documentation, and applications in one interface  
-✅ **Automation**: Setup, validation, and solve scripts handle complexity  
-✅ **Scalable**: Consistent platform across different lab types  
+* **Fast Provisioning**: Labs ready in 5-10 minutes
+* **Interactive Learning**: Step-by-step instructions with validation
+* **Integrated Experience**: Terminal, documentation, and applications in one interface
+* **Automation**: Setup, validation, and solve scripts handle complexity
+* **Scalable**: Consistent platform across different lab types
+====
 
 == Platform Architecture
+
+[%collapsible]
+====
 
 The Zero Touch platform consists of several integrated components working together:
 
@@ -37,23 +43,23 @@ The Zero Touch platform consists of several integrated components working togeth
 |===
 |Component |Purpose
 
-|**git-cloner**
-|Clones your lab repository into shared storage
+|**Showroom**
+|Web interface framework providing lab navigation and content
 
-|**antora-builder** 
-|Builds educational content from your AsciiDoc files
+|**Antora**
+|Documentation site generator that builds content from AsciiDoc files
 
-|**nookbag**
-|Provides the lab interface with progress tracking and navigation
+|**Nookbag UI Bundle**
+|Zero Touch-specific UI components and styling
 
-|**zerotouch-automation**
-|Runs setup scripts and handles step validation
+|**AgnosticD**
+|Deployment engine that provisions infrastructure and runs automation
 
-|**caddy**
-|Reverse proxy serving content and applications
+|**OpenShift CNV**
+|Container Native Virtualization platform hosting VMs and containers
 
-|**wetty**
-|Web-based terminal access to lab VMs
+|**Wetty**
+|Web-based SSH terminal access to lab VMs
 |===
 
 === How It Works
@@ -68,12 +74,12 @@ The Zero Touch platform consists of several integrated components working togeth
 
 Creating a lab follows this progression:
 
-. **📋 Plan**: Define learning objectives and required infrastructure
-. **🏗️ Configure**: Set up VMs, containers, networks, and firewall rules
-. **📝 Create Content**: Write step-by-step instructions in AsciiDoc
-. **🎨 Configure UI**: Set up navigation, tabs, and interactive elements
-. **🧪 Test Locally**: Validate everything works as expected
-. **🚀 Deploy**: Push changes and provision the lab environment
+. **Plan**: Define learning objectives and required infrastructure
+. **Configure**: Set up VMs, containers, networks, and firewall rules
+. **Create Content**: Write step-by-step instructions in AsciiDoc
+. **Configure UI**: Set up navigation, tabs, and interactive elements
+. **Test Locally**: Validate everything works as expected
+. **Deploy**: Push changes and provision the lab environment
 
 == Types of Labs You Can Create
 
@@ -102,11 +108,11 @@ Creating a lab follows this progression:
 * Time-consuming troubleshooting
 
 === Zero Touch Approach
-* ✅ **Automated provisioning** with consistent environments
-* ✅ **Interactive documentation** with embedded terminals
-* ✅ **Integrated experience** - no context switching
-* ✅ **Built-in validation** and progression tracking
-* ✅ **Self-healing** with solve scripts for common issues
+* **Automated provisioning** with consistent environments
+* **Interactive documentation** with embedded terminals
+* **Integrated experience** - no context switching
+* **Built-in validation** and progression tracking
+* **Self-healing** with solve scripts for common issues
 
 == Lab User Experience
 
@@ -130,7 +136,7 @@ When students access your lab, they get:
 * **Proper authentication** and access controls
 * **Monitoring and logging** for troubleshooting
 
-== ✅ Knowledge Check
+== Knowledge Check
 
 Before moving to the next module, make sure you understand:
 
@@ -140,13 +146,17 @@ Before moving to the next module, make sure you understand:
 - [ ] What makes Zero Touch different from traditional approaches
 - [ ] What experience students get when using your labs
 
-== 🎯 What's Next?
+== Next Steps
 
-Now that you understand the platform, let's explore how a Zero Touch template is structured.
+Now that you understand the platform, explore how a Zero Touch template is structured.
 
 **Next Module**: xref:module-1-2-template-structure.adoc[1.2 Template Structure] (10-15 min)
+====
 
 == Related Resources
 
+[%collapsible]
+====
 * xref:template-customization-guide.adoc[Complete Template Customization Guide] (Reference)
 * xref:advanced-lab-features.adoc[Advanced Lab Features] (Reference)
+====

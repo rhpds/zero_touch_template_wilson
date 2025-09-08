@@ -4,23 +4,24 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Deploy multi-tier application stacks** using containers
-* **Configure service communication** between application layers
-* **Implement proper resource allocation** for multi-container deployments  
-* **Set up development and testing environments** with multiple services
+* Multi-tier application stack deployment using containers
+* Service communication configuration between application layers
+* Proper resource allocation implementation for multi-container deployments  
+* Development and testing environment setup with multiple services
 
-== 🏗️ Multi-Tier Application Architecture
+== Multi-Tier Application Architecture
 
 === Web Application Stack
 
 Deploy a complete 3-tier application with web server, API, and database:
 
+.Multi-Service Container Architecture <<roadshow-instances>>
 [source,yaml]
 ----
 containers:
-  # Frontend Web Server
+  # Frontend Web Server (Example)
   - name: "webapp"
     image: "nginx:latest"
     memory: "256Mi"
@@ -68,7 +69,7 @@ containers:
       POSTGRES_PASSWORD: "{{ common_password }}"
 ----
 
-**🎯 Architecture Benefits:**
+** Architecture Benefits:**
 - **Scalability**: Each tier can be scaled independently
 - **Maintainability**: Clear separation of concerns
 - **Security**: Database is not directly exposed
@@ -134,7 +135,7 @@ containers:
         tls: true
 ----
 
-## 🔧 Development Environment Patterns
+##  Development Environment Patterns
 
 === Full Development Stack
 
@@ -191,7 +192,7 @@ containers:
       POSTGRES_PASSWORD: "{{ common_password }}"
 ----
 
-## 🧪 Testing Environment Patterns
+##  Testing Environment Patterns
 
 === Automated Testing Stack
 
@@ -227,7 +228,7 @@ containers:
     command: ["cypress", "run", "--headless"]
 ----
 
-## 📊 Resource Planning
+##  Resource Planning
 
 === Memory and CPU Allocation
 
@@ -318,17 +319,17 @@ containers:
         protocol: TCP
 ----
 
-## ✅ Validation Steps
+##  Validation Steps
 
 After deploying multi-service containers:
 
-1. **✅ Service Connectivity**: Test communication between services
-2. **✅ External Access**: Verify routes and external endpoints
-3. **✅ Database Connections**: Ensure data persistence works
-4. **✅ Resource Monitoring**: Check memory and CPU usage
-5. **✅ Log Aggregation**: Verify centralized logging works
+1. ** Service Connectivity**: Test communication between services
+2. ** External Access**: Verify routes and external endpoints
+3. ** Database Connections**: Ensure data persistence works
+4. ** Resource Monitoring**: Check memory and CPU usage
+5. ** Log Aggregation**: Verify centralized logging works
 
-## 🎯 Next Steps
+## Next Steps
 
 **Expand your knowledge:**
 * xref:container-storage-management.adoc[**Container Storage Management**] - Persistent data and volume patterns
@@ -342,3 +343,12 @@ After deploying multi-service containers:
 * Plan resource allocation for your services
 
 **Multi-service container patterns provide the foundation for building complex, scalable applications in Zero Touch lab environments!**
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

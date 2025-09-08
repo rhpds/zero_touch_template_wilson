@@ -4,23 +4,24 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Configure persistent storage** for containerized applications
-* **Share data between containers** using volume patterns
-* **Implement backup and recovery** strategies for container data
-* **Optimize storage performance** for different use cases
+* Persistent storage configuration for containerized applications
+* Data sharing between containers using volume patterns
+* Backup and recovery strategies for container data
+* Storage performance optimization for different use cases
 
-== 📦 Volume Types and Patterns
+==  Volume Types and Patterns
 
 === EmptyDir Volumes
 
 Temporary storage shared between containers in the same deployment:
 
+.Container Storage Configuration <<template-instances>>
 [source,yaml]
 ----
 containers:
-  # Data processor container
+  # Data processor container (Example)
   - name: "data-processor"
     image: "python:3.11-slim"
     command: ["python", "/app/process.py"]
@@ -47,7 +48,7 @@ containers:
         readOnly: true
 ----
 
-**📝 EmptyDir Use Cases:**
+** EmptyDir Use Cases:**
 - **Temporary file processing**
 - **Cache directories**
 - **Inter-container communication**
@@ -87,7 +88,7 @@ containers:
         readOnly: true
 ----
 
-## 🗃️ Database Storage Patterns
+## 🗃 Database Storage Patterns
 
 === PostgreSQL with Persistent Storage
 
@@ -199,7 +200,7 @@ containers:
         readOnly: true
 ----
 
-## 📁 File Storage and Content Management
+##  File Storage and Content Management
 
 === Static Content Serving
 
@@ -270,7 +271,7 @@ containers:
       FLB_LOG_LEVEL: "info"
 ----
 
-## 🔄 Data Backup and Recovery
+## Data Backup and Recovery
 
 === Database Backup Strategy
 
@@ -309,7 +310,7 @@ containers:
       PGPASSWORD: "{{ common_password }}"
 ----
 
-## ⚡ Performance Optimization
+##  Performance Optimization
 
 === Storage Performance Patterns
 
@@ -364,7 +365,7 @@ containers:
 **Memory Volumes**: Count towards container memory limits. Use sparingly.
 ====
 
-## 🔧 Storage Troubleshooting
+##  Storage Troubleshooting
 
 === Common Storage Issues
 
@@ -401,17 +402,17 @@ containers:
         mountPath: "/app/data"
 ----
 
-## ✅ Storage Validation
+##  Storage Validation
 
 Verify your storage configuration:
 
-1. **✅ Volume Mounts**: Confirm all volumes are properly mounted
-2. **✅ File Permissions**: Verify containers can read/write as expected
-3. **✅ Data Persistence**: Test data survives container restarts
-4. **✅ Performance**: Monitor I/O performance under load
-5. **✅ Backup Strategy**: Validate backup and recovery procedures
+1. ** Volume Mounts**: Confirm all volumes are properly mounted
+2. ** File Permissions**: Verify containers can read/write as expected
+3. ** Data Persistence**: Test data survives container restarts
+4. ** Performance**: Monitor I/O performance under load
+5. ** Backup Strategy**: Validate backup and recovery procedures
 
-## 🎯 Next Steps
+##  Next Steps
 
 **Expand your storage knowledge:**
 * xref:container-multi-service-patterns.adoc[**Multi-Service Patterns**] - Service communication with persistent data
@@ -425,3 +426,15 @@ Verify your storage configuration:
 * Configure shared storage between services
 
 **Container storage management enables reliable, performant data handling in Zero Touch lab environments!**
+
+[bibliography]
+== References
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - config/instances.yaml. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/config/instances.yaml. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - setup-automation/main.yml. 2024.

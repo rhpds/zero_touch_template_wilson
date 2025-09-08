@@ -3,19 +3,19 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Deploy complex multi-container applications
-* Configure container storage and networking
-* Implement container security best practices  
-* Troubleshoot container deployments
-* Build production-ready container environments
+* Complex multi-container application deployment
+* Container storage and networking configuration
+* Container security best practices implementation
+* Container deployment troubleshooting
+* Production-ready container environment creation
 
 == Overview
 
-This module takes you beyond basic container deployment to **enterprise-ready patterns**. You'll build a complete multi-container application with proper networking, storage, monitoring, and security.
+This module covers advanced container deployment with **enterprise-ready patterns**. Build a complete multi-container application with proper networking, storage, monitoring, and security.
 
-**What You'll Build:**
+**Application components:**
 - Multi-tier application stack (frontend, API, database)
 - Container storage and data persistence
 - Monitoring and health checks
@@ -23,11 +23,11 @@ This module takes you beyond basic container deployment to **enterprise-ready pa
 
 **Prerequisites:** Completed xref:module-2-1-single-vm-setup.adoc[Module 2.1] and xref:container-basics.adoc[Container Basics]
 
-== 🛠️ Step 1: Multi-Container Application Stack
+== Step 1: Multi-Container Application Stack
 
 **Goal**: Deploy a 3-tier application with frontend, API, and database containers communicating with each other.
 
-**You'll Learn**: Service-to-service communication, environment variables, port configuration
+**Topics covered**: Service-to-service communication, environment variables, port configuration
 
 === Update instances.yaml
 
@@ -127,11 +127,11 @@ nc -zv database 5432
 redis-cli -h cache ping
 ----
 
-== 🛠️ Step 2: Container Storage Patterns
+== Step 2: Container Storage Patterns
 
 **Goal**: Configure persistent storage and shared data between containers.
 
-**You'll Learn**: Volume mounting, ConfigMaps, EmptyDir volumes, database initialization
+**Topics covered**: Volume mounting, ConfigMaps, EmptyDir volumes, database initialization
 
 === Shared Storage Between Containers
 
@@ -199,11 +199,11 @@ containers:
         mountPath: "/docker-entrypoint-initdb.d"
 ----
 
-== 🛠️ Step 3: Container Networking and Service Discovery  
+== Step 3: Container Networking and Service Discovery  
 
 **Goal**: Test and verify inter-container communication using DNS and service discovery.
 
-**You'll Learn**: Container DNS resolution, service-to-service communication, network debugging
+**Topics covered**: Container DNS resolution, service-to-service communication, network debugging
 
 === Test Inter-Container Communication
 
@@ -257,7 +257,7 @@ containers:
         mountPath: "/etc/envoy"
 ----
 
-=== 🔒 Critical: Network Policy for SSH Access
+===  Critical: Network Policy for SSH Access
 
 [WARNING]
 ====
@@ -299,11 +299,11 @@ zero_touch_ingress_lockdown_rules:
 
 **Complete Guide**: xref:network-policy-configuration.adoc[Network Policy Configuration]
 
-== 🛠️ Step 4: Container Lifecycle Management
+== Step 4: Container Lifecycle Management
 
 **Goal**: Implement proper container health checks and lifecycle management.
 
-**You'll Learn**: Health probes, lifecycle hooks, graceful shutdown, container monitoring
+**Topics covered**: Health probes, lifecycle hooks, graceful shutdown, container monitoring
 
 [source,yaml]
 ----
@@ -352,11 +352,11 @@ containers:
       periodSeconds: 10
 ----
 
-== 🛠️ Step 5: Development and Testing Containers
+== Step 5: Development and Testing Containers
 
 **Goal**: Set up development and testing environments using containers for rapid iteration.
 
-**You'll Learn**: Development container patterns, hot reloading, testing environments
+**Topics covered**: Development container patterns, hot reloading, testing environments
 
 [source,yaml]
 ----
@@ -422,7 +422,7 @@ containers:
         mountPath: "/cypress/results"
 ----
 
-== 🛠️ Step 6: Container Security Configuration
+== Step 6: Container Security Configuration
 
 Implement security best practices:
 
@@ -462,7 +462,7 @@ containers:
         mountPath: "/tmp"
 ----
 
-== 🛠️ Step 7: Testing Your Container Deployment
+== Step 7: Testing Your Container Deployment
 
 Validate your container setup:
 
@@ -487,7 +487,7 @@ kubectl logs deployment/api
 kubectl scale deployment/api --replicas=2
 ----
 
-== 🛠️ Step 8: Monitoring and Observability
+== Step 8: Monitoring and Observability
 
 Add monitoring to your containers:
 
@@ -532,7 +532,7 @@ containers:
       GF_SECURITY_ADMIN_PASSWORD: "{{ common_password }}"
 ----
 
-== ✅ Container Deployment Checklist
+==  Container Deployment Checklist
 
 Verify your advanced container deployment:
 
@@ -545,7 +545,7 @@ Verify your advanced container deployment:
 - [ ] **Resource limits** appropriate
 - [ ] **Security context** configured
 
-== 🛠️ Troubleshooting Containers
+== Troubleshooting Containers
 
 Common issues and solutions:
 
@@ -564,19 +564,19 @@ Common issues and solutions:
 **Networking problems?**
 → Verify DNS resolution and port accessibility
 
-== 🎯 What You've Accomplished
+== Summary
 
 You now have enterprise-level container skills:
 
-✅ **Multi-container applications** with proper service architecture  
-✅ **Advanced storage patterns** for data persistence and sharing  
-✅ **Container networking** and service discovery mastery  
-✅ **Security best practices** implementation  
-✅ **Development workflows** with containers  
-✅ **Monitoring and observability** setup  
-✅ **Troubleshooting expertise** for container issues  
+* **Multi-container applications** with proper service architecture  
+* **Advanced storage patterns** for data persistence and sharing  
+* **Container networking** and service discovery mastery  
+* **Security best practices** implementation  
+* **Development workflows** with containers  
+* **Monitoring and observability** setup  
+* **Troubleshooting expertise** for container issues  
 
-== 🚀 Next Steps
+== Next Steps
 
 === Advanced Topics
 * xref:container-advanced.adoc[Advanced Container Configuration] - Deep-dive reference
@@ -588,3 +588,15 @@ You now have enterprise-level container skills:
 * xref:vm-basics.adoc[VM Configuration] - Hybrid VM+container environments
 
 You're now ready to build sophisticated container-based lab environments! 🐳
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `/home/wilson/Projects/zero_touch_template_wilson/setup-automation/main.yml`. 2024.

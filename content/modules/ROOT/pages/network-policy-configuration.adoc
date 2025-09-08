@@ -3,13 +3,13 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Understand Zero Touch network security architecture** and default policy restrictions
-* **Configure network policies** to enable SSH access from containers to VMs
-* **Troubleshoot network connectivity issues** between different lab components
-* **Apply security best practices** while enabling necessary lab functionality
-* **Design network policies** for complex multi-container, multi-VM environments
+* Zero Touch network security architecture and default policy restrictions
+* Network policy configuration to enable SSH access from containers to VMs
+* Network connectivity issue troubleshooting between different lab components
+* Security best practices application while enabling necessary lab functionality
+* Network policy design for complex multi-container, multi-VM environments
 
 == Overview
 
@@ -100,19 +100,19 @@ graph TB
     end
     
     %% Cross-namespace connections (ALLOWED)
-    SH -.->|SSH Port 22<br/>✅ ALLOWED<br/>Cross-namespace| VM1
-    SH -.->|SSH Port 22<br/>✅ ALLOWED<br/>Cross-namespace| VM2
+    SH -.->|SSH Port 22<br/> ALLOWED<br/>Cross-namespace| VM1
+    SH -.->|SSH Port 22<br/> ALLOWED<br/>Cross-namespace| VM2
     
     %% Intra-namespace connections (BLOCKED by default)
-    VSC -.->|SSH Port 22<br/>❌ BLOCKED<br/>Same namespace| VM1
-    VSC -.->|SSH Port 22<br/>❌ BLOCKED<br/>Same namespace| VM2
+    VSC -.->|SSH Port 22<br/> BLOCKED<br/>Same namespace| VM1
+    VSC -.->|SSH Port 22<br/> BLOCKED<br/>Same namespace| VM2
     
     %% Container service connections (ALLOWED)
-    VSC -->|Port 8080<br/>✅ ALLOWED| VSVC
-    VSVC -->|Route<br/>✅ ALLOWED| VSCR
+    VSC -->|Port 8080<br/> ALLOWED| VSVC
+    VSVC -->|Route<br/> ALLOWED| VSCR
     
     %% External access to container
-    VSCR -.->|HTTPS<br/>✅ External Access| SH
+    VSCR -.->|HTTPS<br/> External Access| SH
     
     %% Policy enforcement
     NP -.->|Blocks SSH within<br/>same namespace| VSC
@@ -218,10 +218,10 @@ spec:
 
 Traditional Kubernetes security often relies on namespace isolation. Zero Touch deployments put lab infrastructure in a **single namespace**, making network policies the **primary security mechanism**.
 
-* ❌ **No namespace boundary** between containers and VMs
-* ❌ **Default SSH blocking** within the lab namespace  
-* ✅ **Cross-namespace SSH** from Showroom works (different security rule)
-* ✅ **Policy exceptions** required for intra-namespace SSH
+*  **No namespace boundary** between containers and VMs
+*  **Default SSH blocking** within the lab namespace  
+*  **Cross-namespace SSH** from Showroom works (different security rule)
+*  **Policy exceptions** required for intra-namespace SSH
 
 This architecture is **more secure but requires explicit configuration** for container SSH access.
 ====
@@ -319,9 +319,18 @@ For higher security environments, consider deploying VS Code as part of Showroom
 
 == Summary
 
-✅ **Configure network policy** to allow VS Code SSH access to VMs
-✅ **Test SSH connectivity** from VS Code terminal  
-✅ **Verify SSH keys** are properly configured
-✅ **Monitor network policy** effectiveness
+ **Configure network policy** to allow VS Code SSH access to VMs
+ **Test SSH connectivity** from VS Code terminal  
+ **Verify SSH keys** are properly configured
+ **Monitor network policy** effectiveness
 
 Without proper network policy configuration, the VS Code container cannot establish SSH connections to lab VMs, rendering the SSH integration non-functional.
+
+[bibliography]
+== References
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

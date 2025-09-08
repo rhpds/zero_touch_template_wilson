@@ -3,59 +3,66 @@
 
 == Learning Objectives
 
-By the end of this module, you will:
+Upon completion, you will understand:
 
-* Create your first VM configuration from scratch
-* Understand the essential VM parameters
-* Modify the existing template to use your VM
-* Validate your configuration works correctly
+* VM configuration creation from scratch
+* Essential VM parameters and their purposes
+* Template file modification procedures
+* Configuration file validation methods
 
 == Overview
 
-In this hands-on module, you'll replace the existing `vscode` VM with your own lab server. This is the foundation for any Zero Touch lab.
+In this hands-on module, replace the existing `host1` VM (from the official template at https://github.com/rhpds/lab_zero_touch_template.git) with your own lab server. This is the foundation for any Zero Touch lab.
 
-== 🛠️ Step 1: Plan Your VM
+== Step 1: Plan Your VM
 
-Before writing configuration, let's plan what we need:
+Before editing configuration files, clarify your requirements:
 
 **Lab Scenario**: Basic RHEL administration training  
 **VM Purpose**: Single server for learning Linux commands  
 **Requirements**:
 - RHEL 9.6 operating system
-- 4GB RAM (enough for multiple processes)
-- 2 CPU cores (responsive performance)
-- 40GB disk (sufficient for packages and data)
+- 4GB RAM (sufficient for multiple processes)
+- 2 CPU cores (for responsive performance)
+- 40GB disk (ample for packages and data)
 - Network connectivity
 
-== 🛠️ Step 2: Create the VM Configuration
+== Step 2: Create the VM Configuration
 
-Let's modify `config/instances.yaml` to replace the vscode VM:
+Edit `config/instances.yaml` to replace the "host1" VM with your new lab server.
 
 === Current Configuration
 
-First, let's see what's currently configured:
+First, review the current configuration:
 
+.View Current Configuration <<template-instances>>
 [source,bash]
 ----
 cat config/instances.yaml
 ----
 
-You should see something like:
+You should see something similar to:
+.Current Official Template Configuration <<template-instances>>
 [source,yaml]
 ----
 virtualmachines:
-  - name: "vscode"
+  - name: "host1"
     image: "rhel-9.6"
     memory: "4G"
     cores: 1
     image_size: "40G"
-    # ... more configuration
+    tags:
+      - key: "AnsibleGroup"
+        value: "bastions"
+    networks:
+      - default
 ----
 
 === Replace with Lab Server
 
-Replace the entire `virtualmachines` section with our lab server:
+Replace the entire `virtualmachines` section with your lab server definition:
 
+.Lab Server VM Configuration <<roadshow-instances>>
 [source,yaml]
 ----
 virtualmachines:
@@ -108,7 +115,7 @@ virtualmachines:
 
 |`networks`
 |`- default`
-|Which networks to connect to
+|Networks to connect to (see <<agnosticd-base>>)
 
 |`packages`
 |List of packages
@@ -121,40 +128,43 @@ virtualmachines:
 
 [IMPORTANT]
 ====
-**At least ONE VM must have the "bastions" Ansible group tag** for Zero Touch deployment to succeed.
+**At least ONE VM must have the "bastions" Ansible group tag** for Zero Touch deployment to succeed.  
+See <<template-instances>> for required tags.
 
-The bastion host provides SSH access, user accounts, and terminal integration. In single-VM labs, this is your main server. In multi-tier labs, designate one VM as the bastion (usually a management/jump server) while others can use different Ansible groups like "webservers" or "databases".
+The bastion host provides SSH access, user accounts, and terminal integration. In single-VM labs, this is your main server. In multi-tier labs, designate one VM as the bastion (usually a management/jump server) while others can use different Ansible groups such as "webservers" or "databases".
 ====
 
-== 🛠️ Step 3: Update the UI Configuration
+== Step 3: Update the UI Configuration
 
-The current UI configuration references the "vscode" VM. We need to update it to point to our new "lab-server".
+The current UI configuration references the "host1" VM (from the official template). Update it to point to your new "lab-server".
 
 === Check Current UI Config
 
+.View UI Configuration <<template-ui>>
 [source,bash]
 ----
 cat ui-config.yml
 ----
 
-Look for the `tabs` section. You'll likely see:
+Look for the `tabs` section. You should see:
+.Current UI Tab Configuration <<template-ui>>
 [source,yaml]
 ----
 tabs:
-  - name: "VS Code"
-    # ... configuration pointing to vscode VM
+  - name: ">_ terminal"
+    url: /wetty_host1/ssh/root
 ----
 
 === Update to Lab Server
 
-Replace the tab configuration to point to our lab server's terminal:
+Replace the tab configuration to point to your lab server's terminal:
 
+.Updated Lab Server UI Configuration <<satellite-ui>>
 [source,yaml]
 ----
 tabs:
   - name: ">_ lab-server"
-    url: /wetty
-    path: /ssh/lab-server
+    url: /wetty_lab-server/ssh/root
   
   - name: "Lab Guide"
     type: "docs"
@@ -165,31 +175,40 @@ This creates:
 - **Terminal tab**: Direct SSH access to lab-server
 - **Lab Guide tab**: Documentation/instructions
 
-== 🛠️ Step 4: Verify Network Configuration
+[NOTE]
+====
+For UI variable syntax, see <<satellite-ui>> and <<template-ui>>.  
+Use shell-style variables (no curly braces) in `ui-config.yml`.
+====
 
-Our VM uses the `default` network. Let's make sure it's properly configured:
+== Step 4: Verify Network Configuration
 
+Your VM uses the `default` network. Verify it is defined in `config/networks.yaml`:
+
+.Check Network Configuration <<agnosticd-base>>
 [source,bash]
 ----
 cat config/networks.yaml
 ----
 
 You should see:
+.Default Network Definition <<agnosticd-base>>
 [source,yaml]
 ----
 ---
+# Default network exists by default, specify here always.
 - name: default
 ----
 
 This is correct for a single VM setup. The default network provides:
-- ✅ Internet connectivity
-- ✅ DNS resolution  
-- ✅ SSH access from the platform
-- ✅ Access to lab interface
+- Internet connectivity
+- DNS resolution  
+- SSH access from the platform
+- Access to the lab interface
 
-== 🛠️ Step 5: Configure Firewall Rules
+== Step 5: Configure Firewall Rules
 
-For a basic lab server, we need minimal firewall configuration:
+For a basic lab server, minimal firewall configuration is required:
 
 [source,bash]
 ----
@@ -208,14 +227,16 @@ egress:
       - protocol: TCP
         port: 80   # HTTP
 
-# Allow inbound SSH (this is typically handled automatically)
+# Allow inbound SSH (typically handled automatically)
 ingress:
   - ports:
       - protocol: TCP
         port: 22   # SSH
 ----
 
-== 🛠️ Step 6: Validate Your Configuration
+See <<agnosticd-base>> for firewall configuration details.
+
+== Step 6: Validate Your Configuration
 
 === YAML Syntax Check
 
@@ -255,11 +276,11 @@ echo "Total CPU cores:"
 grep "cores:" config/instances.yaml | awk '{sum += $2} END {print sum " cores total"}'
 ----
 
-== 🛠️ Step 7: Test Configuration
+== Step 7: Test Configuration
 
 === Create a Test Content File
 
-Let's create a simple instruction file to test our setup:
+Create a simple instruction file to test the setup:
 
 [source,bash]
 ----
@@ -295,13 +316,13 @@ Verify internet access:
 curl -s https://httpbin.org/ip
 ----
 
-✅ If you see an IP address, your lab server is properly configured!
+If you see an IP address, your lab server is properly configured.
 EOF
 ----
 
 === Update Site Configuration
 
-Update `site.yml` to point to our test lab:
+Update `site.yml` to point to your test lab:
 
 [source,yaml]
 ----
@@ -320,16 +341,16 @@ ui:
     url: https://github.com/rhpds/nookbag-bundle/releases/download/v0.0.5/nookbag-v0.0.5.zip
 ----
 
-== ✅ Configuration Review Checklist
+== Configuration Review Checklist
 
-Before proceeding, verify you have:
+Before proceeding, verify you have completed the following:
 
 **VM Configuration**:
-- [ ] VM name changed from "vscode" to "lab-server"
-- [ ] Appropriate memory (4G) and cores (2) allocated
+- [ ] VM name changed from "host1" to "lab-server"
+- [ ] Memory set to 4G and cores set to 2
 - [ ] Useful packages included (git, vim, tree, htop)
 - [ ] Connected to default network
-- [ ] Tags added for organization
+- [ ] Tags added for organization and deployment
 
 **UI Configuration**:
 - [ ] Tab updated to point to lab-server terminal
@@ -346,46 +367,18 @@ Before proceeding, verify you have:
 - [ ] Site configuration points to test content
 - [ ] Instructions are clear and testable
 
-== 🎯 What You've Accomplished
+== Summary
 
-Congratulations! You've just:
+You have successfully:
 
-✅ **Created your first VM configuration** from scratch  
-✅ **Updated the UI** to match your infrastructure  
-✅ **Configured networking and security** appropriately  
-✅ **Created test content** to validate your setup  
-✅ **Learned the relationship** between configuration files  
+* **Created your first VM configuration** from scratch  
+* **Updated the UI** to match your infrastructure  
+* **Configured networking and security** appropriately  
+* **Created test content** to validate your setup  
+* **Learned the relationship** between configuration files  
 
-== 🛠️ Quick Troubleshooting
+== Troubleshooting
 
 **Common Issues**:
 
 **YAML Syntax Error**:
-```
-yaml.scanner.ScannerError: while parsing a scalar
-```
-- **Fix**: Check indentation (use spaces, not tabs)
-- **Fix**: Ensure consistent spacing (2 spaces per level)
-
-**Network Reference Error**:
-```
-Network 'lab-tier' not found
-```
-- **Fix**: Add the network to `networks.yaml` or use `default`
-
-**Missing Required Field**:
-```
-ValidationError: 'memory' is a required property
-```
-- **Fix**: Ensure all required fields are present (name, image, memory, cores, image_size, networks)
-
-== 🎯 What's Next?
-
-Your VM is configured! Next, let's explore networking options to connect multiple systems.
-
-**Next Module**: xref:module-2-2-basic-networking.adoc[2.2 Basic Networking] (10-15 min)
-
-== Related Resources
-
-* xref:vm-basics.adoc[Adding Instances and Containers] (Reference)
-* xref:module-1-3-configuration-files.adoc[Previous: Configuration Files]

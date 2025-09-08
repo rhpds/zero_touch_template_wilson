@@ -3,12 +3,12 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Configure security rules** for ingress and egress traffic control
-* **Implement port-based access control** for lab services and applications
-* **Design secure network policies** that balance security with functionality
-* **Troubleshoot connectivity issues** related to firewall configurations
+* Security rule configuration for ingress and egress traffic control
+* Port-based access control implementation for lab services and applications
+* Secure network policy design that balances security with functionality
+* Connectivity issue troubleshooting related to firewall configurations
 
 == Overview
 
@@ -21,15 +21,11 @@ The `firewall.yaml` file defines network security rules:
 [source,yaml]
 ----
 ---
+# By default egress traffic is not allowed, define below the ports allowed.
 egress:
-  - port: 80
-    protocol: tcp
-    description: "HTTP access"
-    
-ingress:
-  - port: 8080
-    protocol: tcp 
-    description: "Web application access"
+  - ports:
+      - protocol: TCP
+        port: 443
 ----
 
 == Understanding Traffic Direction
@@ -94,11 +90,11 @@ ingress:
 |Parameter |Required |Description
 
 |`port`
-|✅ Yes  
+| Yes  
 |Port number or range
 
 |`protocol`
-|✅ Yes
+| Yes
 |`tcp`, `udp`, or `icmp`
 
 |`description`
@@ -302,3 +298,12 @@ ingress:
 * xref:vm-basics.adoc[VM Configuration Basics] - Configure services that need firewall access
 * xref:networking-basics.adoc[Networking Basics] - Network topology and firewall interaction
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complex firewall scenarios - CIDR restrictions, complex rules
+
+[bibliography]
+== References
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

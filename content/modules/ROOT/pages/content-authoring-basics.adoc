@@ -3,12 +3,12 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Write effective lab content** using AsciiDoc syntax and best practices
-* **Structure educational content** with clear learning objectives and outcomes
-* **Create engaging interactive elements** like code blocks, callouts, and navigation
-* **Optimize content for the Showroom interface** with proper formatting and cross-references
+* Effective lab content creation using AsciiDoc syntax and best practices
+* Educational content structure with clear learning objectives and outcomes
+* Interactive elements including code blocks, callouts, and navigation
+* Content optimization for the Showroom interface with proper formatting and cross-references
 
 == Overview
 
@@ -20,6 +20,7 @@ This guide covers the essential syntax and patterns for creating engaging educat
 
 Every content file follows this structure:
 
+.Standard Content File Structure <<template-content>>
 [source,asciidoc]
 ----
 = Module Title
@@ -77,10 +78,13 @@ What students accomplished...
 
 == Code Blocks and Commands
 
+[%collapsible]
+====
 === Interactive Commands
 
 Create copy+run buttons for student commands:
 
+.Interactive Command Buttons <<template-content>>
 [source,asciidoc]
 ----
 [source,bash]
@@ -96,6 +100,7 @@ uname -a
 
 Show students what to expect:
 
+.Expected Output Examples <<template-content>>
 [source,asciidoc]
 ----
 .Expected Output
@@ -110,6 +115,7 @@ Linux lab-server 5.14.0-362.el9.x86_64 #1 SMP x86_64 GNU/Linux
 
 Break complex tasks into steps:
 
+.Multi-Step Command Structure <<template-content>>
 [source,asciidoc]
 ----
 == Step 1: Install Package
@@ -262,6 +268,7 @@ Use password: "{{ common_password }}"
 === Write Effective Instructions
 
 **Good:**
+.Effective Instructional Content Example <<template-content>>
 [source,asciidoc]
 ----
 == Install and Configure Apache
@@ -336,3 +343,15 @@ grep -r "xref:" content/modules/ROOT/pages/
 * xref:module-2-3-simple-content.adoc[Module 2.3: Simple Content Creation] - Hands-on content creation
 * xref:advanced-lab-features.adoc[Advanced Lab Features] - Complex content scenarios - Variables, includes, complex layouts
 * xref:template-customization-guide.adoc[Template Customization Guide] - Complete UI configuration reference
+
+[bibliography]
+== References
+
+* [[[template-content]]] Red Hat GPTE Team. Zero Touch Template Content Examples. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - content/modules/ROOT/pages/. 2024.
+
+* [[[roadshow-content]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Content Structure. 
+  AgnosticV Git Repository - zt-ans-bu-roadshow01/content/modules/ROOT/pages/. 2024.
+
+* [[[template-setup]]] Red Hat GPTE Team. Zero Touch Template Setup Automation. 
+  `https://github.com/rhpds/lab_zero_touch_template.git` - setup-automation/main.yml. 2024.

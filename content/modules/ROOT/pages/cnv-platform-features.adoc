@@ -2,19 +2,19 @@
 
 == Learning Outcomes
 
-By the end of this guide, you will:
+Upon completion, you will understand:
 
-* **Configure advanced virtualization features** like UEFI, SecureBoot, and hugepages
-* **Optimize VM performance** with proper disk bus types and interface models
-* **Implement enterprise security patterns** with TPM and isolation configurations
-* **Design sophisticated networking** with multiple interfaces and advanced CNV features
-* **Troubleshoot platform-specific issues** and leverage CNV capabilities effectively
+* Advanced virtualization feature configuration including UEFI, SecureBoot, and hugepages
+* VM performance optimization with proper disk bus types and interface models
+* Enterprise security pattern implementation with TPM and isolation configurations
+* Sophisticated networking design with multiple interfaces and advanced CNV features
+* Platform-specific troubleshooting and CNV capability leverage
 
 == Overview
 
 The Zero Touch platform runs on OpenShift Container Native Virtualization (CNV), providing advanced virtualization capabilities that go far beyond basic VM hosting. Understanding these platform features enables you to create sophisticated, enterprise-grade lab environments.
 
-== 🖥️ Advanced VM Configuration
+== Advanced VM Configuration
 
 === Boot Configuration Options
 
@@ -33,7 +33,7 @@ virtualmachines:
     secureboot: true       # Requires UEFI mode
 ----
 
-**🔧 Boot Options Explained**:
+**Boot Options Explained**:
 - **`bios`**: Traditional BIOS boot (default, maximum compatibility)
 - **`efi`/`uefi`**: Modern UEFI boot (required for SecureBoot, Windows 11)
 - **`secureboot`**: Enhanced security for enterprise environments
@@ -54,7 +54,7 @@ virtualmachines:
     memory_overcommit: false  # Guarantee memory allocation
 ----
 
-**🚀 Performance Benefits**:
+**Performance Benefits**:
 - **Hugepages**: Reduces memory management overhead for large VMs
 - **Memory Guarantees**: Ensures consistent performance under load
 - **Host-Passthrough CPU**: Maximum CPU performance for labs
@@ -83,13 +83,13 @@ virtualmachines:
         bus: "virtio"        # Standard performance
 ----
 
-**💾 Storage Features**:
+** Storage Features**:
 - **Multiple Bus Types**: virtio (performance), SCSI (compatibility), SATA (legacy)
 - **Dynamic Provisioning**: Kubernetes-native storage management
 - **Block Storage**: Direct block device access for databases
 - **Volume Expansion**: Resize storage without VM downtime
 
-== 🌐 Advanced Networking Capabilities
+==  Advanced Networking Capabilities
 
 === Network Interface Models
 
@@ -110,7 +110,7 @@ virtualmachines:
         interface_model: "virtio"   # Higher performance
 ----
 
-**🔌 Interface Types**:
+** Interface Types**:
 - **`virtio`**: High-performance virtualized interface (default)
 - **`e1000e`**: Intel emulation (Windows compatibility)
 - **`rtl8139`**: Legacy compatibility
@@ -159,12 +159,12 @@ virtualmachines:
       lab-network: "2c:c2:60:dd:ee:ff"
 ----
 
-**🏷️ Benefits**:
+**Benefits**:
 - **DHCP Reservations**: Consistent IP assignments
 - **Network Monitoring**: Predictable network identifiers
 - **Compliance**: Meet security audit requirements
 
-== 📦 Container Integration
+== Container Integration
 
 === Advanced Container Configuration
 
@@ -204,13 +204,13 @@ containers:
         mountPath: "/etc/prometheus"
 ----
 
-**⚡ Container Features**:
+**Container Features**:
 - **Resource Guarantees**: CPU and memory requests/limits
 - **Lifecycle Management**: Startup and shutdown hooks
 - **Volume Management**: Persistent and ephemeral storage
 - **Environment Variables**: Dynamic configuration
 
-== 🔄 VM Lifecycle Management
+== VM Lifecycle Management
 
 === Run Strategies
 
@@ -230,7 +230,7 @@ virtualmachines:
     run_strategy: "Halted"      # VM template (not running)
 ----
 
-**🎛️ Run Strategy Options**:
+**Run Strategy Options**:
 - **`Always`**: VM automatically restarts if it stops
 - **`Manual`**: Explicit start/stop control
 - **`Halted`**: VM definition exists but not running
@@ -247,13 +247,13 @@ oc get vmi                                                                  # Sh
 oc get vm -o wide                                                          # Show VM status
 ```
 
-**🛠️ Management Features**:
+**Management Features**:
 - **Start/Stop Control**: Individual VM lifecycle management
 - **Status Monitoring**: Real-time VM state reporting  
 - **Bulk Operations**: Manage multiple VMs simultaneously
 - **Resource Monitoring**: CPU, memory, network, storage metrics
 
-== 🔧 Cloud-Init Integration
+== Cloud-Init Integration
 
 === Advanced VM Initialization
 
@@ -301,20 +301,20 @@ virtualmachines:
             domain: "{{ domain }}"
 ----
 
-**📝 Cloud-Init Features**:
+**Cloud-Init Features**:
 - **User Management**: Automated user creation and SSH key deployment
 - **Package Installation**: Automated software installation
 - **Service Configuration**: Automatic service startup and firewall rules
 - **File Management**: Template file creation with variables
 - **Network Configuration**: Static IP, DNS, routing configuration
 
-== 🔒 Security Features
+== Security Features
 
 === Enterprise Security Integration
 
 CNV provides enterprise-grade security capabilities:
 
-**🛡️ Security Features**:
+**🛡 Security Features**:
 - **SecureBoot**: UEFI SecureBoot for trusted computing
 - **TPM Emulation**: Hardware security module simulation
 - **Network Policies**: Kubernetes-native network isolation
@@ -323,19 +323,19 @@ CNV provides enterprise-grade security capabilities:
 
 === Compliance and Governance
 
-**📋 Compliance Features**:
+** Compliance Features**:
 - **Resource Quotas**: Limit resource consumption per lab
 - **Network Isolation**: Complete network separation between labs
 - **Access Control**: Fine-grained permissions management  
 - **Monitoring Integration**: Integration with enterprise monitoring
 
-== 🚀 Performance Optimization
+== Performance Optimization
 
 === Resource Management
 
 CNV provides advanced resource optimization:
 
-**⚡ Performance Features**:
+** Performance Features**:
 - **CPU Pinning**: Dedicate CPU cores to VMs
 - **NUMA Awareness**: Optimize memory access patterns
 - **SR-IOV Support**: Direct hardware access for networking
@@ -343,29 +343,29 @@ CNV provides advanced resource optimization:
 
 === Monitoring and Metrics
 
-**📊 Observability**:
+** Observability**:
 - **VM Metrics**: CPU, memory, disk, network monitoring
 - **Platform Metrics**: CNV operator and infrastructure metrics
 - **Custom Metrics**: Application-specific monitoring
 - **Alerting Integration**: Prometheus and AlertManager integration
 
-== 🛠️ Development and Testing
+== Development and Testing
 
 === Lab Environment Features
 
-**🧪 Development Capabilities**:
+**Development Capabilities**:
 - **Snapshot Support**: VM state snapshots for testing
 - **Clone Operations**: Rapid VM duplication
 - **Template Management**: VM templates for consistency
 - **Migration Support**: Live VM migration between nodes
 
-== 📚 Platform Integration
+== Platform Integration
 
 === Kubernetes-Native Features
 
 CNV integrates deeply with Kubernetes:
 
-**☸️ Integration Points**:
+**Integration Points**:
 - **Custom Resources**: VirtualMachine, DataVolume, NetworkAttachmentDefinition
 - **Operators**: Automated lifecycle management
 - **Service Discovery**: Kubernetes-native service networking
@@ -373,6 +373,18 @@ CNV integrates deeply with Kubernetes:
 
 ---
 
-**💡 Key Takeaway**: OpenShift CNV provides enterprise-grade virtualization with Kubernetes-native management, enabling sophisticated lab environments that combine VMs, containers, and advanced networking in a single platform.
+**Key Takeaway**: OpenShift CNV provides enterprise-grade virtualization with Kubernetes-native management, enabling sophisticated lab environments that combine VMs, containers, and advanced networking in a single platform.
 
 Understanding these capabilities allows you to design labs that leverage the full power of the Zero Touch platform, creating professional learning experiences that match real-world enterprise environments.
+
+[bibliography]
+== References
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.

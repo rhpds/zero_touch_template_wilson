@@ -1,0 +1,342 @@
+= Advanced Architecture & Platform Internals
+:description: Deep technical guide to Zero Touch platform internals, CNV architecture, and performance optimization
+:keywords: CNV, KubeVirt, OpenShift, performance, troubleshooting, automation
+:estimated-time: 20-30 minutes
+:page-level: advanced
+:page-role: reference
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Learning Outcomes
+
+Upon completion, you will understand:
+
+* Complete deployment pipeline including AgnosticD variable transformation and CNV orchestration
+* Complex deployment failure debugging through component interactions and failure points  
+* Resource allocation optimization based on CNV scheduler behavior and resource constraints
+* Custom automation pattern implementation using advanced Ansible/Jinja2 techniques
+* High-performance lab architecture design with network optimization and resource planning
+
+== Deep Dive: CNV Virtualization Layer
+
+=== HyperConverged Infrastructure 
+
+Zero Touch leverages OpenShift CNV (based on KubeVirt) for VM orchestration. Understanding the underlying architecture is crucial for advanced configurations:
+
+[source,text]
+----
+VirtualMachine (CR)                    # <1>
+  ↓ CNV Controller
+VirtualMachineInstance (running VM)    # <2>
+  ↓ KubeVirt
+Pod (virt-launcher + compute)          # <3>
+  ↓ CRI-O/Containerd
+QEMU/KVM Process (actual VM)           # <4>
+----
+<1> Custom Resource managed by CNV operator
+<2> Running instance with VM specifications
+<3> Kubernetes pod containing the VM process
+<4> Actual virtualization layer running the guest OS
+
+IMPORTANT: Memory overhead calculation for CNV VMs follows the formula: `VM_Memory_Request = Guest_Memory + Overhead` where overhead ≈ 100Mi base + (Guest_Memory * 0.02) for the virt-launcher pod.
+
+[source,yaml,subs="verbatim,quotes"]
+----
+virtualmachines:
+  - name: "production-server"
+    memory: "8G"                     # <1>
+    cores: 4                         # <2>
+    # Actual resource request: ~8.26Gi total
+    resources:                       # <3>
+      requests:
+        memory: "8260Mi"             # Guest + overhead
+        cpu: "4000m"
+      limits:
+        memory: "8260Mi"
+        cpu: "4000m"
+----
+<1> Guest memory allocation
+<2> CPU cores dedicated to VM
+<3> Kubernetes resource requests/limits including overhead
+
+=== Network Architecture & Performance
+
+.CNV Network Stack Architecture
+[source,text]
+----
+Pod Network (Multus CNI)               # <1>
+├── Primary: cluster network (CNI)     # <2>  
+├── Secondary: bridge/macvlan/SR-IOV   # <3>
+└── VM Networks: virtio-net → TAP → Bridge/OVS  # <4>
+----
+<1> Multus enables multiple network interfaces per pod
+<2> Default cluster networking for pod-to-pod communication
+<3> Additional networks for VM isolation and performance
+<4> VM network path through virtualization layer
+
+TIP: For maximum network performance, use SR-IOV with dedicated NICs to bypass the kernel networking stack entirely.
+
+.High-Performance Network Configuration
+[source,yaml]
+----
+networks:
+  - name: "high-perf-network"           # <1>
+    type: "bridge"                      
+    parameters:
+      bridge: "br-performance"          # <2>
+      sriov: true                       # <3>
+      vlan: 100
+      # Performance tuning parameters
+      rx_queue_size: 1024               # <4>
+      tx_queue_size: 1024
+      mtu: 9000                         # <5>
+----
+<1> Dedicated network for performance-critical workloads
+<2> Custom bridge for network isolation
+<3> SR-IOV enables hardware-level network acceleration
+<4> Increased queue sizes for high-throughput applications
+<5> Jumbo frames reduce network overhead
+
+=== Storage Performance & I/O Patterns
+
+NOTE: Different workloads require different storage characteristics. Database workloads need low-latency, high-IOPS storage, while batch processing workloads benefit from high-throughput sequential I/O.
+
+.Multi-Tier Storage Configuration
+[source,yaml]
+----
+virtualmachines:
+  - name: "database-server"
+    memory: "16G"
+    cores: 8
+    disks:
+      - name: "os-disk"                 # <1>
+        size: "50Gi"
+        storageClass: "fast-ssd"
+        bus: "virtio"
+        cache: "writethrough"
+      - name: "data-disk"               # <2>
+        size: "500Gi"
+        storageClass: "high-iops"
+        bus: "virtio"
+        cache: "none"                   # <3>
+        io: "native"                    # <4>
+      - name: "log-disk"                # <5>
+        size: "100Gi"  
+        storageClass: "fast-sequential"
+        bus: "virtio"
+        cache: "writeback"              # <6>
+----
+<1> OS disk optimized for system operations
+<2> Primary database storage with high IOPS
+<3> Direct I/O bypasses host cache for consistency
+<4> Native AIO for optimal async I/O performance  
+<5> Dedicated disk for database transaction logs
+<6> Write-back caching safe for sequential log writes
+
+CAUTION: Using `cache: "none"` with `io: "native"` provides best performance for databases but requires proper application-level data consistency handling.
+
+== Advanced Automation Patterns
+
+=== Dynamic Configuration Generation
+
+**Jinja2 Advanced Templating for Scale:**
+[source,yaml]
+----
+# Generate multiple VMs with complex naming patterns
+{% set environments = ['dev', 'staging', 'prod'] %}
+{% set tiers = ['web', 'app', 'db'] %}
+
+virtualmachines:
+{% for env in environments %}
+{% for tier in tiers %}
+{% for i in range(1, 4) %}  # 3 instances per tier
+  - name: "{{ env }}-{{ tier }}-{{ '%02d' | format(i) }}"
+    image: "rhel-9.6"
+    memory: "{{ '4G' if tier == 'web' else '8G' if tier == 'app' else '16G' }}"
+    cores: {{ 2 if tier == 'web' else 4 if tier == 'app' else 8 }}
+    networks:
+      - {{ env }}-network
+    tags:
+      - key: "Environment" 
+        value: "{{ env }}"
+      - key: "Tier"
+        value: "{{ tier }}"
+      - key: "Instance"
+        value: "{{ i }}"
+{% endfor %}
+{% endfor %}
+{% endfor %}
+----
+
+=== Advanced Setup Automation
+
+**Complex Initialization with Error Handling:**
+[source,bash]
+----
+#!/bin/bash
+# setup-automation/setup-cluster-nodes.sh
+# Production-grade setup with comprehensive error handling
+
+set -euo pipefail
+IFS=$'\n\t'
+
+# Logging and error handling
+exec 1> >(logger -s -t $(basename $0))
+exec 2>&1
+
+log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"; }
+error() { log "ERROR: $*" >&2; exit 1; }
+
+# Validate environment
+[[ -n "${NODE_TYPE:-}" ]] || error "NODE_TYPE environment variable required"
+[[ -n "${CLUSTER_TOKEN:-}" ]] || error "CLUSTER_TOKEN environment variable required"
+
+# Advanced service mesh configuration
+configure_service_mesh() {
+    local node_type=$1
+    
+    # Install and configure based on node role
+    case "$node_type" in
+        "control")
+            log "Configuring control plane..."
+            systemctl enable --now etcd
+            systemctl enable --now kube-apiserver
+            # Configure HA etcd cluster
+            setup_etcd_cluster
+            ;;
+        "worker")
+            log "Configuring worker node..."
+            systemctl enable --now kubelet
+            # Join cluster with advanced networking
+            kubeadm join --token "${CLUSTER_TOKEN}" \
+                --discovery-token-unsafe-skip-ca-verification \
+                --node-name "$(hostname -f)"
+            ;;
+        "storage")
+            log "Configuring storage node..."
+            # Configure Ceph or other distributed storage
+            setup_distributed_storage
+            ;;
+        *)
+            error "Unknown node type: $node_type"
+            ;;
+    esac
+}
+
+# Retry mechanism for network-dependent operations
+retry_with_backoff() {
+    local max_attempts=$1; shift
+    local delay=$1; shift
+    local attempt=1
+    
+    while [[ $attempt -le $max_attempts ]]; do
+        if "$@"; then
+            return 0
+        fi
+        
+        log "Attempt $attempt/$max_attempts failed. Retrying in ${delay}s..."
+        sleep $delay
+        delay=$((delay * 2))  # Exponential backoff
+        attempt=$((attempt + 1))
+    done
+    
+    error "All $max_attempts attempts failed"
+}
+
+# Main execution
+main() {
+    log "Starting advanced cluster setup for node type: $NODE_TYPE"
+    
+    # Network validation with retries
+    retry_with_backoff 5 2 ping -c 1 google.com
+    
+    # Configure based on node type
+    configure_service_mesh "$NODE_TYPE"
+    
+    # Validate configuration
+    validate_node_configuration
+    
+    log "Advanced cluster setup completed successfully"
+}
+
+main "$@"
+----
+
+== Troubleshooting & Performance Tuning
+
+=== CNV-Specific Debugging
+
+**Advanced Diagnostics Commands:**
+[source,bash]
+----
+# VM debugging workflow for advanced users
+alias debug-vm='kubectl get vm,vmi,pod -l kubevirt.io/created-by'
+alias vm-console='virtctl console'
+alias vm-vnc='virtctl vnc'
+
+# Resource monitoring for performance tuning
+kubectl top nodes
+kubectl describe node <node-name> | grep -A 10 "Allocated resources"
+
+# Advanced: Direct QEMU process inspection
+ps aux | grep qemu | grep <vm-name>
+virsh list --all  # If using libvirt integration
+----
+
+=== Performance Optimization Strategies
+
+**Resource Allocation Optimization:**
+[source,yaml]
+----
+# Advanced resource configuration for production workloads
+virtualmachines:
+  - name: "high-performance-vm"
+    memory: "32G"
+    cores: 16
+    # CPU features and optimization
+    cpu:
+      dedicatedCpuPlacement: true    # CPU pinning
+      numa:
+        guestMappingPassthrough: {}  # NUMA topology passthrough
+      features:
+        - name: "invtsc"             # Invariant TSC
+          policy: "require"
+        - name: "pdpe1gb"            # 1GB pages support
+          policy: "require"
+    # Memory optimization
+    memory:
+      hugepages:
+        pageSize: "1Gi"              # Use 1GB hugepages
+      guest: "32Gi"
+    # Advanced I/O configuration  
+    devices:
+      disks:
+        - name: "os-disk"
+          disk:
+            bus: "virtio"
+            cache: "writethrough"     # Optimize for consistency
+            io: "threads"             # Threaded I/O
+----
+
+== Related Documentation
+
+* xref:deployment-architecture.adoc[Deployment Architecture Overview]
+* xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns]  
+* xref:production-patterns-guide.adoc[Production Patterns Guide]
+
+[bibliography]
+== References
+
+* [[[agnosticd-base]]] Red Hat GPTE Team. AgnosticD Zero Touch Base RHEL Configuration. 
+  `/home/wilson/Projects/agnosticd/ansible/configs/zero-touch-base-rhel/default_vars_openshift_cnv.yaml`. 2024.
+
+* [[[roadshow-instances]]] Red Hat Ansible Team. AAP 2.5 Roadshow Lab Instance Configuration. 
+  `/home/wilson/Projects/showroom_git/zt-ans-bu-roadshow01/config/instances.yaml`. 2024.
+
+* [[[template-instances]]] Red Hat GPTE Team. Zero Touch Template Instance Configuration. 
+  `/home/wilson/Projects/zero_touch_template_wilson/config/instances.yaml`. 2024.
