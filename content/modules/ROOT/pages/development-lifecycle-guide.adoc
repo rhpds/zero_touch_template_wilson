@@ -1,0 +1,345 @@
+= Zero Touch Development Lifecycle Guide
+:navtitle: Development Lifecycle
+
+This comprehensive guide walks through the complete Zero Touch lab development lifecycle, from initial template customization to deployed lab environment.
+
+== 🎯 Development Lifecycle Overview
+
+The Zero Touch development process involves multiple integrated systems working together to transform your Git repository into a live lab environment. Understanding this flow is essential for effective lab development.
+
+[mermaid]
+....
+graph TB
+    subgraph "👨‍💻 Developer Workflow"
+        DEV[Developer]
+        CLONE[🔄 Clone Template<br/>zero_touch_template_wilson]
+        CONFIG[⚙️ Configure Lab]
+        TEST[🧪 Local Testing<br/>antora generate/serve]
+        COMMIT[📝 Git Commit & Push]
+        
+        DEV --> CLONE
+        CLONE --> CONFIG
+        CONFIG --> TEST
+        TEST --> |"Iterate until ready"| CONFIG
+        TEST --> COMMIT
+    end
+    
+    subgraph "📄 Configuration Files"
+        INSTANCES[instances.yaml<br/>VMs + Containers]
+        NETWORKS[networks.yaml<br/>Network topology]  
+        FIREWALL[firewall.yaml<br/>Security rules]
+        CONTENT[content/<br/>AsciiDoc modules]
+        UICONFIG[ui-config.yml<br/>Tabs + Navigation]
+        
+        CONFIG --> INSTANCES
+        CONFIG --> NETWORKS
+        CONFIG --> FIREWALL
+        CONFIG --> CONTENT
+        CONFIG --> UICONFIG
+    end
+    
+    subgraph "📋 AgnosticV Catalog"
+        CATALOG[AgnosticV Catalog<br/>babylon-catalog]
+        COMMON[common.yaml<br/>Git integration logic]
+        ENV[Environment Files<br/>dev.yaml / prod.yaml]
+        TRANSFORM[🔄 URL Transformation<br/>github → raw.githubusercontent]
+        
+        COMMIT --> CATALOG
+        CATALOG --> COMMON
+        COMMON --> ENV
+        COMMON --> TRANSFORM
+    end
+    
+    subgraph "🚀 AgnosticD Engine"
+        AGNOSTICD[AgnosticD<br/>zero-touch-base-rhel]
+        FETCH[📥 Fetch Config Files<br/>URL lookup dynamic loading]
+        VARIABLES[📊 Variable Mapping<br/>containers, instances, networks]
+        ROLES[⚙️ Role Execution Chain<br/>12+ deployment roles]
+        
+        TRANSFORM --> AGNOSTICD
+        AGNOSTICD --> FETCH
+        FETCH --> VARIABLES
+        VARIABLES --> ROLES
+    end
+    
+    subgraph "☁️ Infrastructure Deployment"
+        CNV[OpenShift CNV<br/>Virtualization Platform]
+        VMS[🖥️ Virtual Machines<br/>From instances.yaml]
+        CONTAINERS[📦 Containers<br/>Custom or Workloads]
+        NETWORKING[🌐 Network Policies<br/>Security + SSH rules]
+        
+        ROLES --> CNV
+        CNV --> VMS
+        CNV --> CONTAINERS
+        CNV --> NETWORKING
+    end
+    
+    subgraph "🤔 Extension Decision"
+        DECISION{Extension Method?}
+        CUSTOM[🔧 Custom Containers<br/>Full control + education]
+        WORKLOADS[📦 AgnosticD Workloads<br/>200+ pre-built options]
+        
+        ROLES --> DECISION
+        DECISION --> |"Custom approach"| CUSTOM
+        DECISION --> |"Standard tools"| WORKLOADS
+        CUSTOM --> CONTAINERS
+        WORKLOADS --> CONTAINERS
+    end
+    
+    subgraph "🎨 Showroom Integration"
+        SHOWROOM[Showroom Deployment<br/>Helm Chart v1.9.6/v1.9.10]
+        ANTORA[📖 Antora Build<br/>site.yml processing]
+        WETTY[💻 Wetty Terminals<br/>SSH integration]
+        ROUTES[🌍 Route Creation<br/>Unique URLs per lab]
+        
+        ROLES --> SHOWROOM
+        SHOWROOM --> ANTORA
+        SHOWROOM --> WETTY
+        SHOWROOM --> ROUTES
+    end
+    
+    subgraph "🎓 Final Lab Environment"
+        LAB[Live Lab Environment]
+        STUDENTS[👥 Student Access<br/>Unique URLs + passwords]
+        TERMINAL[💻 Terminal Access<br/>SSH to VMs]
+        IDE[🛠️ Development Tools<br/>VS Code, Git, etc]
+        
+        ANTORA --> LAB
+        WETTY --> TERMINAL
+        CONTAINERS --> IDE
+        ROUTES --> STUDENTS
+        LAB --> STUDENTS
+    end
+    
+    subgraph "🔄 URL Transformation Example"
+        GITURL["github.com/user/repo.git"]
+        RAWURL["raw.githubusercontent.com/<br/>user/repo/refs/heads/main/config/"]
+        CONFIGURL["config/instances.yaml<br/>config/firewall.yaml"]
+        
+        GITURL --> |"AgnosticV transform"| RAWURL
+        RAWURL --> CONFIGURL
+        CONFIGURL --> FETCH
+    end
+    
+    subgraph "📊 Variable Mapping Flow"
+        YAML1["instances.yaml.containers"]
+        YAML2["instances.yaml.virtualmachines"] 
+        YAML3["firewall.yaml.ingress"]
+        VAR1["containers: [...]"]
+        VAR2["instances: [...]"]
+        VAR3["zero_touch_ingress_lockdown_rules"]
+        
+        YAML1 --> VAR1
+        YAML2 --> VAR2
+        YAML3 --> VAR3
+        VAR1 --> VARIABLES
+        VAR2 --> VARIABLES
+        VAR3 --> VARIABLES
+    end
+
+    %% Styling
+    classDef developer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef config fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef agnosticv fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef agnosticd fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef showroom fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef final fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef decision fill:#fff8e1,stroke:#ff6f00,stroke-width:3px
+    
+    class DEV,CLONE,CONFIG,TEST,COMMIT developer
+    class INSTANCES,NETWORKS,FIREWALL,CONTENT,UICONFIG config
+    class CATALOG,COMMON,ENV,TRANSFORM,GITURL,RAWURL,CONFIGURL agnosticv
+    class AGNOSTICD,FETCH,VARIABLES,ROLES,YAML1,YAML2,YAML3,VAR1,VAR2,VAR3 agnosticd
+    class CNV,VMS,CONTAINERS,NETWORKING infrastructure
+    class SHOWROOM,ANTORA,WETTY,ROUTES showroom
+    class LAB,STUDENTS,TERMINAL,IDE final
+    class DECISION,CUSTOM,WORKLOADS decision
+....
+
+== 🔄 Phase-by-Phase Breakdown
+
+=== Phase 1: Developer Workflow (Blue)
+
+**👨‍💻 Developer Activities:**
+
+1. **Clone Template** - Start with `zero_touch_template_wilson` base template
+2. **Configure Lab** - Customize configuration files for your specific requirements
+3. **Local Testing** - Use `antora generate` and `antora serve` for rapid iteration
+4. **Git Commit & Push** - Publish changes to trigger the deployment pipeline
+
+**🔧 Key Tools:**
+- Git for version control
+- Antora for local content testing
+- Text editor for YAML/AsciiDoc editing
+
+=== Phase 2: Configuration Files (Purple)
+
+**📄 File Configuration:**
+
+- **`instances.yaml`** - Define VMs, containers, resources, and networking
+- **`networks.yaml`** - Configure network topology and connectivity
+- **`firewall.yaml`** - Set security rules for ingress/egress traffic
+- **`content/`** - Create AsciiDoc learning modules
+- **`ui-config.yml`** - Configure UI tabs, navigation, and student experience
+
+**🎯 Critical Success Factors:**
+- Consistent naming between files (instances → ui-config)
+- Valid YAML syntax and structure
+- Proper variable patterns for each file type
+
+=== Phase 3: AgnosticV Catalog Integration (Green)
+
+**📋 Catalog Orchestration:**
+
+**AgnosticV automatically:**
+1. **Reads your Git repository** when lab deployment is requested
+2. **Transforms GitHub URLs** to raw.githubusercontent.com for direct file access
+3. **Applies environment-specific overrides** (dev vs. prod configurations)
+4. **Passes configuration** to AgnosticD deployment engine
+
+**🔄 URL Transformation Process:**
+```
+https://github.com/user/repo.git
+         ↓
+https://raw.githubusercontent.com/user/repo/refs/heads/main/config/
+         ↓  
+https://raw.githubusercontent.com/user/repo/refs/heads/main/config/instances.yaml
+```
+
+=== Phase 4: AgnosticD Deployment Engine (Orange)
+
+**🚀 Deployment Processing:**
+
+1. **Fetch Configuration Files** - Downloads YAML files from your Git repository
+2. **Variable Mapping** - Converts your YAML structures into Ansible variables
+3. **Role Execution Chain** - Runs 12+ specialized roles for complete deployment
+
+**📊 Variable Mapping Examples:**
+- `instances.yaml.containers` → `containers: [...]`
+- `instances.yaml.virtualmachines` → `instances: [...]`
+- `firewall.yaml.ingress` → `zero_touch_ingress_lockdown_rules: [...]`
+
+=== Phase 5: Infrastructure Deployment (Pink)
+
+**☁️ OpenShift CNV Deployment:**
+
+- **Virtual Machines** - Created based on your `instances.yaml` specifications
+- **Containers** - Deployed with full networking, storage, and security configuration  
+- **Network Policies** - Applied for security isolation and SSH access control
+- **Storage & Resources** - Allocated per your memory, CPU, and disk requirements
+
+=== Phase 6: Extension Decision Point (Yellow)
+
+**🤔 Two Deployment Approaches:**
+
+**Custom Containers:**
+- Full control over container configuration
+- Educational value showing all configuration details
+- Custom Git repository integration
+- Unique SSH and networking requirements
+
+**AgnosticD Workloads:**
+- 200+ pre-built, enterprise-ready extensions
+- Standardized deployment patterns
+- Reduced maintenance overhead
+- Enterprise authentication integration
+
+=== Phase 7: Showroom Integration (Teal)
+
+**🎨 UI Framework Deployment:**
+
+- **Helm Chart Deployment** - Different versions for dev (v1.9.6) vs prod (v1.9.10)
+- **Antora Content Build** - Processes your `site.yml` and generates documentation site
+- **Wetty Terminal Integration** - Provides browser-based SSH access to VMs
+- **Route Creation** - Generates unique URLs for lab access
+
+=== Phase 8: Final Lab Environment (Light Green)
+
+**🎓 Student-Ready Lab:**
+
+- **Live Lab Environment** - Fully functional, accessible to students
+- **Unique URLs** - Each student gets individual lab instance
+- **Terminal Access** - Browser-based SSH to all VMs
+- **Development Tools** - VS Code, Git, and custom tools ready for use
+
+== ⚡ Development Workflow Tips
+
+=== Rapid Iteration
+
+**Local Development Loop:**
+```bash
+# Make changes to configuration files
+vim config/instances.yaml
+
+# Test content locally
+antora generate && antora serve
+
+# Review in browser at http://localhost:8080
+
+# When satisfied, commit and push
+git add .
+git commit -m "Add new VM configuration"
+git push origin main
+```
+
+=== Testing Strategy
+
+**Progressive Testing Approach:**
+1. **Local Content Testing** - Validate AsciiDoc and navigation locally
+2. **YAML Validation** - Use online YAML validators for syntax checking
+3. **Small Deployments** - Start with minimal configurations and expand
+4. **Full Integration Testing** - Deploy complete environment for validation
+
+=== Common Pitfalls
+
+**❌ Avoid These Issues:**
+- **Name Mismatches** - Ensure consistent naming between `instances.yaml` and `ui-config.yml`
+- **Variable Pattern Confusion** - Use correct templating syntax for each file type
+- **Network Policy Oversight** - Configure SSH access rules for containers
+- **Resource Over-allocation** - Start with modest resources and scale up as needed
+
+== 🔗 Integration Points
+
+=== Critical System Boundaries
+
+**Git Repository ↔ AgnosticV:**
+- URL transformation and branch selection
+- Dynamic file fetching during deployment
+- Environment-specific configuration overrides
+
+**AgnosticV ↔ AgnosticD:**
+- Variable mapping and transformation
+- Configuration file validation
+- Role execution triggering
+
+**AgnosticD ↔ OpenShift CNV:**
+- Infrastructure resource allocation
+- Network policy enforcement
+- Container and VM lifecycle management
+
+**Infrastructure ↔ Showroom:**
+- Content serving and UI integration
+- Terminal proxy configuration
+- Route and service mesh setup
+
+== 📚 Related Documentation
+
+**For Detailed Information:**
+
+* xref:zero-touch-platform-training.adoc[**Zero Touch Platform Training**] - Complete self-paced learning
+* xref:deployment-architecture.adoc[**Deployment Architecture**] - Technical system details
+* xref:git-integration-patterns.adoc[**Git Integration Patterns**] - Repository management strategies
+* xref:advanced-lab-features.adoc[**Advanced Lab Features**] - Extension capabilities and workload system
+* xref:template-customization-guide.adoc[**Template Customization Guide**] - Configuration reference
+
+== 🎯 Next Steps
+
+After understanding the development lifecycle:
+
+1. **🏁 Start Training** - Begin with xref:zero-touch-platform-training.adoc[Zero Touch Platform Training]
+2. **🔧 Configure Your Lab** - Use the lifecycle guide to plan your development approach
+3. **📦 Choose Extensions** - Decide between custom containers and AgnosticD workloads
+4. **🚀 Deploy and Iterate** - Use the rapid development loop for continuous improvement
+
+**The development lifecycle provides a comprehensive framework for creating production-ready Zero Touch labs efficiently and effectively!**

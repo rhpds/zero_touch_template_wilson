@@ -90,7 +90,7 @@ Expand to multiple VMs with network segmentation and security isolation.
 * Multi-network topologies
 * Network isolation and security concepts
 * CIDR notation and subnet planning
-* Firewall configuration for network communication
+* Firewall configuration and network policy security
 
 ==== Module 2.3: Simple Content (15-20 min)
 xref:module-2-3-simple-content.adoc[**Create content →**]
@@ -134,10 +134,14 @@ Master complex scenarios and Business Unit requirements.
 
 Comprehensive guides for specific topics and advanced features.
 
+==== Essential References
+* xref:development-lifecycle-guide.adoc[**🔄 Development Lifecycle Guide**] - Complete development workflow with visual flowchart
+
 ==== Core Configuration Guides
-* xref:vm-basics.adoc[**Adding Instances and Containers**] - Complete VM and container reference
+* xref:vm-basics.adoc[**VM Configuration Basics**] - Complete VM configuration reference
 * xref:networking-basics.adoc[**Configuring Networking**] - Advanced networking patterns
 * xref:firewall-basics.adoc[**Configuring Firewall Rules**] - Security and traffic control
+* xref:network-policy-configuration.adoc[**Network Policy Configuration**] - Container SSH access security
 * xref:content-authoring-basics.adoc[**Creating Lab Content and UI Configuration**] - Content authoring reference
 
 ==== Advanced Features

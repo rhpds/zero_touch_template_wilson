@@ -1,0 +1,427 @@
+= Container Storage Management
+:estimated-time: 15-20 minutes
+:navtitle: Storage Management
+
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Configure persistent storage** for containerized applications
+* **Share data between containers** using volume patterns
+* **Implement backup and recovery** strategies for container data
+* **Optimize storage performance** for different use cases
+
+== 📦 Volume Types and Patterns
+
+=== EmptyDir Volumes
+
+Temporary storage shared between containers in the same deployment:
+
+[source,yaml]
+----
+containers:
+  # Data processor container
+  - name: "data-processor"
+    image: "python:3.11-slim"
+    command: ["python", "/app/process.py"]
+    volumes:
+      - name: "shared-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "shared-data"
+        mountPath: "/data"
+        
+  # Web server serving processed data
+  - name: "data-server"
+    image: "nginx:alpine"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "shared-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "shared-data"
+        mountPath: "/usr/share/nginx/html/data"
+        readOnly: true
+----
+
+**📝 EmptyDir Use Cases:**
+- **Temporary file processing**
+- **Cache directories**
+- **Inter-container communication**
+- **Build artifacts**
+
+[IMPORTANT]
+====
+**EmptyDir Limitation**: Data is lost when containers restart. Use only for temporary data.
+====
+
+=== ConfigMap Volumes
+
+Mount configuration files and scripts into containers:
+
+[source,yaml]
+----
+containers:
+  - name: "webapp"
+    image: "nginx:latest"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "nginx-config"
+        configMap:
+          name: "webapp-nginx-config"
+      - name: "static-content"
+        configMap:
+          name: "webapp-static-files"
+    volumeMounts:
+      - name: "nginx-config"
+        mountPath: "/etc/nginx/conf.d"
+        readOnly: true
+      - name: "static-content"
+        mountPath: "/usr/share/nginx/html/static"
+        readOnly: true
+----
+
+## 🗃️ Database Storage Patterns
+
+=== PostgreSQL with Persistent Storage
+
+Configure database with data persistence:
+
+[source,yaml]
+----
+containers:
+  - name: "postgres-db"
+    image: "postgres:15-alpine"
+    memory: "1G"
+    cpu: "1"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "appdb"
+      POSTGRES_USER: "appuser"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - name: "postgres-data"
+        emptyDir: {}
+      - name: "postgres-config"
+        configMap:
+          name: "postgres-configuration"
+      - name: "postgres-init-scripts"
+        configMap:
+          name: "postgres-init-sql"
+    volumeMounts:
+      - name: "postgres-data"
+        mountPath: "/var/lib/postgresql/data"
+      - name: "postgres-config"
+        mountPath: "/etc/postgresql"
+        readOnly: true
+      - name: "postgres-init-scripts"
+        mountPath: "/docker-entrypoint-initdb.d"
+        readOnly: true
+----
+
+### Database Initialization Scripts
+
+Create ConfigMap with initialization SQL:
+
+[source,yaml]
+----
+# Create this ConfigMap separately or via automation
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+data:
+  01-schema.sql: |
+    CREATE SCHEMA IF NOT EXISTS app_schema;
+    
+    CREATE TABLE IF NOT EXISTS app_schema.users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE TABLE IF NOT EXISTS app_schema.sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id INTEGER REFERENCES app_schema.users(id),
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+  02-seed-data.sql: |
+    INSERT INTO app_schema.users (username, email) 
+    VALUES 
+      ('admin', 'admin@lab.local'),
+      ('student', 'student@lab.local')
+    ON CONFLICT (username) DO NOTHING;
+----
+
+=== MySQL Storage Configuration
+
+[source,yaml]
+----
+containers:
+  - name: "mysql-db"
+    image: "mysql:8.0"
+    memory: "1G"
+    environment:
+      MYSQL_ROOT_PASSWORD: "{{ common_password }}"
+      MYSQL_DATABASE: "appdb"
+      MYSQL_USER: "appuser"
+      MYSQL_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "mysql-data"
+        emptyDir: {}
+      - name: "mysql-config"
+        configMap:
+          name: "mysql-custom-config"
+      - name: "mysql-init-scripts"
+        configMap:
+          name: "mysql-init-scripts"
+    volumeMounts:
+      - name: "mysql-data"
+        mountPath: "/var/lib/mysql"
+      - name: "mysql-config"
+        mountPath: "/etc/mysql/conf.d"
+        readOnly: true
+      - name: "mysql-init-scripts"
+        mountPath: "/docker-entrypoint-initdb.d"
+        readOnly: true
+----
+
+## 📁 File Storage and Content Management
+
+=== Static Content Serving
+
+Serve static files from containers:
+
+[source,yaml]
+----
+containers:
+  - name: "static-content-server"
+    image: "nginx:alpine"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "website-content"
+        configMap:
+          name: "website-static-files"
+      - name: "nginx-config"
+        configMap:
+          name: "nginx-static-config"
+    volumeMounts:
+      - name: "website-content"
+        mountPath: "/usr/share/nginx/html"
+        readOnly: true
+      - name: "nginx-config"
+        mountPath: "/etc/nginx/conf.d"
+        readOnly: true
+    routes:
+      - name: static-content
+        host: static
+        service: static-content-server
+        targetPort: 80
+        tls: true
+----
+
+=== Log Collection and Aggregation
+
+Centralize logs from multiple containers:
+
+[source,yaml]
+----
+containers:
+  # Application container with log volume
+  - name: "webapp"
+    image: "myapp:latest"
+    volumes:
+      - name: "app-logs"
+        emptyDir: {}
+    volumeMounts:
+      - name: "app-logs"
+        mountPath: "/app/logs"
+    environment:
+      LOG_FILE: "/app/logs/application.log"
+      
+  # Log aggregator (simple example)
+  - name: "log-collector"
+    image: "fluent/fluent-bit:latest"
+    volumes:
+      - name: "app-logs"
+        emptyDir: {}
+    volumeMounts:
+      - name: "app-logs"
+        mountPath: "/var/log/app"
+        readOnly: true
+    environment:
+      FLB_LOG_LEVEL: "info"
+----
+
+## 🔄 Data Backup and Recovery
+
+=== Database Backup Strategy
+
+Implement automated backup for containerized databases:
+
+[source,yaml]
+----
+containers:
+  # Main database
+  - name: "postgres-primary"
+    image: "postgres:15-alpine"
+    memory: "1G"
+    environment:
+      POSTGRES_DB: "production"
+      POSTGRES_USER: "app"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+    volumes:
+      - name: "postgres-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "postgres-data"
+        mountPath: "/var/lib/postgresql/data"
+        
+  # Backup utility container
+  - name: "postgres-backup"
+    image: "postgres:15-alpine"
+    memory: "256Mi"
+    command: ["/bin/bash", "-c", "while true; do sleep 3600; pg_dump -h postgres-primary -U app production > /backups/backup-$(date +%Y%m%d-%H%M%S).sql; find /backups -name '*.sql' -mtime +7 -delete; done"]
+    volumes:
+      - name: "backup-storage"
+        emptyDir: {}
+    volumeMounts:
+      - name: "backup-storage"
+        mountPath: "/backups"
+    environment:
+      PGPASSWORD: "{{ common_password }}"
+----
+
+## ⚡ Performance Optimization
+
+=== Storage Performance Patterns
+
+**Performance Guidelines:**
+
+[cols="3,2,3"]
+|===
+|Use Case |Volume Type |Performance Notes
+
+|**Database Storage**
+|EmptyDir (fast local)
+|Best performance for lab environments
+
+|**Configuration Files**
+|ConfigMap
+|Read-only, minimal overhead
+
+|**Log Storage**
+|EmptyDir
+|High write performance needed
+
+|**Static Content**
+|ConfigMap
+|Efficient for small files
+
+|**Temporary Processing**
+|EmptyDir
+|Fast local storage preferred
+|===
+
+=== Memory-Based Storage
+
+Use memory-backed volumes for high-performance needs:
+
+[source,yaml]
+----
+containers:
+  - name: "high-performance-app"
+    image: "myapp:latest"
+    volumes:
+      - name: "memory-cache"
+        emptyDir:
+          medium: Memory
+          sizeLimit: "512Mi"
+    volumeMounts:
+      - name: "memory-cache"
+        mountPath: "/app/cache"
+----
+
+[WARNING]
+====
+**Memory Volumes**: Count towards container memory limits. Use sparingly.
+====
+
+## 🔧 Storage Troubleshooting
+
+=== Common Storage Issues
+
+**Volume Mount Problems:**
+[source,bash]
+----
+# Check volume mounts
+kubectl describe pod <pod-name>
+
+# Check ConfigMap contents
+kubectl get configmap <configmap-name> -o yaml
+
+# Test file access inside container
+kubectl exec -it <pod-name> -- ls -la /mounted/path
+kubectl exec -it <pod-name> -- cat /mounted/path/file.txt
+----
+
+**Permission Issues:**
+[source,yaml]
+----
+containers:
+  - name: "webapp"
+    image: "nginx:alpine"
+    # Fix permission issues
+    securityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
+    volumes:
+      - name: "webapp-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "webapp-data"
+        mountPath: "/app/data"
+----
+
+## ✅ Storage Validation
+
+Verify your storage configuration:
+
+1. **✅ Volume Mounts**: Confirm all volumes are properly mounted
+2. **✅ File Permissions**: Verify containers can read/write as expected
+3. **✅ Data Persistence**: Test data survives container restarts
+4. **✅ Performance**: Monitor I/O performance under load
+5. **✅ Backup Strategy**: Validate backup and recovery procedures
+
+## 🎯 Next Steps
+
+**Expand your storage knowledge:**
+* xref:container-multi-service-patterns.adoc[**Multi-Service Patterns**] - Service communication with persistent data
+* xref:container-monitoring-logging.adoc[**Monitoring & Logging**] - Log storage and monitoring data
+* xref:advanced-lab-features.adoc[**Advanced Lab Features**] - Enterprise storage patterns
+
+**Apply storage patterns:**
+* Design persistent storage for your applications
+* Implement backup and recovery strategies
+* Optimize storage performance for your use cases
+* Configure shared storage between services
+
+**Container storage management enables reliable, performant data handling in Zero Touch lab environments!**

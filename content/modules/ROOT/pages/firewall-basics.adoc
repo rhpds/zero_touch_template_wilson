@@ -1,9 +1,18 @@
 = Firewall Configuration Basics
 :estimated-time: 15-20 minutes
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Configure security rules** for ingress and egress traffic control
+* **Implement port-based access control** for lab services and applications
+* **Design secure network policies** that balance security with functionality
+* **Troubleshoot connectivity issues** related to firewall configurations
+
 == Overview
 
-Learn how to configure firewall rules for your lab environment using the `config/firewall.yaml` file. This guide covers essential security controls for network access.
+This guide covers essential security controls for network access using the `config/firewall.yaml` file. You'll learn to implement proper firewall rules that secure your lab environment while allowing necessary communication.
 
 == Configuration File Structure
 

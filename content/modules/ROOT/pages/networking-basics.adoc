@@ -1,9 +1,18 @@
 = Networking Basics
 :estimated-time: 15-20 minutes
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Design network topologies** with proper CIDR allocation and segmentation
+* **Configure multi-network environments** for complex lab scenarios
+* **Implement network isolation** between different lab components
+* **Troubleshoot network connectivity** and resolve common networking issues
+
 == Overview
 
-Learn the fundamentals of configuring networks in your Zero Touch lab environment. This guide covers the essential networking concepts and basic configurations.
+This guide covers essential networking concepts and configurations for Zero Touch lab environments. You'll learn to design and implement network topologies that support your lab requirements.
 
 == Configuration File Structure
 
@@ -159,8 +168,86 @@ ping google.com
 **IP conflicts?**
 → Verify CIDR ranges don't overlap
 
+== Network Security: Firewall vs Network Policies
+
+**Understanding the Two Security Layers:**
+
+Zero Touch deployments use **two different security mechanisms** that work together:
+
+=== Firewall Rules (`firewall.yaml`)
+
+**Purpose**: Control **external** network access (internet, outside OpenShift)
+**Scope**: **Ingress** (traffic coming into lab) and **Egress** (traffic going out)
+**Configuration**: Template-level in `config/firewall.yaml`
+
+[source,yaml]
+----
+# firewall.yaml - Controls external access
+egress:
+  - ports:
+      - protocol: TCP
+        port: 443  # HTTPS to internet
+      - protocol: TCP  
+        port: 80   # HTTP to internet
+ingress:
+  - ports:
+      - protocol: TCP
+        port: 8080  # External access to apps
+----
+
+=== Network Policies (AgnosticD)
+
+**Purpose**: Control **internal** communication between pods/VMs within OpenShift
+**Scope**: **Container-to-VM** SSH access, **pod-to-pod** communication
+**Configuration**: Deployment-level variables (not in template files)
+
+[source,yaml]
+----
+# sample_vars.yml - Controls internal OpenShift communication
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode  # Container SSH to VMs
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+=== Key Differences
+
+[cols="2,3,3"]
+|===
+|Aspect |Firewall Rules |Network Policies
+
+|**Controls**
+|External internet access
+|Internal pod/VM communication
+
+|**Configured In**
+|Template `firewall.yaml` file
+|Deployment variables
+
+|**Common Issues**
+|"Connection timeout to external API"
+|"Container SSH to VM fails"
+
+|**Troubleshooting**
+|Check `firewall.yaml` port rules
+|Check `zero_touch_ingress_lockdown_rules`
+
+|**Affects**
+|Internet access, external APIs
+|SSH, internal service communication
+|===
+
+**Important**: Both layers work together. A container needs:
+1. **Network policy permission** to SSH to VM (internal)  
+2. **Firewall rule** for any external internet access
+
 == Related Documentation
 
 * xref:vm-basics.adoc[Adding Instances] - Connect VMs to networks
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns] - Complex networking topologies - Complex topologies
-* xref:firewall-basics.adoc[Configuring Firewall Rules] - Network security
+* xref:firewall-basics.adoc[Configuring Firewall Rules] - External network security
+* xref:network-policy-configuration.adoc[Network Policy Configuration] - Internal container SSH security

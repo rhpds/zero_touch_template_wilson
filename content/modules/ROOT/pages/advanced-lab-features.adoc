@@ -1,6 +1,14 @@
 = Advanced Lab Features and Special Cases
 
-This guide covers advanced features and special configurations needed for specific lab scenarios, including Business Unit requirements and complex use cases.
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Configure advanced platform features** like backend SSH access and complex networking
+* **Implement Business Unit-specific requirements** for RHEL, Ansible, and other teams  
+* **Use specialized workloads and extensions** for enterprise applications
+* **Apply complex security patterns** and certificate management
+* **Troubleshoot advanced deployment scenarios** and integration issues
 
 == Overview
 
@@ -13,27 +21,29 @@ Beyond basic template customization, some labs require specialized configuration
 
 == Platform Architecture
 
-The Zero Touch platform consists of several integrated components:
+[TIP]
+====
+**Quick Reference**: Zero Touch uses git-cloner → antora-builder → automation scripts → nookbag UI → wetty terminals
+**Key insight**: Content builds statically but runtime validation is dynamic via API
+====
 
 === Core Components
 
 * **git-cloner**: Clones lab repositories into shared storage
-* **antora-builder**: Builds educational content from AsciiDoc sources
+* **antora-builder**: Builds educational content from AsciiDoc sources  
 * **zerotouch-automation/cli**: Runs setup and automation scripts
 * **zerotouch-automation/api**: Handles runtime module execution
 * **nookbag**: Lab interface with progress tracking and navigation
 * **caddy**: Reverse proxy and static file server
 * **wetty**: Web-based terminal access
 
-=== Data Flow
-
-. Repository is cloned during lab provisioning
-. Antora builds static content from source
-. Automation scripts configure lab environment
-. User accesses lab through integrated web interface
-. Runtime API handles step validation and progression
-
 == Advanced Instance Features
+
+[TIP]
+====
+**Quick Reference**: SSH root access, bootloader configs, isolation patterns, complex networking
+**When to use**: Enterprise VMs, specialized images, multi-platform labs
+====
 
 === Backend Configuration
 
@@ -415,6 +425,89 @@ containers:
 * Test each component independently before integration
 * Use descriptive names for instances, networks, and services
 * Follow naming conventions for consistency
+
+== AgnosticD Workload Extensions
+
+[TIP]
+====
+**Quick Reference**: 200+ pre-built workloads for development, CI/CD, security, registries
+**Alternative to**: Custom container configurations in `instances.yaml`
+**Benefits**: Standardized, maintained, enterprise-ready deployments
+====
+
+=== Available Extension Workloads
+
+Zero Touch deployments support **200+ specialized workloads** for advanced lab requirements:
+
+**🔧 Development Tools**:
+- `ocp4_workload_codeserver` - Browser-based VS Code IDE with Git integration
+- `ocp4_workload_devspaces` - Eclipse Che development environments  
+- `ocp4_workload_gitea_operator` - Self-hosted Git repository platform
+
+**🚀 CI/CD & Automation**:
+- `ocp4_workload_jenkins` - Jenkins CI/CD pipelines
+- `ocp4_workload_pipelines` - Tekton OpenShift Pipelines
+- `ocp4_workload_gitops_bootstrap` - ArgoCD GitOps workflows
+
+**📦 Container & Registry Management**:
+- `ocp4_workload_quay_operator` - Private container registries
+- `ocp4_workload_nexus_operator` - Artifact repository management
+- `ocp4_workload_openshift_container_storage` - Persistent storage
+
+**🔐 Security & Compliance**:
+- `ocp4_workload_rhacs` - Red Hat Advanced Cluster Security
+- `ocp4_workload_cert_manager` - Automated certificate management
+- `ocp4_workload_vault` - HashiCorp Vault secret management
+
+=== Configuring Workloads
+
+**In AgnosticV `common.yaml`:**
+[source,yaml]
+----
+# Extension workloads by deployment phase
+pre_software_workloads:
+  bastions:
+    - gitea_operator
+
+software_workloads:
+  localhost:
+    - codeserver
+    - jenkins
+
+post_software_workloads:
+  bastions:
+    - rhacs
+    - quay_operator
+----
+
+**Workload Target Options**:
+- `localhost` - Control node tasks
+- `bastions` - Bastion/jump servers
+- `nodes` - Worker nodes
+- `all` - All managed hosts
+- `windows` - Windows systems
+- `satellites` - Satellite servers
+
+=== Custom Workload Development
+
+**Create Custom Extensions**:
+[source,text]
+----
+roles_ocp_workloads/
+├── ocp4_workload_my_custom_app/
+│   ├── defaults/main.yml          # Default variables
+│   ├── tasks/workload.yml         # Main deployment logic
+│   ├── tasks/pre_workload.yml     # Pre-deployment setup
+│   ├── tasks/post_workload.yml    # Post-deployment tasks
+│   └── templates/                 # Jinja2 templates
+----
+
+**Integration Benefits**:
+- Standardized deployment patterns
+- Automatic error handling and retries
+- Integration with Zero Touch security model  
+- Shared variable access (`guid`, `common_password`, etc.)
+- Built-in validation and testing hooks
 
 == Related Documentation
 

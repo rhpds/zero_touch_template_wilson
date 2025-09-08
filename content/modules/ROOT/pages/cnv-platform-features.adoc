@@ -1,5 +1,17 @@
 = OpenShift CNV Platform Features
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Configure advanced virtualization features** like UEFI, SecureBoot, and hugepages
+* **Optimize VM performance** with proper disk bus types and interface models
+* **Implement enterprise security patterns** with TPM and isolation configurations
+* **Design sophisticated networking** with multiple interfaces and advanced CNV features
+* **Troubleshoot platform-specific issues** and leverage CNV capabilities effectively
+
+== Overview
+
 The Zero Touch platform runs on OpenShift Container Native Virtualization (CNV), providing advanced virtualization capabilities that go far beyond basic VM hosting. Understanding these platform features enables you to create sophisticated, enterprise-grade lab environments.
 
 == 🖥️ Advanced VM Configuration

@@ -1,41 +1,97 @@
 = VS Code Development Environment
 :estimated-time: 15-20 minutes
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Access and use** the browser-based VS Code development environment
+* **Understand SSH integration** with lab VMs for seamless development
+* **Configure and customize** the development environment for your needs
+* **Apply best practices** for Zero Touch template development
+
 == Overview
 
-This template includes a full VS Code development environment that automatically clones the Zero Touch template repository and installs code-server during deployment, providing a complete browser-based IDE for template customization and lab content creation.
+The VS Code container provides a complete browser-based development environment with automatic repository cloning, SSH integration to lab VMs, and pre-configured development tools for Zero Touch template customization.
 
-== VS Code Container Features
+== Key Features
 
-The `vscode` container provides:
+**✅ Browser-Based IDE**: Complete VS Code experience in your browser  
+**✅ Auto-Setup**: Repository cloned, development branch created automatically  
+**✅ SSH Integration**: Seamless connection to lab VMs with pre-configured keys  
+**✅ Security**: Password-protected access using lab credentials  
 
-* **Full VS Code experience** - Complete browser-based VS Code IDE with all features
-* **Red Hat UBI base** - Standard RHEL container platform with maximum compatibility  
-* **Dynamic Node.js installation** - Fresh installation of Node.js and npm via dnf package manager
-* **Dynamic code-server installation** - Fresh installation of @coder/code-server via npm
-* **Automatic repository cloning** - Zero Touch template pre-loaded and ready
-* **Development branch setup** - Pre-configured `lab-development` branch for customization work  
-* **Password protection** - Secured with your lab's common password
-* **Git integration** - Repository cloned and configured for development
-* **Full terminal access** - Integrated terminal within VS Code
-* **Extension support** - Can install VS Code extensions as needed
+[NOTE]
+====
+**Alternative**: You can also use the `ocp4_workload_codeserver` AgnosticD workload for enterprise-standard deployment. This template uses a **custom container approach** for maximum flexibility and educational value.
+====
 
-== Accessing the Development Environment
+== Quick Start
 
-=== Through Lab Interface
+**Accessing VS Code:**
+1. **Click "💻 VS Code" tab** in your lab interface
+2. **Enter password** (same as SSH access)
+3. **Wait 30-60 seconds** for startup
+4. **Start developing** - Repository is pre-loaded
 
-After lab deployment:
+== SSH Integration
 
-1. **Click the "💻 VS Code" tab** - Integrated iframe access in lab interface
-2. **Enter password** - Uses your lab's common password (same as SSH access)
-3. **Wait for startup** - Code-server installs and starts automatically (may take 30-60 seconds)
-3. **Start developing** - Repository is pre-cloned and ready
+The VS Code container **automatically connects to lab VMs** using AgnosticD-generated SSH keys.
 
-The VS Code environment loads directly in the lab interface, providing seamless access without leaving your training environment.
+**✅ What Works Automatically:**
+- SSH keys from AgnosticD deployment
+- Terminal profiles for lab-server connection
+- Passwordless SSH to VMs (when network policy configured)
 
-== Container Configuration
+[IMPORTANT]
+====
+**Network Policy Required for SSH Access**
 
-The VS Code container uses a Red Hat UBI base image and installs Node.js and code-server during deployment:
+For VS Code to SSH to lab VMs, configure network policy in deployment variables:
+
+[source,yaml]
+----
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+**Details**: xref:network-policy-configuration.adoc[Network Policy Configuration Guide]
+====
+
+**Using SSH in VS Code:**
+
+- **Open Terminal** (`Ctrl+` `) → Automatically connects to lab-server
+- **Manual SSH**: `ssh rhel@lab-server` (uses AgnosticD keys or password)  
+- **Remote-SSH Extension**: `Ctrl+Shift+P` → "Remote-SSH: Connect to Host"
+
+== Development Workflow
+
+**Repository Setup:**
+- Repository automatically cloned to `/workspace/zero_touch_template_wilson/`
+- Development branch `lab-development` created automatically
+- Git configured with default user settings
+
+**Common Tasks:**
+- **Edit Configuration**: Modify `instances.yaml`, `firewall.yaml`, `ui-config.yml`
+- **Create Content**: Add new `.adoc` files in `content/modules/ROOT/pages/`
+- **Test Changes**: Use terminal SSH to test configurations on lab-server
+- **Version Control**: Commit and push changes using integrated Git
+
+**Best Practices:**
+- ✅ Use consistent naming between configuration files
+- ✅ Test changes before committing
+- ✅ Keep DNS names aligned across `instances.yaml` and `ui-config.yml`
+- ✅ Use branches for experimental work
+
+== Container Configuration Reference
+
+The VS Code container uses Red Hat UBI9 with the following key configuration:
 
 [source,yaml]
 ----
@@ -50,338 +106,68 @@ containers:
         protocol: TCP
     environment:
       PASSWORD: "{{ common_password }}"
-    volumes:
-      - name: workspace-data
-        emptyDir: {}
-      - name: vscode-config
-        emptyDir: {}
-    volumeMounts:
-      - name: workspace-data
-        mountPath: /opt/app-root/src/workspace
-      - name: vscode-config
-        mountPath: /opt/app-root/src/.local
+      RHEL_USER: "{{ zero_touch_rhel_user_user_name | default('rhel') }}"
+      SSH_PRIVATE_KEY: "{{ hostvars.localhost.ssh_provision_pubkey_content }}"
     commands:
-      - "dnf install -y nodejs npm git curl"
-      - "npm install -g @coder/code-server"
-      - "useradd -u 1001 -g 0 -m coder"
-      - "mkdir -p /opt/app-root/src/workspace"
-      - "mkdir -p /opt/app-root/src/.local/share/code-server"
-      - "chown -R coder:root /opt/app-root/src"  
-      - "cd /opt/app-root/src/workspace && git clone https://github.com/rhpds/zero_touch_template_wilson.git"
-      - "cd /opt/app-root/src/workspace/zero_touch_template_wilson && git checkout -b lab-development"
-      - "git config --global user.name 'Lab Developer'"
-      - "git config --global user.email 'developer@lab.local'"
-      - "su - coder -c 'nohup code-server --bind-addr 0.0.0.0:8080 --password \"$PASSWORD\" --disable-telemetry --user-data-dir /opt/app-root/src/.local/share/code-server /opt/app-root/src/workspace/zero_touch_template_wilson > /tmp/code-server.log 2>&1 &'"
-----
-
-=== Key Configuration Benefits
-
-* **🔒 Maximum Compatibility** - Standard Red Hat UBI image with full control over dependencies
-* **📦 Fresh Installation** - Node.js and code-server installed fresh during container startup  
-* **👤 Proper User Management** - Creates dedicated `coder` user with OpenShift-compatible permissions
-* **🔐 Secure Access** - Password protection using lab credentials
-* **📁 Auto Setup** - Repository cloned and development branch created automatically  
-* **🖥️ Full IDE** - Complete VS Code experience with terminal and extension support
-* **💾 Persistent Storage** - Volumes ensure data persists across container restarts
-
-=== Volume Configuration
-
-**Workspace Volume** (`workspace-data`):
-- **Mount Point**: `/opt/app-root/src/workspace`
-- **Purpose**: Stores Git repository, user files, and project data
-- **Type**: `emptyDir` - Fast local storage within the pod
-
-**Configuration Volume** (`vscode-config`):
-- **Mount Point**: `/opt/app-root/src/.local`  
-- **Purpose**: Stores VS Code settings, extensions, and user preferences
-- **Type**: `emptyDir` - Persists VS Code customizations during lab session
-
-[NOTE]
-====
-**EmptyDir Volumes**: Data persists for the lifetime of the pod but is lost when the pod is deleted. This provides fast local storage perfect for lab sessions while keeping the environment clean between different lab deployments.
-====
-
-=== Direct Access
-
-[source,bash]
-----
-# Access via lab URL (follows standard Zero Touch pattern)
-https://vscode-${guid}.${domain}/
-
-# Login with lab credentials
-Password: [your-lab-password]
-----
-
-== Development Workflow
-
-=== Repository Structure
-
-The VS Code container automatically sets up:
-
-[source,bash]
-----
-/opt/app-root/src/workspace/zero_touch_template_wilson/
-├── config/                    # Lab configuration
-│   ├── instances.yaml        # VM and container definitions
-│   ├── networks.yaml         # Network topology
-│   └── firewall.yaml         # Security rules
-├── content/                   # Documentation and training
-│   └── modules/ROOT/pages/   # Lab content files
-├── ui-config.yml             # Navigation and UI
-└── site.yml                  # Antora configuration
-----
-
-=== Development Branch
-
-The container creates a `lab-development` branch:
-
-[source,bash]
-----
-# Check current branch
-git branch
-
-# Your changes are isolated from main
-# * lab-development  <- You're here
-#   main
-
-# Make changes and commit
-git add .
-git commit -m "Customize lab for my needs"
-
-# Push your development branch
-git push origin lab-development
-----
-
-=== Pre-Installed Extensions
-
-The VS Code environment includes:
-
-* **YAML Language Support** - Syntax highlighting for configuration files
-* **AsciiDoc** - Preview and editing support for content files  
-* **JSON** - Configuration file support
-* **Remote Containers** - Container development support
-
-== Common Development Tasks
-
-=== Editing Configuration Files
-
-[source,bash]
-----
-# Open configuration files
-# Click on config/ folder in VS Code Explorer
-# Edit instances.yaml, networks.yaml, firewall.yaml
-
-# Validate YAML syntax
-# VS Code will highlight syntax errors automatically
-----
-
-=== Creating Lab Content
-
-[source,bash]
-----
-# Navigate to content creation
-cd content/modules/ROOT/pages/
-
-# Create new lab module
-touch my-custom-module.adoc
-
-# Edit with AsciiDoc support
-# Use Ctrl+Shift+V to preview AsciiDoc
-----
-
-=== Testing Changes
-
-[source,bash]
-----
-# Use integrated terminal in VS Code (Terminal > New Terminal)
-
-# Test Antora build
-antora generate site.yml
-
-# Validate YAML files
-python3 -c "import yaml; yaml.safe_load(open('config/instances.yaml'))"
-----
-
-=== Version Control
-
-[source,bash]
-----
-# View changes
-git status
-git diff
-
-# Stage and commit changes  
-git add .
-git commit -m "Add custom lab configuration"
-
-# Push to your development branch
-git push origin lab-development
-----
-
-== Customization Examples
-
-=== Add Your Own VM
-
-Edit `config/instances.yaml` in VS Code:
-
-[source,yaml]
-----
-virtualmachines:
-  # Add your custom VM
-  - name: "my-custom-vm"
-    image: "rhel-9.6"
-    cores: 2
-    memory: "4G"
-    networks:
-      - default
-    services:
-      - name: webapp
-        ports:
-          - port: 8080
-            protocol: TCP
-            targetPort: 8080
-            name: webapp
+      - "dnf install -y git openssh-clients"
+      - "curl -fsSL https://code-server.dev/install.sh | sh"
+      # ... additional setup commands
     routes:
-      - name: webapp
-        host: webapp
-        service: webapp
+      - name: vscode
+        host: vscode
+        service: vscode
         targetPort: 8080
         tls: true
 ----
 
-=== Create Custom Content
-
-Create `content/modules/ROOT/pages/my-lab-guide.adoc`:
-
-[source,asciidoc]
-----
-= My Custom Lab Guide
-
-== Learning Objectives
-
-By the end of this lab, you will:
-* Understand custom application deployment
-* Configure monitoring and logging
-* Troubleshoot application issues
-
-== Step 1: Deploy Application
-
-[source,bash]
-----
-# Deploy your application
-kubectl apply -f app-deployment.yaml
-----
-
-== Step 2: Verify Deployment
-
-Check that your application is running:
-
-[source,bash]
-----
-curl https://webapp-${guid}.${domain}/health
-----
-----
-
-=== Update Navigation  
-
-Edit `ui-config.yml` to include your content:
-
-[source,yaml]
-----
-modules:
-  # Add your custom module
-  - name: my-lab-guide
-    label: "My Custom Lab Guide"
-    solveButton: false
-----
-
-== Advanced Development
-
-=== Using Extensions
-
-**AsciiDoc Preview:**
-1. Open any `.adoc` file
-2. Press `Ctrl+Shift+V` for preview
-3. Edit and preview side-by-side
-
-**YAML Validation:**
-- Automatic syntax checking
-- Error highlighting
-- IntelliSense support
-
-**Integrated Git:**
-1. Use Source Control panel (Ctrl+Shift+G)  
-2. Stage changes visually
-3. Commit with messages
-4. Push to remote branches
-
-=== Container Development
-
-Since you're in a container environment:
-
-[source,bash]
-----
-# Install additional tools if needed
-sudo apt-get update
-sudo apt-get install -y your-tool
-
-# Tools are persistent in the container
-# But will reset when container restarts
-----
+**Key Elements:**
+- **UBI9 Base**: Enterprise-ready Red Hat image
+- **Code-server Installation**: Official binary installation method
+- **AgnosticD Integration**: Uses deployment SSH keys and lab patterns
+- **Automatic Setup**: Git clone, user creation, SSH configuration
 
 == Troubleshooting
 
-**VS Code won't load?**
-→ Check container logs and ensure route is accessible
+**Common Issues:**
 
-**Repository not cloned?**
-→ Check container startup logs for git clone errors
+**🔧 VS Code Won't Load**
+- Wait 60+ seconds for initial startup
+- Check browser console for errors
+- Verify route is accessible
 
-**Extensions not working?**  
-→ Restart VS Code or reinstall extensions from Extensions panel
+**🔧 SSH Connection Failed**
+- Check network policy configuration
+- Verify AgnosticD SSH keys are available
+- Try manual password SSH as fallback
 
-**Can't save files?**
-→ Check file permissions in workspace directory
+**🔧 Repository Not Cloned**
+- Check container logs for Git errors
+- Verify GitHub repository accessibility
+- Try manual clone if automatic fails
 
-**Git authentication issues?**
-→ Set up SSH keys or use HTTPS with tokens
+**Debug Commands:**
+[source,bash]
+----
+# Check container status
+kubectl get pods | grep vscode
 
-== Best Practices
+# View container logs
+kubectl logs deployment/vscode
 
-=== Development Workflow
-
-1. **Always work in development branch** - Keep main branch clean
-2. **Regular commits** - Commit small, logical changes
-3. **Test changes** - Build documentation before committing
-4. **Document changes** - Use clear commit messages
-
-=== File Organization
-
-* **Keep configuration changes minimal** - Only change what you need
-* **Test locally** - Use Antora generate before deployment
-* **Back up work** - Push branches regularly
-* **Follow naming conventions** - Use consistent file names
-
-=== Security
-
-* **Don't commit secrets** - Use quoted variables like `"{{ common_password }}"` in YAML files
-* **DNS consistency** - Ensure route `host` names match UI config URL patterns
-* **Review changes** - Check diffs before committing  
-* **Use branches** - Isolate experimental work
-
-== Integration with Template
-
-The VS Code container works seamlessly with the Zero Touch template:
-
-* **Live editing** - Changes reflect in lab immediately after rebuild
-* **Full template access** - All files and configurations available
-* **Integrated workflow** - Edit, test, deploy from one interface
-* **Version control** - Track all changes with Git
-
-This provides the most efficient development experience for creating and customizing Zero Touch labs!
+# Access container directly
+kubectl exec -it deployment/vscode -- /bin/bash
+----
 
 == Related Documentation
 
-* xref:template-customization-guide.adoc[Template Customization Guide] - Overview of template structure
-* xref:content-authoring-basics.adoc[Content Authoring Basics] - Writing effective lab content
-* xref:container-basics.adoc[Container Configuration Basics] - Understanding the VS Code container setup
+**Essential References:**
+* xref:container-basics.adoc[**Container Basics**] - Understanding container configuration
+* xref:network-policy-configuration.adoc[**Network Policy Configuration**] - SSH access configuration
+* xref:template-customization-guide.adoc[**Template Customization Guide**] - Overall template development
+
+**Development Guides:**
+* xref:content-authoring-basics.adoc[**Content Authoring Basics**] - Writing lab content
+* xref:development-lifecycle-guide.adoc[**Development Lifecycle**] - Complete development workflow
+* xref:vm-basics.adoc[**VM Basics**] - Understanding lab VMs
+
+**The VS Code development environment provides the fastest way to customize and develop Zero Touch lab templates directly in your browser!**

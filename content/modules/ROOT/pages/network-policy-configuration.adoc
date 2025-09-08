@@ -1,0 +1,327 @@
+= Network Policy Configuration for VS Code SSH Access
+:estimated-time: 10 minutes
+
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Understand Zero Touch network security architecture** and default policy restrictions
+* **Configure network policies** to enable SSH access from containers to VMs
+* **Troubleshoot network connectivity issues** between different lab components
+* **Apply security best practices** while enabling necessary lab functionality
+* **Design network policies** for complex multi-container, multi-VM environments
+
+== Overview
+
+Zero Touch deployments use OpenShift Network Policies to secure lab environments. By default, these policies **block SSH access** between pods and VMs for security. The VS Code container requires explicit network policy configuration to enable SSH connectivity to lab VMs.
+
+== The Problem
+
+**Default Network Policy Behavior:**
+- Only pods with label `app.kubernetes.io/name: showroom` can SSH to VMs
+- VS Code container has label `app.kubernetes.io/name: vscode` 
+- **SSH connections from VS Code to VMs are blocked**
+
+**Error Symptoms:**
+- SSH connections from VS Code terminal timeout or are refused
+- `ssh lab-server` fails with "Connection timed out"
+- Manual SSH with password also fails
+
+== Solution: Custom Network Policy Rules
+
+=== Option 1: Modify Deployment Variables (Recommended)
+
+Add VS Code SSH permission to your deployment configuration:
+
+[source,yaml]
+----
+# In your sample_vars.yml or deployment configuration
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: showroom  # Existing Showroom access
+    ports:
+      - protocol: TCP
+        port: 22
+  - from:  
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode    # NEW: VS Code container access
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+=== Option 2: Template-Level Configuration
+
+If your template will always include VS Code, add this to the template's default variables:
+
+[source,yaml]
+----
+# In your template's default_vars_openshift_cnv.yaml
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: showroom
+  - from:  
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+== Network Architecture Details
+
+=== Architecture Overview
+
+[mermaid]
+....
+graph TB
+    subgraph "OpenShift Cluster"
+        subgraph "showroom-GUID Namespace"
+            SH[Showroom Pod<br/>app.k8s.io/name: showroom]
+        end
+        
+        subgraph "ENV-GUID Namespace (CNV) - SAME NAMESPACE"
+            VSC[VS Code Container<br/>app.k8s.io/name: vscode]
+            VM1[lab-server VM<br/>kubevirt.io: virt-launcher]
+            VM2[Other VMs<br/>kubevirt.io: virt-launcher]
+            VSVC[VS Code Service<br/>Service: vscode]
+            VSCR[VS Code Route<br/>Route: vscode]
+            
+            subgraph "Network Policy Rules (Intra-Namespace)"
+                NP[lock-bastion-GUID<br/>NetworkPolicy<br/>podSelector: {}]
+            end
+        end
+    end
+    
+    %% Cross-namespace connections (ALLOWED)
+    SH -.->|SSH Port 22<br/>✅ ALLOWED<br/>Cross-namespace| VM1
+    SH -.->|SSH Port 22<br/>✅ ALLOWED<br/>Cross-namespace| VM2
+    
+    %% Intra-namespace connections (BLOCKED by default)
+    VSC -.->|SSH Port 22<br/>❌ BLOCKED<br/>Same namespace| VM1
+    VSC -.->|SSH Port 22<br/>❌ BLOCKED<br/>Same namespace| VM2
+    
+    %% Container service connections (ALLOWED)
+    VSC -->|Port 8080<br/>✅ ALLOWED| VSVC
+    VSVC -->|Route<br/>✅ ALLOWED| VSCR
+    
+    %% External access to container
+    VSCR -.->|HTTPS<br/>✅ External Access| SH
+    
+    %% Policy enforcement
+    NP -.->|Blocks SSH within<br/>same namespace| VSC
+    
+    %% Styling
+    classDef allowed fill:#d4edda,stroke:#155724
+    classDef blocked fill:#f8d7da,stroke:#721c24
+    classDef policy fill:#fff3cd,stroke:#856404
+    classDef service fill:#cce5ff,stroke:#0066cc
+    
+    class SH allowed
+    class VM1,VM2 allowed
+    class VSC blocked
+    class VSVC,VSCR service
+    class NP policy
+....
+
+=== Namespace Layout
+
+[cols="2,2,3"]
+|===
+|Component |Namespace |Labels
+
+|**Showroom UI**
+|`showroom-{{ guid }}`
+|`app.kubernetes.io/name: showroom`
+
+|**VS Code Container** 
+|`{{ env_type }}-{{ guid }}`
+|`app.kubernetes.io/name: vscode`
+
+|**Lab VMs**
+|`{{ env_type }}-{{ guid }}`
+|`kubevirt.io: virt-launcher`
+
+|**Container Services**
+|`{{ env_type }}-{{ guid }}`
+|Various service labels
+
+|**Container Routes**
+|`{{ env_type }}-{{ guid }}`
+|Route definitions
+|===
+
+[IMPORTANT]
+====
+**Critical Architecture Detail**: Containers and VMs are deployed in the **SAME namespace** (`{{ env_type }}-{{ guid }}`).
+
+This makes network policy configuration **MORE critical** because the policy restrictions apply **within the same namespace** where your lab infrastructure lives.
+====
+
+=== Default Network Policy
+
+The default network policy in CNV namespace:
+
+[source,yaml]
+----
+# Applied by lock_bastion_security_group_openshift_cnv.yml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: "lock-bastion-{{ guid }}"
+  namespace: "{{ openshift_cnv_namespace }}"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # SSH access TO VMs - restricted by podSelector
+    - ports:
+        - protocol: TCP
+          port: 22
+      from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: showroom  # Only Showroom allowed
+  egress:
+    # SSH access FROM containers - allowed to VMs
+    - ports:
+        - protocol: TCP
+          port: 22
+      to:
+        - podSelector:
+            matchLabels:
+              kubevirt.io: virt-launcher  # VMs
+----
+
+=== Critical Implementation Details
+
+**Same-Namespace Architecture:**
+
+* **Shared Deployment Target**: Both containers and VMs deploy to `{{ env_type }}-{{ guid }}` namespace
+* **No Natural Isolation**: Same namespace means no automatic network separation
+* **Policy Applies Internally**: Network policy `podSelector: {}` affects ALL pods in the namespace
+* **Intra-namespace Restrictions**: SSH between pods in same namespace blocked by default
+
+**Why This Makes Network Policies MORE Critical:**
+
+[IMPORTANT]
+====
+**Same-Namespace Security Challenge**
+
+Traditional Kubernetes security often relies on namespace isolation. Zero Touch deployments put lab infrastructure in a **single namespace**, making network policies the **primary security mechanism**.
+
+* ❌ **No namespace boundary** between containers and VMs
+* ❌ **Default SSH blocking** within the lab namespace  
+* ✅ **Cross-namespace SSH** from Showroom works (different security rule)
+* ✅ **Policy exceptions** required for intra-namespace SSH
+
+This architecture is **more secure but requires explicit configuration** for container SSH access.
+====
+
+**Pod Labeling System:**
+- **Containers**: `app.kubernetes.io/name: <container-name>` (from `instances.yaml`)
+- **VMs**: `kubevirt.io: virt-launcher` (automatic CNV labeling)
+- **Showroom**: `app.kubernetes.io/name: showroom` (in different namespace)
+
+**Network Policy Enforcement:**
+- **Default Rule**: Only Showroom namespace can SSH to VMs
+- **Exception Required**: Each SSH-enabled container needs explicit policy rule
+- **Scope**: Policy applies to entire CNV namespace via `podSelector: {}`
+
+== Testing Network Connectivity
+
+=== Verify Network Policy Configuration
+
+[source,bash]
+----
+# Check if network policy allows VS Code SSH access
+oc get networkpolicy -n {{ env_type }}-{{ guid }}
+oc describe networkpolicy lock-bastion-{{ guid }} -n {{ env_type }}-{{ guid }}
+----
+
+=== Test SSH from VS Code Container
+
+[source,bash]
+----
+# From VS Code terminal
+ssh rhel@lab-server
+
+# Should connect without password if:
+# 1. Network policy allows VS Code -> VM SSH
+# 2. SSH keys are properly configured
+# 3. VMs are running and accessible
+----
+
+== Troubleshooting
+
+=== SSH Connection Timeouts
+
+**Symptom:** `ssh: connect to host lab-server port 22: Connection timed out`
+
+**Cause:** Network policy blocking SSH from VS Code container
+
+**Solution:** Add VS Code ingress rule to `zero_touch_ingress_lockdown_rules`
+
+=== SSH Connection Refused
+
+**Symptom:** `ssh: connect to host lab-server port 22: Connection refused`
+
+**Cause:** SSH service not running on VM or VM not ready
+
+**Solution:** Check VM status and SSH service:
+[source,bash]
+----
+# Check VM status
+oc get vms -n {{ env_type }}-{{ guid }}
+
+# Check if VM is running
+oc describe vm lab-server -n {{ env_type }}-{{ guid }}
+----
+
+=== DNS Resolution Issues
+
+**Symptom:** `ssh: could not resolve hostname lab-server`
+
+**Cause:** DNS not configured for VM hostname
+
+**Solution:** Use VM's pod IP directly:
+[source,bash]
+----
+# Find VM pod IP
+oc get pods -l kubevirt.io=virt-launcher -o wide
+
+# SSH using IP
+ssh rhel@<VM_POD_IP>
+----
+
+== Security Considerations
+
+=== Principle of Least Privilege
+
+The network policy solution follows security best practices:
+
+- **Specific port access**: Only TCP port 22 (SSH) is allowed
+- **Targeted source**: Only VS Code container (not all pods) gets SSH access  
+- **Targeted destination**: Only VMs (virt-launcher pods) are accessible
+- **Maintained isolation**: Other network restrictions remain in place
+
+=== Alternative: Showroom Integration
+
+For higher security environments, consider deploying VS Code as part of Showroom instead of a separate container. This requires AgnosticD modifications but eliminates the need for custom network policies.
+
+== Summary
+
+✅ **Configure network policy** to allow VS Code SSH access to VMs
+✅ **Test SSH connectivity** from VS Code terminal  
+✅ **Verify SSH keys** are properly configured
+✅ **Monitor network policy** effectiveness
+
+Without proper network policy configuration, the VS Code container cannot establish SSH connections to lab VMs, rendering the SSH integration non-functional.

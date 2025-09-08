@@ -1,6 +1,14 @@
 = Template Customization Guide
 
-This comprehensive reference guide covers how to customize the Zero Touch template to meet your specific lab requirements. The template provides a flexible framework that can be extended and modified for various use cases.
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Customize Zero Touch templates** to meet specific lab requirements
+* **Configure infrastructure components** (VMs, containers, networking, security)
+* **Design lab user experiences** with proper UI configuration and navigation
+* **Apply advanced extension patterns** using AgnosticD workloads and custom configurations
+* **Troubleshoot common customization issues** and implement best practices
 
 💡 **New to Zero Touch?** Consider starting with our xref:zero-touch-platform-training.adoc[**Self-Paced Training Program**] for step-by-step guidance.
 
@@ -174,6 +182,98 @@ tabs:
 # ui-config.yml:  url: https://web-app-${guid}.${domain}/  # ← Different name!
 ----
 
+== Advanced Extension Options
+
+=== AgnosticD Workload Extensions
+
+**Beyond Custom Containers**: Zero Touch deployments support **200+ specialized workloads** for advanced lab requirements without custom configuration.
+
+**🔧 Alternative to Custom Containers:**
+Instead of configuring containers in `instances.yaml`, you can use pre-built workloads in your AgnosticV configuration:
+
+[source,yaml]
+----
+# In AgnosticV common.yaml - Alternative to custom VS Code container
+post_software_workloads:
+  bastions:
+    - ocp4_workload_codeserver       # Browser-based VS Code IDE
+    - ocp4_workload_gitea_operator   # Self-hosted Git platform
+    - ocp4_workload_jenkins          # CI/CD pipeline system
+----
+
+**🚀 Popular Extension Workloads:**
+- **Development**: `ocp4_workload_devspaces`, `ocp4_workload_codeserver`
+- **CI/CD**: `ocp4_workload_pipelines`, `ocp4_workload_gitops_bootstrap`
+- **Security**: `ocp4_workload_rhacs`, `ocp4_workload_cert_manager`
+- **Databases**: `ocp4_workload_postgresql`, `ocp4_workload_mongodb`
+- **Registries**: `ocp4_workload_quay_operator`, `ocp4_workload_nexus_operator`
+
+**✅ Workload Benefits:**
+- **Pre-configured**: Enterprise-ready with authentication and security
+- **Standardized**: Consistent deployment patterns across environments  
+- **Maintained**: Regularly updated by Red Hat engineering teams
+- **Integrated**: Access to `guid`, `common_password`, and lab variables
+
+**📚 Complete Reference**: xref:advanced-lab-features.adoc#agnosticd-workload-extensions[AgnosticD Workload Extensions]
+
+[TIP]
+====
+**Custom vs. Workload Decision Matrix:**
+
+**Use Custom Containers When:**
+- You need specific Git repository integration
+- Custom user workflows are required
+- Educational value of showing configuration details
+- Unique networking or SSH requirements
+
+**Use Workloads When:**
+- Standard enterprise tools are sufficient
+- Faster deployment is prioritized  
+- Maintenance overhead should be minimized
+- Enterprise authentication patterns are needed
+====
+
+=== Network Security Requirements
+
+**CRITICAL for Container SSH Access**: Zero Touch deployments use network policies that **block SSH connections** by default for security.
+
+[IMPORTANT]
+====
+**If your containers need SSH access to VMs**, you MUST configure network policy rules.
+
+**Architecture**: Containers and VMs deploy to the **same namespace** but are isolated by network policies.
+**Problem**: Containers cannot SSH to VMs within the same namespace without explicit policy permission.
+**Solution**: Add network policy configuration to your deployment variables.
+
+This is **more restrictive** than cross-namespace communication because both resources are co-located.
+====
+
+**Required for VS Code or SSH-enabled containers:**
+
+[source,yaml]
+----
+# In your sample_vars.yml or deployment configuration
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: showroom  # Existing Showroom access
+  - from:  
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode    # Container SSH access
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+**Symptoms of missing network policy:**
+- SSH connections timeout or are refused
+- `ssh lab-server` fails from container terminals
+- Remote SSH extensions fail to connect
+
+**Complete Guide**: xref:network-policy-configuration.adoc[Network Policy Configuration for Container SSH Access]
+
 == Related Documentation
 
 === Self-Paced Training
@@ -193,6 +293,7 @@ tabs:
 * xref:production-patterns-guide.adoc[Production Lab Patterns Guide]
 * xref:enterprise-lab-patterns.adoc[Enterprise Lab Patterns]
 * xref:deployment-architecture.adoc[Zero Touch Deployment Architecture]
+* xref:network-policy-configuration.adoc[Network Policy Configuration for Container SSH Access]
 * xref:git-integration-patterns.adoc[Git Integration Patterns]
 * xref:cnv-platform-features.adoc[OpenShift CNV Platform Features]
 

@@ -1,6 +1,18 @@
 = Production Lab Patterns Guide
 
-Based on analysis of actual converted Zero Touch labs, this guide shows the patterns used in production environments and how they differ from our training examples.
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Apply production-ready patterns** from real Zero Touch lab deployments
+* **Implement professional naming conventions** and file organization
+* **Configure enterprise-grade resource allocation** and performance settings
+* **Use advanced features** like versioned images and specific platform requirements
+* **Adopt best practices** proven in live production environments
+
+== Overview
+
+Based on analysis of actual converted Zero Touch labs, this guide shows the patterns used in production environments and how they differ from training examples.
 
 == Key Production Patterns
 

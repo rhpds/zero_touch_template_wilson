@@ -1,5 +1,17 @@
 = Git Integration Patterns
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Understand dynamic configuration loading** and how Git repositories are transformed during deployment
+* **Master URL transformation patterns** used by AgnosticV to fetch configuration files
+* **Implement advanced Git strategies** for multi-environment deployments and version control
+* **Design robust configuration patterns** with error handling and validation
+* **Troubleshoot Git integration issues** and optimize repository structures for deployment
+
+== Overview
+
 Zero Touch labs use a sophisticated Git-based deployment system that dynamically fetches your lab configuration during deployment. Understanding these patterns is essential for advanced lab development.
 
 == 🔄 Dynamic Configuration Loading
@@ -16,10 +28,12 @@ git_config_directory: |-
     replace('.git','/refs/heads/' + ocp4_workload_showroom_content_git_repo_ref + '/config/') |
     replace('github.com','raw.githubusercontent.com') }}
 
-# Dynamic loading of configuration files
-instances: "{{ lookup('ansible.builtin.url', git_config_directory + 'instances.yaml') | from_yaml }}"
-networks: "{{ lookup('ansible.builtin.url', git_config_directory + 'networks.yaml') | from_yaml }}"
-firewall_rules: "{{ lookup('ansible.builtin.url', git_config_directory + 'firewall.yaml') | from_yaml }}"
+# Dynamic loading and variable mapping from AgnosticV → AgnosticD
+containers: "{{ (lookup('ansible.builtin.url', git_config_directory + 'instances.yaml') | from_yaml).containers | default([]) }}"
+instances: "{{ (lookup('ansible.builtin.url', git_config_directory + 'instances.yaml') | from_yaml).virtualmachines | default([]) }}"
+networks: "{{ lookup('ansible.builtin.url', git_config_directory + 'networks.yaml') | from_yaml | default([]) }}"
+zero_touch_egress_lockdown_rules: "{{ (lookup('ansible.builtin.url', git_config_directory + 'firewall.yaml') | from_yaml).egress | default([]) }}"
+zero_touch_ingress_lockdown_rules: "{{ (lookup('ansible.builtin.url', git_config_directory + 'firewall.yaml') | from_yaml).ingress | default([]) }}"
 ----
 
 === URL Transformation Example
@@ -165,7 +179,36 @@ containers: >-
 
 === Multi-Environment Configuration
 
-Use Git branches for different environments:
+**AgnosticV Environment-Specific Overrides:**
+
+Different environments use different AgnosticV configuration files:
+
+[source,yaml]
+----
+# agnosticv_all/zt-rhelbu-agnosticv/zt-rhelbu/your-lab/
+├── common.yaml     # Shared configuration (Git integration)
+├── dev.yaml        # Development overrides
+├── test.yaml       # Testing configuration  
+└── prod.yaml       # Production overrides
+
+# Environment differences:
+# dev.yaml
+__meta__:
+  deployer:
+    scm_ref: zero-touch-base-rhel        # Development AgnosticD
+  sandboxes:
+    cloud_selector:
+      purpose: dev
+
+# prod.yaml  
+ocp4_workload_showroom_deployer_chart_version: "1.9.10"  # Latest stable
+ocp4_workload_showroom_content_image: quay.io/rhpds/showroom-content:v1.2
+__meta__:
+  deployer:
+    scm_ref: zero-touch-prod-1.0.0      # Production AgnosticD
+----
+
+**Git Branch Strategy:**
 
 [source,text]
 ----

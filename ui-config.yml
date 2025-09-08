@@ -8,6 +8,11 @@ antora:
       label: "🎓 Zero Touch Platform Training"
       solveButton: false
     
+    # Development Lifecycle Overview
+    - name: development-lifecycle-guide
+      label: "🔄 Development Lifecycle Guide"
+      solveButton: false
+    
     # Module 1: Platform Fundamentals (30-40 min)
     - name: module-1-1-understanding-zero-touch
       label: "1.1 Understanding Zero Touch"
@@ -46,6 +51,18 @@ antora:
     - name: container-advanced
       label: "📖 Advanced Container Configuration"
       solveButton: false
+    - name: container-multi-service-patterns
+      label: "📖 Multi-Service Container Patterns"
+      solveButton: false
+    - name: container-storage-management
+      label: "📖 Container Storage Management"
+      solveButton: false
+    - name: container-monitoring-logging
+      label: "📖 Container Monitoring & Logging"
+      solveButton: false
+    - name: container-testing-validation
+      label: "📖 Container Testing & Validation"
+      solveButton: false
     - name: networking-basics
       label: "📖 Networking Basics"
       solveButton: false
@@ -73,6 +90,9 @@ antora:
     # Platform Deep Dive
     - name: deployment-architecture
       label: "🏗️ Deployment Architecture"
+      solveButton: false
+    - name: network-policy-configuration
+      label: "🔒 Network Policy Configuration"
       solveButton: false
     - name: git-integration-patterns
       label: "🔄 Git Integration Patterns"

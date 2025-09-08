@@ -13,11 +13,21 @@ By the end of this module, you will:
 
 == Overview
 
-Containers in Zero Touch labs provide powerful capabilities beyond simple single-container deployments. This module teaches advanced container patterns used in enterprise environments.
+This module takes you beyond basic container deployment to **enterprise-ready patterns**. You'll build a complete multi-container application with proper networking, storage, monitoring, and security.
+
+**What You'll Build:**
+- Multi-tier application stack (frontend, API, database)
+- Container storage and data persistence
+- Monitoring and health checks
+- Production security patterns
+
+**Prerequisites:** Completed xref:module-2-1-single-vm-setup.adoc[Module 2.1] and xref:container-basics.adoc[Container Basics]
 
 == 🛠️ Step 1: Multi-Container Application Stack
 
-Create a realistic multi-tier application with containers:
+**Goal**: Deploy a 3-tier application with frontend, API, and database containers communicating with each other.
+
+**You'll Learn**: Service-to-service communication, environment variables, port configuration
 
 === Update instances.yaml
 
@@ -119,7 +129,9 @@ redis-cli -h cache ping
 
 == 🛠️ Step 2: Container Storage Patterns
 
-Learn advanced storage configurations:
+**Goal**: Configure persistent storage and shared data between containers.
+
+**You'll Learn**: Volume mounting, ConfigMaps, EmptyDir volumes, database initialization
 
 === Shared Storage Between Containers
 
@@ -187,9 +199,11 @@ containers:
         mountPath: "/docker-entrypoint-initdb.d"
 ----
 
-== 🛠️ Step 3: Container Networking and Service Discovery
+== 🛠️ Step 3: Container Networking and Service Discovery  
 
-Understand how containers communicate:
+**Goal**: Test and verify inter-container communication using DNS and service discovery.
+
+**You'll Learn**: Container DNS resolution, service-to-service communication, network debugging
 
 === Test Inter-Container Communication
 
@@ -243,9 +257,53 @@ containers:
         mountPath: "/etc/envoy"
 ----
 
+=== 🔒 Critical: Network Policy for SSH Access
+
+[WARNING]
+====
+**Container SSH Limitation Discovered!**
+
+By default, containers **cannot SSH to VMs** due to Zero Touch network policies. This is a security feature.
+
+**Problem**: Your containers might need SSH access for:
+- Development tools (like the VS Code container we saw earlier)
+- Administrative tasks  
+- Monitoring and troubleshooting
+
+**Symptom**: SSH connections timeout or are refused from containers
+====
+
+**Required Solution for SSH-enabled containers:**
+
+[source,yaml]
+----
+# Add to your deployment variables (sample_vars.yml)
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: showroom  # Default
+  - from:  
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode    # Your container name
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+**Key Points:**
+- Container names in `instances.yaml` become the pod selector labels  
+- Each SSH-enabled container needs explicit network policy permission
+- This is separate from firewall rules (which control external access)
+
+**Complete Guide**: xref:network-policy-configuration.adoc[Network Policy Configuration]
+
 == 🛠️ Step 4: Container Lifecycle Management
 
-Control container startup and health:
+**Goal**: Implement proper container health checks and lifecycle management.
+
+**You'll Learn**: Health probes, lifecycle hooks, graceful shutdown, container monitoring
 
 [source,yaml]
 ----
@@ -296,21 +354,26 @@ containers:
 
 == 🛠️ Step 5: Development and Testing Containers
 
-Deploy containers for development workflows:
+**Goal**: Set up development and testing environments using containers for rapid iteration.
+
+**You'll Learn**: Development container patterns, hot reloading, testing environments
 
 [source,yaml]
 ----
 containers:
   # Development environment
   - name: "dev-env"
-    image: "codercom/code-server:latest"
+    image: "registry.redhat.io/ubi9/ubi:latest"
     memory: "1G"
     ports:
       - name: http
-        containerPort: 80
-        protocol: TCP80
+        containerPort: 8080
+        protocol: TCP
     environment:
       PASSWORD: "{{ common_password }}"
+    commands:
+      - "dnf install -y git openssh-clients"
+      - "curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/usr/local"
     volumes:
       - name: "workspace"
         emptyDir: {}

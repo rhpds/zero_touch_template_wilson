@@ -1,9 +1,18 @@
 = Container Configuration Basics
 :estimated-time: 15-20 minutes
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Deploy basic containers** with proper port and network configuration
+* **Configure container resources** (memory, CPU, storage)
+* **Expose container services** through routes for external access
+* **Apply container security best practices** and troubleshoot common issues
+
 == Overview
 
-Learn how to add containers to your lab environment alongside VMs. Containers provide lightweight, fast-starting services perfect for databases, web applications, and development tools.
+Containers provide lightweight, fast-starting services perfect for databases, web applications, and development tools. This guide teaches fundamental container deployment patterns in Zero Touch labs.
 
 == Basic Container Configuration
 
@@ -136,6 +145,15 @@ Containers automatically get:
 * **Network connectivity**: Can connect to VMs and other containers
 * **Internet access**: For downloading packages and updates
 
+[IMPORTANT]
+====
+**SSH Access Limitation**: By default, containers **cannot SSH to VMs** due to network policies.
+
+If your container needs SSH access to VMs (like for development tools, monitoring, etc.), you must configure network policies. See xref:network-policy-configuration.adoc[Network Policy Configuration] for details.
+
+**Symptoms**: SSH connections timeout or are refused from containers.
+====
+
 === Connecting from VMs
 
 From your VMs, access containers by name:
@@ -263,9 +281,27 @@ nc -zv postgres-db 5432
 **Out of resources?**  
 → Reduce container memory limits
 
+== 🎯 Next Steps
+
+Ready to advance your container skills? Choose your learning path:
+
+**Practice Hands-On:**
+* xref:module-2-5-containers-deep-dive.adoc[**Module 2.5: Containers Deep Dive**] - Build multi-container applications step-by-step
+
+**Expand Container Knowledge:**
+* xref:container-advanced.adoc[**Advanced Container Configuration**] - Overview of advanced patterns and specialized topics
+* xref:container-multi-service-patterns.adoc[**Multi-Service Container Patterns**] - Deploy complete application stacks
+
+**Integrate with Other Components:**
+* xref:networking-basics.adoc[**Networking Basics**] - Connect containers to custom networks and VMs
+* xref:network-policy-configuration.adoc[**Network Policy Configuration**] - Configure SSH access between containers and VMs
+
+**Production Ready:**
+* xref:container-monitoring-logging.adoc[**Container Monitoring & Logging**] - Implement observability
+* xref:container-testing-validation.adoc[**Container Testing & Validation**] - Ensure reliability
+
 == Related Documentation
 
 * xref:vm-basics.adoc[VM Configuration Basics] - Set up VMs alongside containers
-* xref:networking-basics.adoc[Networking Basics] - Connect containers to custom networks  
-* xref:container-advanced.adoc[Advanced Container Configuration] - Complex deployment patterns
-* xref:module-2-5-containers-deep-dive.adoc[Module 2.5: Containers Deep Dive] - Hands-on advanced container training
+* xref:firewall-basics.adoc[Firewall Configuration Basics] - Secure your container deployments  
+* xref:template-customization-guide.adoc[Template Customization Guide] - Integrate containers into complete lab designs

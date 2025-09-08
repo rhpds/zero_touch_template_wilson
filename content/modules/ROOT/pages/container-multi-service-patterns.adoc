@@ -1,0 +1,344 @@
+= Multi-Service Container Patterns
+:estimated-time: 15-20 minutes
+:navtitle: Multi-Service Patterns
+
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Deploy multi-tier application stacks** using containers
+* **Configure service communication** between application layers
+* **Implement proper resource allocation** for multi-container deployments  
+* **Set up development and testing environments** with multiple services
+
+== 🏗️ Multi-Tier Application Architecture
+
+=== Web Application Stack
+
+Deploy a complete 3-tier application with web server, API, and database:
+
+[source,yaml]
+----
+containers:
+  # Frontend Web Server
+  - name: "webapp"
+    image: "nginx:latest"
+    memory: "256Mi"
+    cpu: "0.5"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    environment:
+      API_ENDPOINT: "http://api-server:8080"
+    routes:
+      - name: webapp
+        host: webapp
+        service: webapp
+        targetPort: 80
+        tls: true
+
+  # Backend API Server  
+  - name: "api-server"
+    image: "node:18-alpine"
+    memory: "512Mi"
+    cpu: "1"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    command: ["node", "server.js"]
+    environment:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgres://appuser:{{ common_password }}@database:5432/appdb"
+      JWT_SECRET: "{{ common_password }}"
+      
+  # Database Layer
+  - name: "database"
+    image: "postgres:15-alpine"
+    memory: "1G"
+    cpu: "1"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "appdb"
+      POSTGRES_USER: "appuser"  
+      POSTGRES_PASSWORD: "{{ common_password }}"
+----
+
+**🎯 Architecture Benefits:**
+- **Scalability**: Each tier can be scaled independently
+- **Maintainability**: Clear separation of concerns
+- **Security**: Database is not directly exposed
+- **Development**: Each service can be developed independently
+
+=== Microservices Communication
+
+Configure service-to-service communication:
+
+[source,yaml]
+----
+containers:
+  # User Service
+  - name: "user-service"
+    image: "myapp/user-service:v1.2"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3001
+        protocol: TCP
+    environment:
+      SERVICE_NAME: "user-service"
+      DATABASE_URL: "postgres://user:{{ common_password }}@user-db:5432/users"
+      
+  # Order Service  
+  - name: "order-service"
+    image: "myapp/order-service:v1.2"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3002
+        protocol: TCP
+    environment:
+      SERVICE_NAME: "order-service"
+      USER_SERVICE_URL: "http://user-service:3001"
+      PAYMENT_SERVICE_URL: "http://payment-service:3003"
+      
+  # Payment Service
+  - name: "payment-service"
+    image: "myapp/payment-service:v1.2"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3003
+        protocol: TCP
+    environment:
+      SERVICE_NAME: "payment-service"
+      STRIPE_API_KEY: "{{ vault_stripe_key | default('test_key') }}"
+      
+  # API Gateway
+  - name: "api-gateway"
+    image: "nginx:alpine"
+    memory: "128Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    routes:
+      - name: api
+        host: api
+        service: api-gateway
+        targetPort: 80
+        tls: true
+----
+
+## 🔧 Development Environment Patterns
+
+=== Full Development Stack
+
+Create a complete development environment with all necessary services:
+
+[source,yaml]
+----
+containers:
+  # Frontend Development Server
+  - name: "frontend-dev"
+    image: "node:18"
+    memory: "512Mi"
+    command: ["npm", "run", "dev"]
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      NODE_ENV: "development"
+      API_URL: "http://backend-dev:8080"
+      HOT_RELOAD: "true"
+    routes:
+      - name: frontend-dev
+        host: frontend-dev
+        service: frontend-dev
+        targetPort: 3000
+        tls: true
+        
+  # Backend Development Server
+  - name: "backend-dev"
+    image: "node:18"
+    memory: "512Mi"
+    command: ["npm", "run", "dev"]
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    environment:
+      NODE_ENV: "development"
+      DATABASE_URL: "postgres://dev:{{ common_password }}@dev-db:5432/devdb"
+      CORS_ORIGIN: "https://frontend-dev-{{ guid }}.{{ sandbox_openshift_apps_domain }}"
+      
+  # Development Database
+  - name: "dev-db"
+    image: "postgres:15-alpine"
+    memory: "512Mi"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "devdb"
+      POSTGRES_USER: "dev"  
+      POSTGRES_PASSWORD: "{{ common_password }}"
+----
+
+## 🧪 Testing Environment Patterns
+
+=== Automated Testing Stack
+
+Deploy containers for automated testing:
+
+[source,yaml]
+----
+containers:
+  # Application Under Test
+  - name: "app-test"
+    image: "myapp:test"
+    memory: "256Mi"
+    environment:
+      NODE_ENV: "test"
+      DATABASE_URL: "postgres://test:{{ common_password }}@test-db:5432/testdb"
+      
+  # Test Database
+  - name: "test-db"
+    image: "postgres:15-alpine"
+    memory: "256Mi"
+    environment:
+      POSTGRES_DB: "testdb"
+      POSTGRES_USER: "test"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      
+  # End-to-End Testing
+  - name: "e2e-tests"
+    image: "cypress/included:latest"
+    memory: "512Mi"
+    environment:
+      CYPRESS_BASE_URL: "http://app-test:3000"
+      CYPRESS_VIDEO: "false"
+    command: ["cypress", "run", "--headless"]
+----
+
+## 📊 Resource Planning
+
+=== Memory and CPU Allocation
+
+**Resource Planning Guidelines:**
+
+[cols="3,2,2,3"]
+|===
+|Service Type |Memory |CPU |Notes
+
+|**Web Server (nginx)**
+|128-256Mi
+|0.25-0.5
+|Static content serving
+
+|**API Server (Node.js)**
+|256-512Mi
+|0.5-1.0
+|Application logic processing
+
+|**Database (PostgreSQL)**
+|512Mi-2G
+|0.5-2.0
+|Based on data volume
+
+|**Cache (Redis)**
+|128-512Mi
+|0.25-0.5
+|Based on cache requirements
+
+|**Development Tools**
+|512Mi-1G
+|0.5-1.0
+|Hot reloading overhead
+|===
+
+=== Service Dependencies
+
+**Deployment Order Considerations:**
+1. **Databases first** - Other services depend on data layer
+2. **Backend services** - API and business logic layers  
+3. **Frontend services** - User interface components
+4. **Reverse proxies/Load balancers** - Traffic routing last
+
+## 🚦 Health Checks and Readiness
+
+=== Container Health Monitoring
+
+Implement health checks for multi-service deployments:
+
+[source,yaml]
+----
+containers:
+  - name: "api-service"
+    image: "myapp:latest"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+      - name: health
+        containerPort: 8081
+        protocol: TCP
+    environment:
+      HEALTH_CHECK_PORT: "8081"
+      DEPENDENCY_CHECK: "database:5432,redis:6379"
+    # Health check endpoint: http://api-service:8081/health
+----
+
+## 🔗 Service Discovery Patterns
+
+=== DNS-Based Service Discovery
+
+Services communicate using container names as DNS:
+
+[source,yaml]
+----
+# Service A can reach Service B using:
+# http://service-b:8080/api/endpoint
+
+containers:
+  - name: "service-a"
+    environment:
+      SERVICE_B_URL: "http://service-b:8080"
+      
+  - name: "service-b"  
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+----
+
+## ✅ Validation Steps
+
+After deploying multi-service containers:
+
+1. **✅ Service Connectivity**: Test communication between services
+2. **✅ External Access**: Verify routes and external endpoints
+3. **✅ Database Connections**: Ensure data persistence works
+4. **✅ Resource Monitoring**: Check memory and CPU usage
+5. **✅ Log Aggregation**: Verify centralized logging works
+
+## 🎯 Next Steps
+
+**Expand your knowledge:**
+* xref:container-storage-management.adoc[**Container Storage Management**] - Persistent data and volume patterns
+* xref:container-monitoring-logging.adoc[**Container Monitoring & Logging**] - Observability and debugging
+* xref:network-policy-configuration.adoc[**Network Policy Configuration**] - Security and network isolation
+
+**Apply what you've learned:**
+* Design a multi-tier application for your lab requirements
+* Configure service communication patterns
+* Set up development and testing environments
+* Plan resource allocation for your services
+
+**Multi-service container patterns provide the foundation for building complex, scalable applications in Zero Touch lab environments!**

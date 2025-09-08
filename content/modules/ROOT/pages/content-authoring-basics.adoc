@@ -1,9 +1,18 @@
 = Content Authoring Basics  
 :estimated-time: 15-20 minutes
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Write effective lab content** using AsciiDoc syntax and best practices
+* **Structure educational content** with clear learning objectives and outcomes
+* **Create engaging interactive elements** like code blocks, callouts, and navigation
+* **Optimize content for the Showroom interface** with proper formatting and cross-references
+
 == Overview
 
-Learn the fundamentals of creating effective lab content using AsciiDoc. This guide covers the essential syntax and patterns for writing engaging educational content.
+This guide covers the essential syntax and patterns for creating engaging educational content using AsciiDoc. You'll learn to write clear, interactive lab content that enhances the student learning experience.
 
 == AsciiDoc Fundamentals
 

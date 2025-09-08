@@ -10,6 +10,9 @@ containers:
         protocol: TCP
     environment:
       PASSWORD: "{{ common_password }}"
+      RHEL_USER: "{{ zero_touch_rhel_user_user_name | default('rhel') }}"
+      SSH_PRIVATE_KEY: "{{ lookup('file', hostvars.localhost.ssh_provision_key_path | default('')) | default('') }}"
+      SSH_PUBLIC_KEY: "{{ hostvars.localhost.ssh_provision_pubkey_content | default('') }}"
     volumes:
       - name: workspace-data
         emptyDir: {}
@@ -20,10 +23,13 @@ containers:
         mountPath: /opt/app-root/src/workspace
       - name: vscode-config
         mountPath: /opt/app-root/src/.local
+    command: ["/bin/bash", "-c", "tail -f /dev/null"]
     commands:
-      - "dnf install -y nodejs npm git curl"
-      - "npm install -g @coder/code-server"
-      - "useradd -u 1001 -g 0 -m coder"
+      - "dnf install -y git openssh-clients"
+      - "curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/usr/local"
+      - "ln -sf /usr/local/bin/code-server /usr/bin/code-server"
+      - "useradd -u 1001 -g 0 -m coder || true"
+      - "useradd -m $RHEL_USER || true"
       - "mkdir -p /opt/app-root/src/workspace"
       - "mkdir -p /opt/app-root/src/.local/share/code-server"
       - "chown -R coder:root /opt/app-root/src"
@@ -31,7 +37,30 @@ containers:
       - "cd /opt/app-root/src/workspace/zero_touch_template_wilson && git checkout -b lab-development"
       - "git config --global user.name 'Lab Developer'"
       - "git config --global user.email 'developer@lab.local'"
-      - "su - coder -c 'nohup code-server --bind-addr 0.0.0.0:8080 --password \"$PASSWORD\" --disable-telemetry --user-data-dir /opt/app-root/src/.local/share/code-server /opt/app-root/src/workspace/zero_touch_template_wilson > /tmp/code-server.log 2>&1 &'"
+      - "mkdir -p /home/coder/.config/code-server"
+      - "cat > /home/coder/.config/code-server/config.yaml << 'EOF'\nbind-addr: 0.0.0.0:8080\nauth: password\npassword: {{ common_password }}\ncert: false\nEOF"
+      - "chown -R coder:root /home/coder/.config"
+      - "mkdir -p /home/coder/.ssh /home/$RHEL_USER/.ssh"
+      - "if [ -n \"$SSH_PRIVATE_KEY\" ]; then echo \"$SSH_PRIVATE_KEY\" > /home/coder/.ssh/id_rsa; echo \"$SSH_PRIVATE_KEY\" > /home/$RHEL_USER/.ssh/id_rsa; fi"
+      - "if [ -n \"$SSH_PUBLIC_KEY\" ]; then echo \"$SSH_PUBLIC_KEY\" > /home/coder/.ssh/id_rsa.pub; echo \"$SSH_PUBLIC_KEY\" > /home/$RHEL_USER/.ssh/id_rsa.pub; fi"
+      - "chown -R coder:root /home/coder/.ssh"
+      - "chown -R $RHEL_USER:$RHEL_USER /home/$RHEL_USER/.ssh"
+      - "chmod 700 /home/coder/.ssh /home/$RHEL_USER/.ssh"
+      - "chmod 600 /home/coder/.ssh/id_rsa /home/$RHEL_USER/.ssh/id_rsa 2>/dev/null || true"
+      - "chmod 644 /home/coder/.ssh/id_rsa.pub /home/$RHEL_USER/.ssh/id_rsa.pub 2>/dev/null || true"
+      - "cat > /home/coder/.ssh/config << EOF\nHost lab-server\n    HostName lab-server\n    User $RHEL_USER\n    Port 22\n    IdentityFile ~/.ssh/id_rsa\n    StrictHostKeyChecking no\n    UserKnownHostsFile /dev/null\nEOF"
+      - "cat > /home/$RHEL_USER/.ssh/config << EOF\nHost lab-server\n    HostName lab-server\n    User $RHEL_USER\n    Port 22\n    IdentityFile ~/.ssh/id_rsa\n    StrictHostKeyChecking no\n    UserKnownHostsFile /dev/null\nEOF"
+      - "chown coder:root /home/coder/.ssh/config"
+      - "chown $RHEL_USER:$RHEL_USER /home/$RHEL_USER/.ssh/config"
+      - "chmod 600 /home/coder/.ssh/config /home/$RHEL_USER/.ssh/config"
+      - "if [ -f /home/coder/.ssh/id_rsa ]; then echo \"SSH keys configured for coder and $RHEL_USER users - using AgnosticD provisioning keys\"; else echo \"No SSH keys provided - manual SSH available\"; fi"
+      - "mkdir -p /opt/app-root/src/workspace/zero_touch_template_wilson/.vscode"
+      - "cat > /opt/app-root/src/workspace/zero_touch_template_wilson/.vscode/settings.json << 'EOF'\n{\n    \"terminal.integrated.profiles.linux\": {\n        \"SSH to Lab Server\": {\n            \"path\": \"ssh\",\n            \"args\": [\"lab-server\"]\n        }\n    },\n    \"terminal.integrated.defaultProfile.linux\": \"SSH to Lab Server\",\n    \"remote.SSH.remotePlatform\": {\n        \"lab-server\": \"linux\"\n    },\n    \"remote.SSH.connectTimeout\": 15\n}\nEOF"
+      - "cat > /opt/app-root/src/workspace/zero_touch_template_wilson/.vscode/extensions.json << 'EOF'\n{\n    \"recommendations\": [\n        \"ms-vscode-remote.remote-ssh\",\n        \"ms-vscode-remote.remote-ssh-edit\",\n        \"redhat.vscode-yaml\",\n        \"yzhang.markdown-all-in-one\"\n    ]\n}\nEOF"
+      - "chown -R coder:root /opt/app-root/src/workspace/zero_touch_template_wilson/.vscode"
+      - "cat > /tmp/vscode-supervisor.sh << 'EOF'\n#!/bin/bash\necho \"VS Code Supervisor starting...\"\nwhile true; do\n  echo \"$(date): Starting code-server\"\n  cd /opt/app-root/src/workspace/zero_touch_template_wilson\n  su - coder -c 'code-server --config /home/coder/.config/code-server/config.yaml --user-data-dir /opt/app-root/src/.local/share/code-server .'\n  echo \"$(date): code-server exited, restarting in 5 seconds...\"\n  sleep 5\ndone\nEOF"
+      - "chmod +x /tmp/vscode-supervisor.sh"
+      - "nohup /tmp/vscode-supervisor.sh > /tmp/code-server.log 2>&1 &"
       - "sleep 5"
     services:
       - name: vscode
@@ -59,6 +88,11 @@ virtualmachines:
       - tmux
       - curl
       - wget
+      - openssh-server
+    userdata: |
+      #cloud-config
+      runcmd:
+        - systemctl enable --now sshd
     tags:
       - key: "AnsibleGroup"
         value: "bastions"

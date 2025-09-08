@@ -1,0 +1,512 @@
+= Container Monitoring & Logging
+:estimated-time: 15-20 minutes  
+:navtitle: Monitoring & Logging
+
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Configure monitoring and metrics collection** for containers
+* **Implement centralized logging** across multi-container deployments
+* **Set up health checks and alerting** for containerized applications
+* **Debug container issues** using logs and metrics
+
+== 📊 Container Monitoring Stack
+
+=== Prometheus Metrics Collection
+
+Deploy Prometheus to collect container metrics:
+
+[source,yaml]
+----
+containers:
+  # Prometheus metrics collector
+  - name: "prometheus"
+    image: "prom/prometheus:latest"
+    memory: "512Mi"
+    cpu: "0.5"
+    ports:
+      - name: metrics
+        containerPort: 9090
+        protocol: TCP
+    volumes:
+      - name: "prometheus-config"
+        configMap:
+          name: "prometheus-config"
+      - name: "prometheus-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "prometheus-config"
+        mountPath: "/etc/prometheus"
+        readOnly: true
+      - name: "prometheus-data"
+        mountPath: "/prometheus"
+    routes:
+      - name: prometheus
+        host: prometheus
+        service: prometheus
+        targetPort: 9090
+        tls: true
+    
+  # Application with metrics endpoint
+  - name: "app-with-metrics"
+    image: "myapp:latest"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+      - name: metrics
+        containerPort: 9100
+        protocol: TCP
+    environment:
+      METRICS_PORT: "9100"
+      METRICS_ENDPOINT: "/metrics"
+----
+
+### Prometheus Configuration
+
+Create ConfigMap for Prometheus configuration:
+
+[source,yaml]
+----
+# Prometheus configuration (create as ConfigMap)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      
+    scrape_configs:
+      - job_name: 'container-metrics'
+        static_configs:
+          - targets: 
+            - 'app-with-metrics:9100'
+            - 'database:9187'  # PostgreSQL exporter
+            
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+          
+    rule_files:
+      - "/etc/prometheus/alert.rules"
+      
+  alert.rules: |
+    groups:
+      - name: container_alerts
+        rules:
+          - alert: ContainerDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Container {{ $labels.instance }} is down"
+----
+
+=== Grafana Dashboard
+
+Deploy Grafana for metrics visualization:
+
+[source,yaml]
+----
+containers:
+  - name: "grafana"
+    image: "grafana/grafana:latest"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ common_password }}"
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel"
+    volumes:
+      - name: "grafana-data"
+        emptyDir: {}
+      - name: "grafana-config"
+        configMap:
+          name: "grafana-datasources"
+    volumeMounts:
+      - name: "grafana-data"
+        mountPath: "/var/lib/grafana"
+      - name: "grafana-config"
+        mountPath: "/etc/grafana/provisioning/datasources"
+        readOnly: true
+    routes:
+      - name: grafana
+        host: grafana
+        service: grafana
+        targetPort: 3000
+        tls: true
+----
+
+## 📝 Centralized Logging
+
+=== Fluentd Log Aggregation
+
+Collect and forward logs from all containers:
+
+[source,yaml]
+----
+containers:
+  # Application generating logs
+  - name: "webapp"
+    image: "nginx:alpine"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 80
+        protocol: TCP
+    volumes:
+      - name: "nginx-logs"
+        emptyDir: {}
+    volumeMounts:
+      - name: "nginx-logs"
+        mountPath: "/var/log/nginx"
+        
+  # Log collector
+  - name: "fluentd"
+    image: "fluent/fluentd:latest"
+    memory: "256Mi"
+    volumes:
+      - name: "nginx-logs"
+        emptyDir: {}
+      - name: "fluentd-config"
+        configMap:
+          name: "fluentd-config"
+    volumeMounts:
+      - name: "nginx-logs"
+        mountPath: "/var/log/nginx"
+        readOnly: true
+      - name: "fluentd-config"
+        mountPath: "/fluentd/etc"
+        readOnly: true
+    environment:
+      FLUENTD_CONF: "fluent.conf"
+----
+
+### Fluentd Configuration
+
+Configure log parsing and forwarding:
+
+[source,yaml]
+----
+# Fluentd configuration (create as ConfigMap)
+apiVersion: v1  
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+data:
+  fluent.conf: |
+    # Nginx access logs
+    <source>
+      @type tail
+      path /var/log/nginx/access.log
+      pos_file /var/log/fluentd-nginx-access.log.pos
+      tag nginx.access
+      format nginx
+    </source>
+    
+    # Nginx error logs
+    <source>
+      @type tail
+      path /var/log/nginx/error.log
+      pos_file /var/log/fluentd-nginx-error.log.pos
+      tag nginx.error
+      format /^(?<time>[^ ]+ [^ ]+) \[(?<log_level>[^\]]+)\] (?<message>.*)$/
+      time_format %Y/%m/%d %H:%M:%S
+    </source>
+    
+    # Output to stdout for lab purposes
+    <match nginx.**>
+      @type stdout
+    </match>
+    
+    # Could also output to Elasticsearch, S3, etc.
+    # <match nginx.**>
+    #   @type elasticsearch
+    #   host elasticsearch
+    #   port 9200
+    #   index_name nginx-logs
+    # </match>
+----
+
+=== Application Logging Best Practices
+
+Configure applications for effective logging:
+
+[source,yaml]
+----
+containers:
+  - name: "node-app"
+    image: "node:18-alpine"
+    memory: "256Mi"
+    environment:
+      # Structured logging configuration
+      LOG_LEVEL: "info"
+      LOG_FORMAT: "json"
+      NODE_ENV: "production"
+    command: ["node", "app.js"]
+    # Application should log to stdout/stderr for container best practices
+    
+  - name: "python-app"
+    image: "python:3.11-slim"
+    memory: "256Mi"
+    environment:
+      # Python logging configuration
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: "INFO"
+    command: ["python", "app.py"]
+----
+
+## 🏥 Health Checks and Monitoring
+
+=== Container Health Endpoints
+
+Implement health check endpoints in your applications:
+
+[source,yaml]
+----
+containers:
+  - name: "api-server"
+    image: "myapp:latest"
+    memory: "512Mi"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+      - name: health
+        containerPort: 8081
+        protocol: TCP
+    environment:
+      HEALTH_CHECK_PORT: "8081"
+      HEALTH_CHECK_PATH: "/health"
+      # Health check includes dependency validation
+      DEPENDENCY_CHECKS: "database:5432,redis:6379"
+      
+  # Health check monitoring
+  - name: "health-monitor"
+    image: "curlimages/curl:latest"
+    memory: "64Mi"
+    command: ["/bin/sh", "-c", "while true; do curl -f http://api-server:8081/health || echo 'Health check failed'; sleep 30; done"]
+----
+
+### Database Health Monitoring
+
+Monitor database connectivity and performance:
+
+[source,yaml]
+----
+containers:
+  # PostgreSQL with health monitoring
+  - name: "postgres-monitored"
+    image: "postgres:15-alpine"
+    memory: "1G"
+    ports:
+      - name: postgres
+        containerPort: 5432
+        protocol: TCP
+    environment:
+      POSTGRES_DB: "appdb"
+      POSTGRES_USER: "app"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      
+  # PostgreSQL metrics exporter
+  - name: "postgres-exporter"
+    image: "prometheuscommunity/postgres-exporter:latest"
+    memory: "128Mi"
+    ports:
+      - name: metrics
+        containerPort: 9187
+        protocol: TCP
+    environment:
+      DATA_SOURCE_NAME: "postgresql://app:{{ common_password }}@postgres-monitored:5432/appdb?sslmode=disable"
+----
+
+=== Application Performance Monitoring
+
+Monitor application performance metrics:
+
+[source,yaml]
+----
+containers:
+  - name: "webapp-apm"
+    image: "myapp:latest"
+    memory: "512Mi"
+    environment:
+      # Application Performance Monitoring
+      NEW_RELIC_LICENSE_KEY: "{{ vault_newrelic_key | default('') }}"
+      DATADOG_API_KEY: "{{ vault_datadog_key | default('') }}"
+      
+      # Custom metrics endpoint
+      METRICS_ENABLED: "true"
+      METRICS_PORT: "9090"
+      
+      # Performance logging
+      LOG_SLOW_QUERIES: "true"
+      SLOW_QUERY_THRESHOLD: "500ms"
+----
+
+## 🔍 Debugging and Troubleshooting
+
+=== Log Analysis Patterns
+
+Common log analysis techniques:
+
+[source,bash]
+----
+# View recent logs from specific container
+kubectl logs deployment/webapp --tail=100
+
+# Follow logs in real-time
+kubectl logs deployment/api-server -f
+
+# Get logs from multiple containers
+kubectl logs deployment/webapp --all-containers=true
+
+# Search logs for errors
+kubectl logs deployment/webapp | grep -i error
+
+# Export logs for analysis
+kubectl logs deployment/database > database-logs.txt
+----
+
+=== Performance Debugging
+
+Debug performance issues:
+
+[source,yaml]
+----
+containers:
+  # Application with debug tools
+  - name: "debug-enabled-app"
+    image: "myapp:debug"
+    memory: "512Mi"
+    environment:
+      # Debug configuration
+      DEBUG_MODE: "true"
+      PROFILING_ENABLED: "true"
+      TRACE_REQUESTS: "true"
+      
+      # Performance monitoring
+      SLOW_REQUEST_THRESHOLD: "1000ms"
+      MEMORY_PROFILING: "true"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+      - name: debug
+        containerPort: 9229
+        protocol: TCP
+    # Expose debug port for development
+    routes:
+      - name: app-debug
+        host: app-debug
+        service: debug-enabled-app
+        targetPort: 9229
+        tls: true
+----
+
+## 📈 Monitoring Dashboards
+
+=== Essential Metrics to Monitor
+
+**Container Metrics:**
+- CPU usage and limits
+- Memory usage and limits  
+- Network I/O
+- Disk I/O
+- Container restart count
+
+**Application Metrics:**
+- Request latency
+- Error rates
+- Throughput (requests/second)
+- Database connection pool usage
+- Custom business metrics
+
+=== Grafana Dashboard Configuration
+
+[source,yaml]
+----
+# Grafana datasource configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+data:
+  datasources.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        options:
+          path: /var/lib/grafana/dashboards
+----
+
+## 🚨 Alerting Configuration
+
+=== Alert Rules
+
+Configure alerts for critical issues:
+
+[source,yaml]
+----
+# Alert manager configuration (add to Prometheus ConfigMap)
+alertmanager.yml: |
+  global:
+    smtp_smarthost: 'localhost:587'
+    
+  route:
+    group_by: ['alertname']
+    group_wait: 10s
+    group_interval: 10s
+    repeat_interval: 1h
+    receiver: 'webhook'
+    
+  receivers:
+    - name: 'webhook'
+      webhook_configs:
+        - url: 'http://alert-handler:8080/webhook'
+----
+
+## ✅ Monitoring Validation
+
+Verify your monitoring setup:
+
+1. **✅ Metrics Collection**: Confirm Prometheus scrapes all targets
+2. **✅ Log Aggregation**: Verify logs appear in centralized system
+3. **✅ Health Checks**: Test health endpoints respond correctly
+4. **✅ Dashboards**: Ensure Grafana displays metrics properly
+5. **✅ Alerting**: Validate alerts trigger for test conditions
+
+## 🎯 Next Steps
+
+**Enhance your monitoring:**
+* xref:container-testing-validation.adoc[**Container Testing & Validation**] - Testing and validation strategies
+* xref:container-storage-management.adoc[**Storage Management**] - Monitor storage performance
+* xref:network-policy-configuration.adoc[**Network Policy Configuration**] - Monitor network security
+
+**Implement monitoring:**
+* Set up Prometheus and Grafana for your containers
+* Configure centralized logging with Fluentd
+* Implement health checks for all services
+* Create custom dashboards for your applications
+
+**Comprehensive monitoring enables reliable, observable containerized applications in Zero Touch environments!**

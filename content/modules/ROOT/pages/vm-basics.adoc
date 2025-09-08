@@ -1,9 +1,18 @@
 = VM Configuration Basics
 :estimated-time: 15-20 minutes
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Configure virtual machines** with appropriate resources and networking
+* **Apply cloud-init patterns** for automated VM setup and user management
+* **Implement package installation** and service configuration
+* **Troubleshoot common VM deployment issues** and validate configurations
+
 == Overview
 
-Learn how to configure virtual machines for your lab environment by modifying the `config/instances.yaml` file. This guide covers essential VM setup and configuration.
+This guide covers essential VM setup and configuration by modifying the `config/instances.yaml` file. You'll learn to deploy reliable, properly configured virtual machines for lab environments.
 
 == Configuration File Structure
 
@@ -66,7 +75,84 @@ virtualmachines:
 |`networks`
 |No
 |List of networks to connect (default: ["default"])
+
+|`userdata`
+|No
+|Cloud-init configuration for custom setup commands
+
+|`packages`
+|No
+|List of RPM packages to install automatically
 |===
+
+== Running Commands in VMs
+
+[IMPORTANT]
+====
+**VMs do NOT support the `commands` field** - that's only for containers!
+
+Use `userdata` with cloud-init syntax instead.
+====
+
+=== Cloud-init with userdata
+
+For VMs, use cloud-init configuration to run commands during boot:
+
+[source,yaml]
+----
+virtualmachines:
+  - name: "web-server"
+    image: "rhel-9.6"
+    cores: 2
+    memory: "4G"
+    packages:
+      - httpd
+      - git
+    userdata: |
+      #cloud-config
+      runcmd:
+        - systemctl enable --now httpd
+        - firewall-cmd --permanent --add-service=http
+        - firewall-cmd --reload
+        - echo "Welcome to the lab!" > /var/www/html/index.html
+----
+
+=== Container vs VM Command Execution
+
+[cols="2,3,3"]
+|===
+|Resource Type |Command Field |Execution Timing
+
+|**Containers**
+|`commands:` (list)
+|After container starts running
+
+|**VMs** 
+|`userdata:` (cloud-init)
+|During VM boot process
+|===
+
+**Example Container Commands:**
+[source,yaml]
+----
+containers:
+  - name: "app"
+    commands:
+      - "dnf install -y git"  # ← Runs in running container
+      - "systemctl start app"
+----
+
+**Example VM Commands:**
+[source,yaml]
+----
+virtualmachines:
+  - name: "server"
+    userdata: |
+      #cloud-config
+      runcmd:
+        - dnf install -y git   # ← Runs during VM boot
+        - systemctl start app
+----
 
 == ⚠️ CRITICAL REQUIREMENT: Bastion Host
 
@@ -337,8 +423,23 @@ ping google.com           # Internet access
 **Out of memory?**
 → Reduce VM memory or increase lab resources
 
+== 🎯 Next Steps
+
+Now that you understand VM basics, continue your learning journey:
+
+**Build on VM Knowledge:**
+* xref:container-basics.adoc[**Container Basics**] - Add lightweight services alongside your VMs
+* xref:networking-basics.adoc[**Networking Basics**] - Create multi-network topologies for complex labs
+
+**Apply in Practice:**  
+* xref:module-2-1-single-vm-setup.adoc[**Module 2.1: Single VM Setup**] - Hands-on practice with VM deployment
+* xref:template-customization-guide.adoc[**Template Customization Guide**] - Integrate VMs into complete lab designs
+
+**Advanced VM Features:**
+* xref:cnv-platform-features.adoc[**OpenShift CNV Platform Features**] - EFI boot, SecureBoot, enterprise configurations
+* xref:enterprise-lab-patterns.adoc[**Enterprise Lab Patterns**] - Real-world VM patterns for Satellite, AAP
+
 == Related Documentation
 
-* xref:networking-basics.adoc[Networking Basics] - Connect VMs to networks
-* xref:cnv-platform-features.adoc[OpenShift CNV Platform Features] - Advanced VM capabilities - EFI boot, cloud-init, etc.
-* xref:container-basics.adoc[Container Basics] - Add containers to your lab
+* xref:firewall-basics.adoc[Firewall Configuration Basics] - Secure your VM deployments
+* xref:production-patterns-guide.adoc[Production Lab Patterns Guide] - Professional VM configuration patterns

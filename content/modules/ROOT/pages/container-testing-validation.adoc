@@ -1,0 +1,538 @@
+= Container Testing & Validation
+:estimated-time: 15-20 minutes
+:navtitle: Testing & Validation
+
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Design comprehensive testing strategies** for containerized applications
+* **Implement automated testing pipelines** using containers
+* **Validate container deployments** with systematic testing approaches
+* **Debug and troubleshoot** container deployment issues
+
+== 🧪 Container Testing Strategies
+
+=== Unit Testing in Containers
+
+Create isolated test environments:
+
+[source,yaml]
+----
+containers:
+  # Application under test
+  - name: "app-under-test"
+    image: "myapp:test"
+    memory: "256Mi"
+    environment:
+      NODE_ENV: "test"
+      DATABASE_URL: "postgres://test:{{ common_password }}@test-db:5432/testdb"
+      REDIS_URL: "redis://test-cache:6379"
+      
+  # Test database (isolated)
+  - name: "test-db"
+    image: "postgres:15-alpine"
+    memory: "256Mi"
+    environment:
+      POSTGRES_DB: "testdb"
+      POSTGRES_USER: "test"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      
+  # Test cache
+  - name: "test-cache"
+    image: "redis:7-alpine"
+    memory: "128Mi"
+    
+  # Unit test runner
+  - name: "unit-tests"
+    image: "node:18-alpine"
+    memory: "256Mi"
+    command: ["npm", "test"]
+    environment:
+      TEST_DATABASE_URL: "postgres://test:{{ common_password }}@test-db:5432/testdb"
+      CI: "true"
+----
+
+=== Integration Testing Stack
+
+Test service-to-service communication:
+
+[source,yaml]
+----
+containers:
+  # Frontend service
+  - name: "frontend-test"
+    image: "myapp/frontend:test"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    environment:
+      REACT_APP_API_URL: "http://backend-test:8080"
+      NODE_ENV: "test"
+      
+  # Backend service  
+  - name: "backend-test"
+    image: "myapp/backend:test"
+    memory: "512Mi"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    environment:
+      DATABASE_URL: "postgres://test:{{ common_password }}@test-db:5432/testdb"
+      NODE_ENV: "test"
+      
+  # Integration test runner
+  - name: "integration-tests"
+    image: "cypress/included:latest"
+    memory: "512Mi"
+    environment:
+      CYPRESS_BASE_URL: "http://frontend-test:3000"
+      CYPRESS_API_URL: "http://backend-test:8080"
+      CYPRESS_VIDEO: "false"
+    command: ["cypress", "run", "--headless"]
+----
+
+## 🔍 End-to-End Testing
+
+=== Browser-Based Testing
+
+Test complete user workflows:
+
+[source,yaml]
+----
+containers:
+  # Application stack for E2E testing
+  - name: "webapp-e2e"
+    image: "myapp:latest"
+    memory: "512Mi"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    environment:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgres://app:{{ common_password }}@e2e-db:5432/e2edb"
+    routes:
+      - name: webapp-e2e
+        host: webapp-e2e
+        service: webapp-e2e
+        targetPort: 8080
+        tls: true
+        
+  # E2E test database
+  - name: "e2e-db"
+    image: "postgres:15-alpine"
+    memory: "512Mi"
+    environment:
+      POSTGRES_DB: "e2edb"
+      POSTGRES_USER: "app"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      
+  # Playwright E2E tests
+  - name: "playwright-tests"
+    image: "mcr.microsoft.com/playwright:latest"
+    memory: "1G"
+    environment:
+      PLAYWRIGHT_BASE_URL: "https://webapp-e2e-{{ guid }}.{{ sandbox_openshift_apps_domain }}"
+      PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
+    command: ["npx", "playwright", "test", "--headed"]
+----
+
+=== API Testing
+
+Comprehensive API validation:
+
+[source,yaml]
+----
+containers:
+  # API server for testing
+  - name: "api-test"
+    image: "myapp/api:latest"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    environment:
+      NODE_ENV: "test"
+      DATABASE_URL: "postgres://api:{{ common_password }}@api-test-db:5432/apitest"
+      
+  # API test database
+  - name: "api-test-db"
+    image: "postgres:15-alpine"
+    memory: "256Mi"
+    environment:
+      POSTGRES_DB: "apitest"
+      POSTGRES_USER: "api"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      
+  # Postman/Newman API tests
+  - name: "api-tests"
+    image: "postman/newman:latest"
+    memory: "256Mi"
+    command: ["newman", "run", "/tests/api-tests.json", "--env-var", "base_url=http://api-test:8080"]
+    volumes:
+      - name: "api-test-suite"
+        configMap:
+          name: "postman-tests"
+    volumeMounts:
+      - name: "api-test-suite"
+        mountPath: "/tests"
+        readOnly: true
+----
+
+## 📊 Performance Testing
+
+=== Load Testing with K6
+
+Test application performance under load:
+
+[source,yaml]
+----
+containers:
+  # Application under load test
+  - name: "webapp-load"
+    image: "myapp:latest"
+    memory: "512Mi"
+    cpu: "1"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    environment:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgres://app:{{ common_password }}@load-db:5432/loadtest"
+    routes:
+      - name: webapp-load
+        host: webapp-load
+        service: webapp-load
+        targetPort: 8080
+        tls: true
+        
+  # Load test database
+  - name: "load-db"
+    image: "postgres:15-alpine"
+    memory: "1G"
+    cpu: "1"
+    environment:
+      POSTGRES_DB: "loadtest"
+      POSTGRES_USER: "app"
+      POSTGRES_PASSWORD: "{{ common_password }}"
+      
+  # K6 load test runner
+  - name: "k6-load-test"
+    image: "grafana/k6:latest"
+    memory: "256Mi"
+    command: ["k6", "run", "/scripts/load-test.js"]
+    environment:
+      K6_TARGET_URL: "https://webapp-load-{{ guid }}.{{ sandbox_openshift_apps_domain }}"
+    volumes:
+      - name: "k6-scripts"
+        configMap:
+          name: "k6-test-scripts"
+    volumeMounts:
+      - name: "k6-scripts"
+        mountPath: "/scripts"
+        readOnly: true
+----
+
+### K6 Test Script Example
+
+[source,javascript]
+----
+// K6 load test script (create as ConfigMap)
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export let options = {
+  vus: 10, // 10 virtual users
+  duration: '2m', // Run for 2 minutes
+  thresholds: {
+    http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
+    http_req_failed: ['rate<0.1'], // Error rate under 10%
+  },
+};
+
+export default function () {
+  const baseUrl = __ENV.K6_TARGET_URL;
+  
+  // Test homepage
+  let response = http.get(`${baseUrl}/`);
+  check(response, {
+    'homepage status is 200': (r) => r.status === 200,
+    'homepage response time < 200ms': (r) => r.timings.duration < 200,
+  });
+  
+  // Test API endpoint
+  response = http.get(`${baseUrl}/api/health`);
+  check(response, {
+    'API health status is 200': (r) => r.status === 200,
+    'API response contains "healthy"': (r) => r.body.includes('healthy'),
+  });
+  
+  sleep(1);
+}
+----
+
+## ✅ Deployment Validation
+
+=== Health Check Validation
+
+Systematic health check testing:
+
+[source,yaml]
+----
+containers:
+  # Application with comprehensive health checks
+  - name: "webapp-health"
+    image: "myapp:latest"
+    memory: "256Mi"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+      - name: health
+        containerPort: 8081
+        protocol: TCP
+    environment:
+      HEALTH_CHECK_PORT: "8081"
+      HEALTH_DEPENDENCIES: "database:5432,cache:6379"
+      
+  # Health check validator
+  - name: "health-validator"
+    image: "curlimages/curl:latest"
+    memory: "64Mi"
+    command: ["/bin/sh", "-c", "
+      echo 'Starting health check validation...';
+      while true; do
+        echo '--- Health Check $(date) ---';
+        
+        # Test basic health endpoint
+        if curl -f -s http://webapp-health:8081/health > /tmp/health.json; then
+          echo '✅ Health endpoint responded';
+          cat /tmp/health.json;
+        else
+          echo '❌ Health endpoint failed';
+        fi;
+        
+        # Test readiness endpoint
+        if curl -f -s http://webapp-health:8081/ready; then
+          echo '✅ Readiness check passed';
+        else
+          echo '❌ Readiness check failed';
+        fi;
+        
+        # Test liveness endpoint
+        if curl -f -s http://webapp-health:8081/alive; then
+          echo '✅ Liveness check passed';
+        else
+          echo '❌ Liveness check failed';
+        fi;
+        
+        sleep 30;
+      done
+    "]
+----
+
+=== Configuration Validation
+
+Validate container configuration:
+
+[source,yaml]
+----
+containers:
+  # Configuration validator
+  - name: "config-validator"
+    image: "alpine:latest"
+    memory: "64Mi"
+    command: ["/bin/sh", "-c", "
+      echo 'Validating container configuration...';
+      
+      # Test environment variables
+      echo 'Environment Variables:';
+      env | grep -E '^(DATABASE_URL|REDIS_URL|NODE_ENV)';
+      
+      # Test volume mounts
+      echo 'Volume Mounts:';
+      ls -la /app/config/ || echo 'Config volume not mounted';
+      ls -la /app/data/ || echo 'Data volume not mounted';
+      
+      # Test network connectivity
+      echo 'Network Connectivity:';
+      nc -zv database 5432 && echo '✅ Database reachable' || echo '❌ Database unreachable';
+      nc -zv cache 6379 && echo '✅ Cache reachable' || echo '❌ Cache unreachable';
+      
+      # Keep container running for inspection
+      tail -f /dev/null;
+    "]
+    volumes:
+      - name: "app-config"
+        configMap:
+          name: "app-configuration"
+      - name: "app-data"
+        emptyDir: {}
+    volumeMounts:
+      - name: "app-config"
+        mountPath: "/app/config"
+        readOnly: true
+      - name: "app-data"
+        mountPath: "/app/data"
+----
+
+## 🛠️ Debugging Techniques
+
+=== Container Debugging Tools
+
+Debug containers with specialized tools:
+
+[source,yaml]
+----
+containers:
+  # Debug container with tools
+  - name: "debug-toolkit"
+    image: "nicolaka/netshoot:latest"
+    memory: "128Mi"
+    command: ["sleep", "3600"]
+    # Provides: curl, wget, dig, nslookup, nc, traceroute, iperf3, etc.
+    
+  # Application with debug mode
+  - name: "app-debug"
+    image: "myapp:debug"
+    memory: "512Mi"
+    environment:
+      DEBUG: "*"
+      NODE_ENV: "development"
+      LOG_LEVEL: "debug"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+      - name: debug
+        containerPort: 9229
+        protocol: TCP
+----
+
+=== Log Analysis for Debugging
+
+Structured debugging with logs:
+
+[source,bash]
+----
+# Container debugging commands
+
+# Check container status
+kubectl get pods
+
+# Describe pod for detailed info
+kubectl describe pod <pod-name>
+
+# Get container logs
+kubectl logs <pod-name> -c <container-name>
+
+# Follow logs in real-time
+kubectl logs <pod-name> -c <container-name> -f
+
+# Execute commands in container
+kubectl exec -it <pod-name> -c <container-name> -- /bin/bash
+
+# Check resource usage
+kubectl top pods
+
+# Get events
+kubectl get events --sort-by=.metadata.creationTimestamp
+----
+
+## 🚀 Continuous Testing
+
+=== Automated Test Pipeline
+
+Integrate testing into deployment pipeline:
+
+[source,yaml]
+----
+containers:
+  # Test orchestrator
+  - name: "test-orchestrator"
+    image: "myorg/test-runner:latest"
+    memory: "256Mi"
+    command: ["/bin/bash", "-c", "
+      echo 'Starting automated test pipeline...';
+      
+      # Wait for application to be ready
+      until curl -f http://webapp:8080/health; do
+        echo 'Waiting for application...';
+        sleep 5;
+      done;
+      
+      # Run unit tests
+      echo 'Running unit tests...';
+      npm run test:unit || exit 1;
+      
+      # Run integration tests  
+      echo 'Running integration tests...';
+      npm run test:integration || exit 1;
+      
+      # Run E2E tests
+      echo 'Running E2E tests...';
+      npm run test:e2e || exit 1;
+      
+      echo 'All tests passed ✅';
+    "]
+    environment:
+      TEST_DATABASE_URL: "postgres://test:{{ common_password }}@test-db:5432/testdb"
+      WEBAPP_URL: "http://webapp:8080"
+----
+
+## 📋 Testing Checklist
+
+=== Pre-Deployment Testing
+
+**✅ Unit Tests**
+- All business logic tested
+- Database interactions validated
+- Error handling verified
+
+**✅ Integration Tests**
+- Service communication tested
+- API contracts validated
+- Data flow verified
+
+**✅ Performance Tests**
+- Load testing completed
+- Response times acceptable
+- Resource usage optimized
+
+=== Post-Deployment Validation
+
+**✅ Health Checks**
+- All health endpoints responding
+- Dependencies accessible
+- Error rates acceptable
+
+**✅ Functionality Tests**
+- Critical user paths working
+- API endpoints responding
+- Database operations successful
+
+**✅ Security Tests**
+- Network policies enforced
+- Authentication working
+- Authorization rules applied
+
+## 🎯 Next Steps
+
+**Expand your testing knowledge:**
+* xref:container-multi-service-patterns.adoc[**Multi-Service Patterns**] - Test service interactions
+* xref:container-monitoring-logging.adoc[**Monitoring & Logging**] - Monitor test results
+* xref:network-policy-configuration.adoc[**Network Policy Configuration**] - Test security policies
+
+**Implement testing strategies:**
+* Design comprehensive test suites for your applications
+* Set up automated testing pipelines
+* Implement performance and load testing
+* Create debugging and troubleshooting runbooks
+
+**Comprehensive testing ensures reliable, high-quality container deployments in Zero Touch environments!**

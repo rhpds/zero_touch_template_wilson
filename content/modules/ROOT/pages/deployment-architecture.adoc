@@ -1,5 +1,17 @@
 = Zero Touch Deployment Architecture
 
+== Learning Outcomes
+
+By the end of this guide, you will:
+
+* **Understand the complete deployment pipeline** from Git repository to running lab
+* **Comprehend the role of each system component** (AgnosticV, AgnosticD, OpenShift CNV, Showroom)
+* **Trace the configuration transformation process** and variable mapping between systems
+* **Debug deployment issues** by understanding where failures can occur in the pipeline
+* **Optimize lab designs** based on deployment architecture constraints and capabilities
+
+== Overview
+
 Understanding how your Zero Touch labs get deployed is crucial for advanced customization and troubleshooting. This guide explains the backend deployment process and integration patterns.
 
 == 🏗️ Architecture Overview
@@ -45,14 +57,38 @@ Located at: `agnosticv_all/zt-rhelbu-agnosticv/zt-rhelbu/[your-lab]/`
 [source,yaml]
 ----
 your-lab/
-├── common.yaml        # Shared configuration
+├── common.yaml        # Shared configuration + Git integration
 ├── dev.yaml          # Development settings  
-├── prod.yaml         # Production settings
+├── prod.yaml         # Production settings (chart v1.9.10)
 ├── test.yaml         # Testing configuration
 └── description.adoc  # Catalog description
 ----
 
-**Purpose**: Defines catalog metadata, deployment parameters, and environment-specific overrides.
+**Purpose**: Orchestrates deployment by transforming your Git repository into AgnosticD variables.
+
+**Key Integration Logic**:
+[source,yaml]
+----
+# Dynamic URL transformation (common.yaml)
+git_config_directory: |-
+  {{ ocp4_workload_showroom_content_git_repo  |
+    replace('.git','/refs/heads/' + ocp4_workload_showroom_content_git_repo_ref + '/config/') |
+    replace('github.com','raw.githubusercontent.com') }}
+
+# Template file → AgnosticD variable mapping
+containers: "{{ (lookup('ansible.builtin.url', git_config_directory + 'instances.yaml') | from_yaml).containers | default([]) }}"
+instances: "{{ (lookup('ansible.builtin.url', git_config_directory + 'instances.yaml') | from_yaml).virtualmachines | default([]) }}"
+zero_touch_ingress_lockdown_rules: "{{ (lookup('ansible.builtin.url', git_config_directory + 'firewall.yaml') | from_yaml).ingress | default([]) }}"
+----
+
+**URL Transformation Example**:
+```
+https://github.com/rhpds/zero_touch_template_wilson.git
+      ↓
+https://raw.githubusercontent.com/rhpds/zero_touch_template_wilson/refs/heads/main/config/
+      ↓
+https://raw.githubusercontent.com/rhpds/zero_touch_template_wilson/refs/heads/main/config/instances.yaml
+```
 
 == 🔄 Deployment Process
 
@@ -84,20 +120,48 @@ AgnosticD uses your configuration to create:
 **🔒 Security Groups**: Automatically configured for isolation
 
 === Phase 3: Software Installation
-The platform installs and configures:
+The platform executes comprehensive role-based configuration:
 
-**📦 Base Packages**: RHEL repositories and essential software
-**👤 User Accounts**: Creates `rhel` user with secure password
-**🔑 SSH Access**: Configures terminal access for Showroom
-**🤖 Automation**: Runs your `setup-automation/` scripts
+**🔧 Pre-Software Roles**:
+- `create_ssh_provision_key` - Generates SSH keys for deployment
+- `set-repositories` - Configures RHEL repositories (Satellite integration)
+- `common` - Installs common packages from your `instances.yaml`
+- `bastion-base` - Configures bastion host essentials
+- `zero_touch_rhel_user` - Creates the `rhel` lab user
+- `asset_injector` - Injects custom assets (if configured)
+
+**📦 Software Installation**:
+- Installs packages defined in your `instances.yaml` per VM/container
+- Executes configurable `software_workloads` (extensions available)
+
+**🔧 Available Workload Extensions**:
+- `ocp4_workload_codeserver` - VS Code browser-based IDE
+- `ocp4_workload_gitea_operator` - Git repository hosting
+- `ocp4_workload_jenkins` - CI/CD pipeline integration
+- `ocp4_workload_quay_operator` - Container registry
+- Plus 200+ additional workloads for specialized requirements
 
 === Phase 4: Showroom Deployment
-Your content is packaged and deployed:
+Your content is packaged and deployed via Helm:
 
-**📚 Content Build**: Antora generates your documentation
-**🎨 UI Integration**: Showroom creates the student interface  
-**🔌 Terminal Access**: Wetty provides browser-based SSH
+**🎨 Showroom Helm Chart Deployment**:
+- **Dev**: `showroom-single-pod v1.9.6` (development environments)
+- **Prod**: `zerotouch v1.9.10` (production environments)
+- **UI Bundle**: `nookbag-v0.0.5` (Zero Touch UI framework)
+
+**📚 Content Integration**:
+- Antora processes your `site.yml` playbook
+- Content served via `showroom-content:v1.2` image (prod)
+- Dynamic Git repository content fetching
+
+**🔌 Terminal Integration**:
+- Wetty SSH terminals: `quay.io/rhpds/wetty`
+- Auto-SSH to bastion: `ssh rhel@{{ groups['bastions'][0] }}`
+- Environment variables: `guid`, `domain`, `common_password`
+
 **🌍 URL Generation**: Creates unique URLs for each lab instance
+- Showroom UI: `https://showroom-{{ guid }}.{{ domain }}/`  
+- Container routes: `https://{{ container-name }}-{{ guid }}.{{ domain }}/`
 
 == 🔧 Key Integration Points
 
@@ -235,6 +299,79 @@ zero_touch_egress_lockdown_rules:
         port: 443
     to: []  # Allow HTTPS everywhere
 ----
+
+==== Network Policy for Container SSH Access
+
+**Critical for containers needing SSH access to VMs:**
+
+[IMPORTANT]
+====
+**Default Network Policy Behavior**
+
+Zero Touch deployments implement strict network policies for security:
+
+- **Showroom pods** can SSH to VMs (default)
+- **Custom containers** are blocked from SSH to VMs (security feature)
+- **Container-to-container** communication works normally
+- **VM-to-VM** communication works normally
+====
+
+**Required Configuration for SSH-enabled containers:**
+
+[source,yaml]  
+----
+# Enable SSH access from specific containers to VMs
+zero_touch_ingress_lockdown_rules:
+  - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: showroom  # Default Showroom access
+  - from:  
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: vscode    # VS Code container
+    ports:
+      - protocol: TCP
+        port: 22
+  - from:  
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: monitoring  # Monitoring container
+    ports:
+      - protocol: TCP
+        port: 22
+----
+
+**Key Implementation Details:**
+
+* **Pod Labels**: Containers get `app.kubernetes.io/name: <container-name>` labels automatically
+* **Namespace Scope**: Network policies apply within the CNV namespace
+* **Security Isolation**: VMs and containers are in same namespace but isolated by network policy
+* **Default Lockdown**: `lock_bastion_security_group_openshift_cnv.yml` applies the restrictions
+
+**Common Use Cases:**
+- Development environments (VS Code, IDEs) 
+- Administrative containers (backup, deployment tools)
+- Monitoring systems (node agents, log collectors)
+- CI/CD containers (automation, testing tools)
+
+**Network Architecture:**
+- **Showroom namespace**: `showroom-{{ guid }}` (UI layer only - separate)
+- **CNV namespace**: `{{ env_type }}-{{ guid }}` (ALL lab infrastructure: VMs + containers + services + routes)
+- **Cross-namespace SSH**: Showroom → CNV VMs allowed (default policy rule)
+- **Intra-namespace SSH**: Container → VM blocked by default (MORE restrictive, requires explicit policy)
+
+[IMPORTANT]
+====
+**Critical Architecture Correction**
+
+Containers and VMs deploy to the **SAME CNV namespace**, not separate namespaces. This makes network policy configuration **MORE critical** because:
+
+* No natural namespace isolation between containers and VMs
+* Network policies apply **within** the shared lab namespace
+* Container SSH access requires explicit policy exceptions
+* More restrictive than traditional cross-namespace security
+====
 
 == 🧰 Troubleshooting
 
